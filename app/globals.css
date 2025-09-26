@@ -39,6 +39,31 @@
   --sidebar-ring: oklch(0.708 0 0);
 }
 
+/* Image Crop Dialog Styles */
+.image-crop-container {
+  position: relative;
+  width: var(--crop-size, 256px);
+  height: var(--crop-size, 256px);
+  margin: 0 auto;
+  border: 2px dashed theme('colors.gray.300');
+  border-radius: 50%;
+  overflow: hidden;
+  background-color: theme('colors.gray.50');
+  cursor: move;
+}
+
+.dark .image-crop-container {
+  border-color: theme('colors.gray.600');
+  background-color: theme('colors.gray.800');
+}
+
+.crop-image {
+  position: absolute;
+  user-select: none;
+  pointer-events: none;
+  object-fit: cover;
+}
+
 .dark {
   --background: oklch(0.145 0 0);
   --foreground: oklch(0.985 0 0);
@@ -195,5 +220,27 @@
     z-index: 1000001 !important;
     position: relative;
     pointer-events: auto !important;
+  }
+  
+  /* Ensure body scrollbar is always reserved to prevent layout shift */
+  body {
+    overflow-y: scroll;
+  }
+
+  /* Image Crop Dialog Styles */
+  .crop-image {
+    transition: transform 0.1s ease-out;
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+    user-select: none;
+  }
+
+  .crop-container {
+    cursor: move;
+  }
+
+  .crop-container:active {
+    cursor: grabbing;
   }
 }

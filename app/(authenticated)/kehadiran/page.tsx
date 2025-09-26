@@ -7,6 +7,9 @@ import { Input } from "@/components/ui/input"
 import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Progress } from "@/components/ui/progress"
+import { useSessionStore } from "@/stores/session.store"
+import { canAccessAttendance } from "@/lib/rbac"
+import { redirect } from "next/navigation"
 
 interface AttendanceRecord {
   id: string
@@ -57,6 +60,14 @@ const mockAttendance: AttendanceRecord[] = [
 ]
 
 export default function KehadiranPage() {
+  const { session } = useSessionStore()
+  
+  // Guard: Only dosen and kaprodi can access attendance page
+  if (!session || !canAccessAttendance(session.role)) {
+    redirect("/dashboard")
+    return null
+  }
+  
   const [searchTerm, setSearchTerm] = useState("")
   const [selectedStatus, setSelectedStatus] = useState("all")
   const [selectedSubject, setSelectedSubject] = useState("all")

@@ -5,29 +5,58 @@ import { useRouter } from "next/navigation"
 import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { z } from "zod"
+import Image from "next/image"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { useSessionStore } from "@/stores/session.store"
 import { showError } from "@/lib/alerts"
-import { Check, Sparkles, Mail, Lock, Eye, EyeOff, ArrowRight } from "lucide-react"
+import { Check, Mail, Lock, Eye, EyeOff, ArrowRight } from "lucide-react"
 import { ButtonLoading } from "@/components/ui/loading"
 
 const loginSchema = z.object({
-  email: z.string().email("Format email tidak valid. Contoh: nama@univ.ac.id"),
+  email: z.string()
+    .email("Format email tidak valid")
+    .regex(/^[a-zA-Z]+\.\d{5}@(mhs|dsn|kpd)\.[a-zA-Z]+\.ac\.id$/, "Email harus berformat: nama.nim@role.namauniv.ac.id (nim 5 digit, role: mhs/dsn/kpd)"),
   password: z.string().min(1, "Kata sandi wajib diisi"),
 })
 
 type LoginForm = z.infer<typeof loginSchema>
 
-// Mock users for demo
-const mockUsers = [
-  { id: "1", email: "kaprodi@univ.ac.id", password: "kaprodi123", name: "Dr. Ahmad Kaprodi", role: "kaprodi" as const },
-  { id: "2", email: "dosen@univ.ac.id", password: "dosen123", name: "Prof. Budi Dosen", role: "dosen" as const },
-  { id: "3", email: "mahasiswa1@univ.ac.id", password: "mhs123", name: "Siti Mahasiswa", role: "mahasiswa" as const },
-  { id: "4", email: "mahasiswa2@univ.ac.id", password: "mhs123", name: "Andi Mahasiswa", role: "mahasiswa" as const },
-]
+// Function to determine role from email
+const getRoleFromEmail = (email: string): "kaprodi" | "dosen" | "mahasiswa" | null => {
+  const emailParts = email.split('@')
+  if (emailParts.length < 2) return null
+  
+  const domain = emailParts[1].toLowerCase()
+  const roleCode = domain.split('.')[0]
+  
+  switch (roleCode) {
+    case 'mhs':
+      return 'mahasiswa'
+    case 'dsn':
+      return 'dosen'
+    case 'kpd':
+      return 'kaprodi'
+    default:
+      return null
+  }
+}
+
+// Function to generate user name from email
+const generateNameFromEmail = (email: string, role: string): string => {
+  const emailParts = email.split('@')[0]
+  const [nama, nim] = emailParts.split('.')
+  
+  // Capitalize first letter of each word in nama
+  const formattedNama = nama.split(/(?=[A-Z])/).map(word => 
+    word.charAt(0).toUpperCase() + word.slice(1).toLowerCase()
+  ).join(' ')
+  
+  const capitalizedRole = role.charAt(0).toUpperCase() + role.slice(1)
+  return `${formattedNama} - ${nim} (${capitalizedRole})`
+}
 
 export function LoginCard() {
   const router = useRouter()
@@ -38,6 +67,7 @@ export function LoginCard() {
 
   const form = useForm<LoginForm>({
     resolver: zodResolver(loginSchema),
+    mode: "onChange",
     defaultValues: {
       email: "",
       password: "",
@@ -51,12 +81,20 @@ export function LoginCard() {
       // Simulate API call delay
       await new Promise((resolve) => setTimeout(resolve, 1500))
 
-      // Find user
-      const user = mockUsers.find((u) => u.email === data.email && u.password === data.password)
-
-      if (!user) {
-        showError("Email atau kata sandi salah")
+      // Determine role from email
+      const role = getRoleFromEmail(data.email)
+      
+      if (!role) {
+        showError("Format email tidak dikenali. Gunakan format: role@univ(nama).ac.id")
         return
+      }
+
+      // Create user object from email
+      const user = {
+        id: Date.now().toString(),
+        email: data.email,
+        name: generateNameFromEmail(data.email, role),
+        role: role,
       }
 
       // Show success animation
@@ -88,8 +126,14 @@ export function LoginCard() {
         <CardHeader className="text-center pb-8">
           <div className="flex items-center justify-center mb-4">
             <div className="relative">
-              <div className="w-16 h-16 rounded-2xl bg-primary/20 flex items-center justify-center">
-                <Sparkles className="h-8 w-8 text-primary animate-pulse" />
+              <div className="w-16 h-16 rounded-2xl bg-white dark:bg-gray-800 shadow-lg flex items-center justify-center overflow-hidden">
+                <Image 
+                  src="/logo jadwal in.svg" 
+                  alt="Jadwal.in Logo" 
+                  width={40} 
+                  height={40}
+                  className="w-10 h-10 object-contain animate-pulse"
+                />
               </div>
               <div className="absolute inset-0 bg-primary/10 rounded-2xl blur-xl animate-pulse" />
             </div>
@@ -109,7 +153,7 @@ export function LoginCard() {
                 <Input
                   id="email"
                   type="email"
-                  placeholder="nama@univ.ac.id"
+                  placeholder="nama.12345@mhs.univnama.ac.id"
                   aria-describedby="email-error"
                   aria-invalid={!!form.formState.errors.email}
                   className="
@@ -137,7 +181,7 @@ export function LoginCard() {
                 <Input
                   id="password"
                   type={showPassword ? "text" : "password"}
-                  placeholder="Masukkan kata sandi"
+                  placeholder="Password bebas"
                   aria-describedby="password-error"
                   aria-invalid={!!form.formState.errors.password}
                   className="
@@ -189,47 +233,6 @@ export function LoginCard() {
               )}
             </Button>
           </form>
-
-          <div>
-            <div className="relative">
-              <div className="absolute inset-0 flex items-center">
-                <div className="w-full border-t border-border" />
-              </div>
-              <div className="relative flex justify-center text-sm">
-                <span className="px-4 bg-card text-muted-foreground">Akun Demo</span>
-              </div>
-            </div>
-
-            <div className="mt-6 p-4 bg-muted/50 rounded-xl border border-border">
-              <div className="space-y-3 text-sm">
-                {mockUsers.slice(0, 3).map((user, index) => (
-                  <button
-                    key={user.id}
-                    type="button"
-                    onClick={() => {
-                      form.setValue("email", user.email)
-                      form.setValue("password", user.password)
-                    }}
-                    className="
-                      w-full text-left p-3 rounded-lg bg-background hover:bg-muted
-                      border border-border hover:border-primary/20
-                      transition-all duration-200 hover:scale-105
-                      group focus:outline-none focus:ring-2 focus:ring-primary/20
-                    "
-                    aria-label={`Gunakan akun demo ${user.role}`}
-                  >
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <p className="font-medium text-foreground capitalize">{user.role}</p>
-                        <p className="text-muted-foreground text-xs">{user.email}</p>
-                      </div>
-                      <ArrowRight className="h-4 w-4 text-muted-foreground group-hover:text-foreground group-hover:translate-x-1 transition-all" />
-                    </div>
-                  </button>
-                ))}
-              </div>
-            </div>
-          </div>
         </CardContent>
       </Card>
     </div>

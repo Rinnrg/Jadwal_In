@@ -34,7 +34,7 @@ export function Legend({ userId }: LegendProps) {
       <CardContent className="space-y-3">
         {usedSubjects.map((subject) => (
           <div key={subject.id} className="flex items-center gap-3">
-            <div className="w-4 h-4 rounded-full flex-shrink-0" style={{ backgroundColor: subject.color }} />
+            <div className="w-4 h-4 rounded-full flex-shrink-0 border border-gray-300" />
             <div className="flex-1 min-w-0">
               <p className="font-medium truncate">{subject.kode}</p>
               <p className="text-sm text-muted-foreground truncate">{subject.nama}</p>
@@ -47,7 +47,7 @@ export function Legend({ userId }: LegendProps) {
 
         {personalEventColors.map((color, index) => (
           <div key={color} className="flex items-center gap-3">
-            <div className="w-4 h-4 rounded-full flex-shrink-0" style={{ backgroundColor: color }} />
+            <div className="w-4 h-4 rounded-full flex-shrink-0 bg-gray-400" />
             <div className="flex-1">
               <p className="font-medium">Jadwal Pribadi</p>
               <p className="text-sm text-muted-foreground">Kegiatan non-akademik</p>

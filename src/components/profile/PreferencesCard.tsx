@@ -62,20 +62,6 @@ export function PreferencesCard() {
       </CardHeader>
       <CardContent className="space-y-6">
         <div className="space-y-2">
-          <Label>Tema</Label>
-          <Select value={theme} onValueChange={handleThemeChange}>
-            <SelectTrigger>
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="system">Sistem</SelectItem>
-              <SelectItem value="light">Terang</SelectItem>
-              <SelectItem value="dark">Gelap</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
-
-        <div className="space-y-2">
           <Label>Bahasa</Label>
           <Select value={language} onValueChange={handleLanguageChange}>
             <SelectTrigger>

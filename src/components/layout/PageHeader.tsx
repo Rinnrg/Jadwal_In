@@ -51,8 +51,7 @@ export function PageHeader({ title, description, showBackButton = false, childre
 
             {pageDescription && (
               <p
-                className="text-lg text-muted-foreground animate-slide-in-left max-w-2xl leading-relaxed"
-                style={{ animationDelay: "0.1s" }}
+                className="text-lg text-muted-foreground animate-slide-in-left max-w-2xl leading-relaxed [animation-delay:0.1s]"
               >
                 {pageDescription}
               </p>

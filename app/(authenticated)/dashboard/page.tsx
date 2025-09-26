@@ -2,9 +2,7 @@
 
 import { useSessionStore } from "@/stores/session.store"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { Progress } from "@/components/ui/progress"
 import {
   Calendar,
   BookOpen,
@@ -28,45 +26,13 @@ import Link from "next/link"
 export default function DashboardPage() {
   const { session } = useSessionStore()
   const [currentTime, setCurrentTime] = useState(new Date())
-  const [progressValue, setProgressValue] = useState(0)
 
   useEffect(() => {
     const timer = setInterval(() => setCurrentTime(new Date()), 1000)
     return () => clearInterval(timer)
   }, [])
 
-  useEffect(() => {
-    const timer = setTimeout(() => setProgressValue(75), 500)
-    return () => clearTimeout(timer)
-  }, [])
-
   if (!session) return null
-
-  const getRoleLabel = (role: string) => {
-    switch (role) {
-      case "kaprodi":
-        return "Kepala Program Studi"
-      case "dosen":
-        return "Dosen"
-      case "mahasiswa":
-        return "Mahasiswa"
-      default:
-        return role
-    }
-  }
-
-  const getRoleBadgeVariant = (role: string) => {
-    switch (role) {
-      case "kaprodi":
-        return "default"
-      case "dosen":
-        return "secondary"
-      case "mahasiswa":
-        return "outline"
-      default:
-        return "outline"
-    }
-  }
 
   const quickActions = [
     { title: "Buat Jadwal", icon: Calendar, href: "/schedule", color: "text-blue-500" },
@@ -105,52 +71,7 @@ export default function DashboardPage() {
         </div>
       </div>
 
-      <Card className="glass-effect border-2 border-primary/20 card-interactive overflow-hidden w-full">
-        <CardHeader>
-          <CardTitle className="flex items-center justify-between text-2xl">
-            <div className="flex items-center space-x-3">
-              <Sparkles className="h-6 w-6 text-primary animate-pulse" />
-              Informasi Akun
-            </div>
-            <Badge
-              variant={getRoleBadgeVariant(session.role)}
-              className="animate-pulse-glow px-4 py-2 text-sm font-semibold rounded-full border-2"
-            >
-              {getRoleLabel(session.role)}
-            </Badge>
-          </CardTitle>
-          <CardDescription className="text-base">Detail informasi akun Anda</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="flex items-center space-x-6">
-            <div className="relative">
-              <div className="w-20 h-20 rounded-2xl gradient-primary flex items-center justify-center shadow-xl animate-float">
-                <span className="text-2xl font-bold text-white">
-                  {session.name
-                    .split(" ")
-                    .map((n) => n[0])
-                    .join("")
-                    .toUpperCase()}
-                </span>
-              </div>
-              <div className="absolute -bottom-1 -right-1 w-6 h-6 bg-green-500 rounded-full border-2 border-white animate-pulse" />
-            </div>
-            <div className="flex-1">
-              <p className="font-bold text-xl mb-1">{session.name}</p>
-              <p className="text-muted-foreground mb-3">{session.email}</p>
-              <div className="space-y-2">
-                <div className="flex items-center justify-between text-sm">
-                  <span>Profile Completion</span>
-                  <span className="font-medium">{progressValue}%</span>
-                </div>
-                <Progress value={progressValue} className="h-2" />
-              </div>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-
-      <div className="grid gap-6 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 w-full">
+      <div className={`grid gap-6 grid-cols-1 sm:grid-cols-2 w-full ${session.role === "mahasiswa" ? "lg:grid-cols-4" : "lg:grid-cols-3"}`}>
         <Card
           className="card-interactive border-2 border-blue-200 dark:border-blue-800 hover:border-blue-400 dark:hover:border-blue-600 group w-full min-w-0"
           style={{ animationDelay: "0.1s" }}
@@ -203,23 +124,26 @@ export default function DashboardPage() {
           </CardContent>
         </Card>
 
-        <Card
-          className="card-interactive border-2 border-purple-200 dark:border-purple-800 hover:border-purple-400 dark:hover:border-purple-600 group w-full min-w-0"
-          style={{ animationDelay: "0.4s" }}
-        >
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
-            <CardTitle className="text-sm font-bold">Achievement</CardTitle>
-            <Award className="h-6 w-6 text-purple-500 group-hover:scale-125 transition-transform duration-300" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-4xl font-bold text-purple-600 mb-2">A</div>
-            <p className="text-sm text-muted-foreground">Rata-rata nilai</p>
-            <div className="mt-3 flex items-center text-xs text-purple-600">
-              <Activity className="h-3 w-3 mr-1" />
-              Excellent performance
-            </div>
-          </CardContent>
-        </Card>
+        {/* IPK Card - Only show for mahasiswa */}
+        {session.role === "mahasiswa" && (
+          <Card
+            className="card-interactive border-2 border-purple-200 dark:border-purple-800 hover:border-purple-400 dark:hover:border-purple-600 group w-full min-w-0"
+            style={{ animationDelay: "0.4s" }}
+          >
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
+              <CardTitle className="text-sm font-bold">IPK</CardTitle>
+              <Award className="h-6 w-6 text-purple-500 group-hover:scale-125 transition-transform duration-300" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-4xl font-bold text-purple-600 mb-2">3.85</div>
+              <p className="text-sm text-muted-foreground">Indeks Prestasi Kumulatif</p>
+              <div className="mt-3 flex items-center text-xs text-purple-600">
+                <Activity className="h-3 w-3 mr-1" />
+                Excellent performance
+              </div>
+            </CardContent>
+          </Card>
+        )}
       </div>
 
       <div className="grid gap-6 grid-cols-1 lg:grid-cols-3 w-full">

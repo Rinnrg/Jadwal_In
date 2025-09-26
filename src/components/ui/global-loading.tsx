@@ -1,14 +1,27 @@
 "use client"
 
+import Image from "next/image"
+
 export function GlobalLoading() {
   return (
     <div className="fixed inset-0 bg-background/80 backdrop-blur-sm flex items-center justify-center z-50">
       <div className="flex flex-col items-center space-y-4">
-        {/* Simple spinner */}
-        <div className="w-8 h-8 border-2 border-primary/20 border-t-primary rounded-full animate-spin"></div>
+        {/* Logo */}
+        <div className="flex items-center justify-center">
+          <Image 
+            src="/logo jadwal in.svg" 
+            alt="Jadwal.in Logo" 
+            width={24} 
+            height={24}
+            className="w-6 h-6 object-contain"
+          />
+        </div>
         
         {/* Loading text */}
-        <p className="text-sm text-muted-foreground">Loading...</p>
+        <div className="text-center">
+          <p className="text-sm font-medium text-foreground">Jadwal.in</p>
+          <p className="text-xs text-muted-foreground">Loading...</p>
+        </div>
       </div>
     </div>
   )

@@ -35,7 +35,7 @@ export function OfferingForm({ offering, onSuccess, onCancel }: OfferingFormProp
     kelas: offering?.kelas || "",
     semester: offering?.semester || 1,
     term: offering?.term || "",
-    capacity: offering?.capacity || "",
+    capacity: offering?.capacity?.toString() || "",
     status: offering?.status || ("buka" as const),
     pengampuIds: offering?.pengampuIds || [],
   })
@@ -64,7 +64,7 @@ export function OfferingForm({ offering, onSuccess, onCancel }: OfferingFormProp
       newErrors.semester = "Semester harus antara 1-8"
     }
 
-    if (formData.capacity && (Number.parseInt(formData.capacity) < 1 || Number.parseInt(formData.capacity) > 200)) {
+    if (formData.capacity && (Number.parseInt(String(formData.capacity)) < 1 || Number.parseInt(String(formData.capacity)) > 200)) {
       newErrors.capacity = "Kapasitas harus antara 1-200"
     }
 
@@ -86,7 +86,7 @@ export function OfferingForm({ offering, onSuccess, onCancel }: OfferingFormProp
       kelas: formData.kelas.trim(),
       semester: formData.semester,
       term: formData.term.trim() || undefined,
-      capacity: formData.capacity ? Number.parseInt(formData.capacity) : undefined,
+      capacity: formData.capacity ? Number.parseInt(String(formData.capacity)) : undefined,
       status: formData.status,
       pengampuIds: formData.pengampuIds,
       createdAt: offering?.createdAt || Date.now(),
@@ -250,6 +250,7 @@ export function OfferingForm({ offering, onSuccess, onCancel }: OfferingFormProp
                         type="button"
                         onClick={() => removePengampu(dosen.id)}
                         className="ml-1 hover:bg-muted-foreground/20 rounded-full p-0.5"
+                        aria-label={`Hapus ${dosen.name} dari dosen pengampu`}
                       >
                         <X className="h-3 w-3" />
                       </button>

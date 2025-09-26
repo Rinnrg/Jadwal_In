@@ -2,6 +2,7 @@
 
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
+import Image from "next/image";
 import { motion } from "framer-motion";
 
 const Footer = () => {
@@ -20,9 +21,16 @@ const Footer = () => {
           <div className="col-span-1 md:col-span-2">
             <Link
               href="/"
-              className="text-2xl font-medium hover:opacity-80 transition-opacity"
+              className="flex items-center space-x-2 text-2xl font-medium hover:opacity-80 transition-opacity"
             >
-              Jadwal.in
+              <Image 
+                src="/logo jadwal in.svg" 
+                alt="Jadwal.in Logo" 
+                width={32} 
+                height={32}
+                className="w-8 h-8 object-contain"
+              />
+              <span>Jadwal.in</span>
             </Link>
             <p className="text-muted-foreground mt-4 max-w-md">
               Platform manajemen jadwal akademik yang memudahkan mahasiswa, dosen, dan kaprodi dalam mengelola aktivitas perkuliahan.

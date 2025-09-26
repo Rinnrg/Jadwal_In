@@ -2,6 +2,7 @@
 import { Button } from "@/components/ui/button";
 import ThemeSwitcher from "./theme-switcher";
 import Link from "next/link";
+import Image from "next/image";
 
 export default function NavBar() {
 
@@ -10,8 +11,15 @@ export default function NavBar() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-16">
           <div className="flex">
-            <Link href="/" className="font-light tracking-tighter text-lg sm:text-2xl">
-              Jadwal.in
+            <Link href="/" className="flex items-center space-x-2 font-light tracking-tighter text-lg sm:text-2xl">
+              <Image 
+                src="/logo jadwal in.svg" 
+                alt="Jadwal.in Logo" 
+                width={32} 
+                height={32}
+                className="w-6 h-6 sm:w-8 sm:h-8 object-contain"
+              />
+              <span>Jadwal.in</span>
             </Link>
           </div>
           <div className="hidden sm:flex items-center space-x-8">

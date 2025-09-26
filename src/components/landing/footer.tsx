@@ -1,4 +1,5 @@
 import Link from "next/link";
+import Image from "next/image";
 
 export default function Footer() {
   return (
@@ -6,8 +7,15 @@ export default function Footer() {
       <div className="max-w-7xl mx-auto py-12 px-4 sm:px-6 lg:px-8">
         <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
           <div className="col-span-1 md:col-span-2">
-            <Link href="/" className="font-light tracking-tighter text-2xl">
-              Jadwal.in
+            <Link href="/" className="flex items-center space-x-2 font-light tracking-tighter text-2xl">
+              <Image 
+                src="/logo jadwal in.svg" 
+                alt="Jadwal.in Logo" 
+                width={32} 
+                height={32}
+                className="w-8 h-8 object-contain"
+              />
+              <span>Jadwal.in</span>
             </Link>
             <p className="mt-4 text-muted-foreground max-w-md">
               Platform manajemen jadwal akademik yang memudahkan mahasiswa, dosen, dan kaprodi 

@@ -76,12 +76,26 @@ export function ProfileForm({ profile, onSuccess }: ProfileFormProps) {
   const handleAvatarChange = (avatarUrl: string) => {
     if (!session) return
 
-    const profileData = { avatarUrl }
+    try {
+      const profileData = { avatarUrl }
 
-    if (profile) {
-      updateProfile(session.id, profileData)
-    } else {
-      createProfile({ userId: session.id, angkatan: new Date().getFullYear(), kelas: "A", ...profileData })
+      if (profile) {
+        // Update existing profile
+        updateProfile(session.id, profileData)
+      } else {
+        // Create new profile with minimal required data
+        const newProfile = {
+          userId: session.id,
+          angkatan: new Date().getFullYear(),
+          kelas: session.role === "mahasiswa" ? "A" : "DOSEN", // Default based on role
+          avatarUrl
+        }
+        createProfile(newProfile)
+      }
+      
+      // Note: Success message is shown in AvatarUploader component
+    } catch (error) {
+      showError("Gagal menyimpan avatar. Silakan coba lagi.")
     }
   }
 

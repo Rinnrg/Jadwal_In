@@ -152,6 +152,7 @@ export function SubjectTable({ onEdit }: SubjectTableProps) {
                 value={angkatanFilter}
                 onChange={(e) => setAngkatanFilter(e.target.value)}
                 className="w-full px-3 py-2 border border-input bg-background rounded-md text-sm"
+                aria-label="Filter berdasarkan angkatan"
               >
                 <option value="">Semua Angkatan</option>
                 {uniqueAngkatan.map((angkatan) => (
@@ -166,6 +167,7 @@ export function SubjectTable({ onEdit }: SubjectTableProps) {
                 value={kelasFilter}
                 onChange={(e) => setKelasFilter(e.target.value)}
                 className="w-full px-3 py-2 border border-input bg-background rounded-md text-sm"
+                aria-label="Filter berdasarkan kelas"
               >
                 <option value="">Semua Kelas</option>
                 {uniqueKelas.map((kelas) => (

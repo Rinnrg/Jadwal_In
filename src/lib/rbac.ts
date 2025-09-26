@@ -14,6 +14,10 @@ export function canAccessKHS(role: UserSession["role"]): boolean {
   return role === "mahasiswa"
 }
 
+export function canAccessAttendance(role: UserSession["role"]): boolean {
+  return role === "dosen" || role === "kaprodi"
+}
+
 export function canAccessEntryNilai(role: UserSession["role"]): boolean {
   return role === "dosen" || role === "kaprodi"
 }
@@ -31,7 +35,6 @@ export function getMenuItems(role: UserSession["role"]): RouteConfig[] {
   const commonItems = [
     { href: APP_ROUTES.DASHBOARD, label: "Dashboard", icon: "Home" },
     { href: APP_ROUTES.SCHEDULE, label: "Jadwal", icon: "Calendar" },
-    { href: APP_ROUTES.ATTENDANCE, label: "Kehadiran", icon: "Users" },
     { href: APP_ROUTES.REMINDERS, label: "Pengingat", icon: "Bell" },
   ]
 
@@ -42,10 +45,12 @@ export function getMenuItems(role: UserSession["role"]): RouteConfig[] {
       { href: APP_ROUTES.KHS, label: "KHS", icon: "GraduationCap" },
     ],
     dosen: [
+      { href: APP_ROUTES.ATTENDANCE, label: "Kehadiran", icon: "Users" },
       { href: APP_ROUTES.ASYNCHRONOUS, label: "Asynchronous", icon: "BookOpen" },
       { href: APP_ROUTES.GRADE_ENTRY, label: "Entry Nilai", icon: "Edit" },
     ],
     kaprodi: [
+      { href: APP_ROUTES.ATTENDANCE, label: "Kehadiran", icon: "Users" },
       { href: APP_ROUTES.SUBJECTS, label: "Mata Kuliah", icon: "BookOpen" },
       { href: APP_ROUTES.GRADE_ENTRY, label: "Entry Nilai", icon: "Edit" },
     ],

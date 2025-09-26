@@ -1,6 +1,7 @@
 "use client"
 
 import Link from "next/link"
+import Image from "next/image"
 import { usePathname } from "next/navigation"
 import { useSessionStore } from "@/stores/session.store"
 import { getMenuItems } from "@/lib/rbac"
@@ -18,7 +19,6 @@ import {
   ChevronLeft,
   Menu,
   Users,
-  Sparkles,
   X,
 } from "lucide-react"
 import { useState } from "react"
@@ -96,12 +96,18 @@ export function Sidebar() {
             >
               {/* Logo Section */}
               <div className="flex items-center space-x-3 px-3 py-2 mb-4 border-b border-gray-100/50 dark:border-gray-800/50">
-                <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-blue-600 dark:from-blue-400 dark:to-blue-500 rounded-lg flex items-center justify-center flex-shrink-0 shadow-lg">
-                  <Sparkles className="h-4 w-4 text-white" />
+                <div className="w-8 h-8 flex items-center justify-center flex-shrink-0 overflow-hidden">
+                  <Image 
+                    src="/logo jadwal in.svg" 
+                    alt="Jadwal.in Logo" 
+                    width={24} 
+                    height={24}
+                    className="w-6 h-6 object-contain"
+                  />
                 </div>
                 <div>
-                  <h3 className="font-bold text-gray-900 dark:text-white text-sm">Jadwal.in</h3>
-                  <p className="text-xs text-blue-600 dark:text-blue-400 font-medium">Academic Hub</p>
+                  <h3 className="font-bold text-gray-900 dark:text-white text-sm">Jadwal_in</h3>
+                  <p className="text-xs text-blue-600 dark:text-blue-400 font-medium">by.Gacor</p>
                 </div>
               </div>
 
@@ -143,6 +149,8 @@ export function Sidebar() {
                   </motion.div>
                 )
               })}
+
+
             </motion.div>
           </motion.div>
         )}
@@ -161,8 +169,14 @@ export function Sidebar() {
           <div
             className={cn("flex items-center transition-all duration-500 ease-out", collapsed ? "justify-center" : "space-x-3")}
           >
-            <div className="w-9 h-9 bg-gradient-to-br from-blue-500 to-blue-600 dark:from-blue-400 dark:to-blue-500 rounded-xl flex items-center justify-center flex-shrink-0 shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105">
-              <Sparkles className="h-5 w-5 text-white" />
+            <div className="w-9 h-9 flex items-center justify-center flex-shrink-0 transition-all duration-300 hover:scale-105 overflow-hidden">
+              <Image 
+                src="/logo jadwal in.svg" 
+                alt="Jadwal.in Logo" 
+                width={28} 
+                height={28}
+                className="w-7 h-7 object-contain"
+              />
             </div>
             <div
               className={cn(
@@ -170,8 +184,8 @@ export function Sidebar() {
                 collapsed ? "w-0 opacity-0" : "w-auto opacity-100",
               )}
             >
-              <h3 className="font-bold text-gray-900 dark:text-white text-sm">Jadwal.in</h3>
-              <p className="text-xs text-blue-600 dark:text-blue-400 font-medium">Academic Hub</p>
+              <h3 className="font-bold text-gray-900 dark:text-white text-sm">Jadwal_in</h3>
+              <p className="text-xs text-blue-600 dark:text-blue-400 font-medium">by.Gacor</p>
             </div>
           </div>
         </div>
@@ -222,6 +236,8 @@ export function Sidebar() {
               )
             })}
           </div>
+
+
         </nav>
       </aside>
     </>

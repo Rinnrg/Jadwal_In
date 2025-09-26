@@ -54,7 +54,6 @@ export default function ProfilePage() {
 
       <ProfileForm profile={profile} />
 
-      <PreferencesCard />
     </div>
   )
 }

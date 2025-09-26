@@ -80,13 +80,13 @@ export function ScheduleGrid({ userId, onEditEvent, onAddEvent }: ScheduleGridPr
           height: `${Math.max(height, 30)}px`,
           backgroundColor: color + "20",
           borderColor: color,
-        }}
+        } as React.CSSProperties}
       >
         <div className="p-2 h-full flex flex-col justify-between">
           <div className="min-w-0 flex-1">
             <div className="flex items-start justify-between gap-1">
               <div className="min-w-0 flex-1">
-                <p className="text-xs font-medium truncate" style={{ color }}>
+                <p className="text-xs font-medium truncate" style={{ color } as React.CSSProperties}>
                   {subject ? subject.kode : "Pribadi"}
                 </p>
                 {height > 40 && (
@@ -129,7 +129,7 @@ export function ScheduleGrid({ userId, onEditEvent, onAddEvent }: ScheduleGridPr
           </div>
 
           <div className="flex items-center justify-between text-xs">
-            <span className="font-medium" style={{ color }}>
+            <span className="font-medium" style={{ color } as React.CSSProperties}>
               {fmt24(event.startUTC)} - {fmt24(event.endUTC)}
             </span>
             <div className="flex items-center gap-1">
@@ -149,7 +149,7 @@ export function ScheduleGrid({ userId, onEditEvent, onAddEvent }: ScheduleGridPr
     if (nowPosition < 0 || nowPosition > 14 * 60) return null
 
     return (
-      <div className="absolute left-0 right-0 border-t-2 border-red-500 z-10" style={{ top: `${nowPosition}px` }}>
+      <div className="absolute left-0 right-0 border-t-2 border-red-500 z-10" style={{ top: `${nowPosition}px` } as React.CSSProperties}>
         <div className="absolute -left-2 -top-1 w-4 h-2 bg-red-500 rounded-full" />
       </div>
     )

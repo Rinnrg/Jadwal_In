@@ -9,11 +9,24 @@ import "./globals.css"
 
 const inter = Inter({
   subsets: ["latin"],
+  display: "swap",
+  fallback: ["system-ui", "arial"],
+  adjustFontFallback: false,
 })
 
 export const metadata: Metadata = {
-  title: "Jadwal.in - Platform Manajemen Jadwal Akademik",
-  description: "Platform terpadu untuk mengelola jadwal perkuliahan, KRS, dan kehadiran mahasiswa, dosen, dan kaprodi",
+  title: "Jadwal.in",
+  description: "Platform terpadu untuk mengelola jadwal perkuliahan",
+  icons: {
+    icon: "/logo jadwal in.svg",
+    shortcut: "/logo jadwal in.svg",
+    apple: "/logo jadwal in.svg",
+  },
+  openGraph: {
+    title: "Jadwal.in",
+    description: "Platform terpadu untuk mengelola jadwal perkuliahan",
+    images: ["/logo jadwal in.svg"],
+  },
 }
 
 export default function RootLayout({

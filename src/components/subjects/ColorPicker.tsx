@@ -59,6 +59,7 @@ export function ColorPicker({ value, onChange, disabled }: ColorPickerProps) {
                 onChange(color)
                 setOpen(false)
               }}
+              aria-label={`Select color ${color}`}
             />
           ))}
         </div>

@@ -94,7 +94,7 @@ export function ReminderList({ userId, onEdit }: ReminderListProps) {
     } as const
 
     return (
-      <Badge variant={variants[status.type]} className="flex items-center gap-1">
+      <Badge variant={variants[status.type as keyof typeof variants]} className="flex items-center gap-1">
         <status.icon className="h-3 w-3" />
         {status.label}
       </Badge>
@@ -174,6 +174,7 @@ export function ReminderList({ userId, onEdit }: ReminderListProps) {
               {filteredReminders.map((reminder, index) => {
                 const relatedSubject = getRelatedSubject(reminder.relatedSubjectId)
                 const isOverdue = reminder.isActive && reminder.dueUTC < now
+                const animationDelay = `${index * 0.1}s`
 
                 return (
                   <div
@@ -183,7 +184,6 @@ export function ReminderList({ userId, onEdit }: ReminderListProps) {
                       isOverdue && "border-destructive/50 bg-destructive/5 hover:border-destructive/70",
                       !reminder.isActive && "opacity-60 hover:opacity-80",
                     )}
-                    style={{ animationDelay: `${index * 0.1}s` }}
                   >
                     <div className="flex items-start justify-between gap-4">
                       <div className="flex-1 min-w-0">
@@ -207,8 +207,7 @@ export function ReminderList({ userId, onEdit }: ReminderListProps) {
                           {relatedSubject && (
                             <p className="flex items-center gap-1">
                               <div
-                                className="w-3 h-3 rounded-full hover:scale-125 transition-transform duration-200"
-                                style={{ backgroundColor: relatedSubject.color }}
+                                className="w-3 h-3 rounded-full hover:scale-125 transition-transform duration-200 border"
                               />
                               {relatedSubject.kode} - {relatedSubject.nama}
                             </p>
@@ -221,7 +220,6 @@ export function ReminderList({ userId, onEdit }: ReminderListProps) {
                           <Switch
                             checked={reminder.isActive}
                             onCheckedChange={() => handleToggle(reminder)}
-                            size="sm"
                           />
                         </div>
                         <DropdownMenu>
