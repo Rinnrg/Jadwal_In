@@ -8,7 +8,7 @@ import {
 } from "@/components/ui/tooltip";
 
 export default function Partners() {
-  // svg icons untuk teknologi yang digunakan Jadwal.in
+  // svg icons untuk teknologi yang digunakan jadwal_in
   const icons = [
     {
       name: "Next.js",

@@ -14,12 +14,12 @@ export default function NavBar() {
             <Link href="/" className="flex items-center space-x-2 font-light tracking-tighter text-lg sm:text-2xl">
               <Image 
                 src="/logo jadwal in.svg" 
-                alt="Jadwal.in Logo" 
+                alt="jadwal_in Logo" 
                 width={32} 
                 height={32}
                 className="w-6 h-6 sm:w-8 sm:h-8 object-contain"
               />
-              <span>Jadwal.in</span>
+              <span>jadwal_in</span>
             </Link>
           </div>
           <div className="hidden sm:flex items-center space-x-8">

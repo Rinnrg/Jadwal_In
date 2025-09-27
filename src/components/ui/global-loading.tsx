@@ -10,7 +10,7 @@ export function GlobalLoading() {
         <div className="flex items-center justify-center">
           <Image 
             src="/logo jadwal in.svg" 
-            alt="Jadwal.in Logo" 
+            alt="jadwal_in Logo" 
             width={24} 
             height={24}
             className="w-6 h-6 object-contain"
@@ -19,7 +19,7 @@ export function GlobalLoading() {
         
         {/* Loading text */}
         <div className="text-center">
-          <p className="text-sm font-medium text-foreground">Jadwal.in</p>
+          <p className="text-sm font-medium text-foreground">jadwal_in</p>
           <p className="text-xs text-muted-foreground">Loading...</p>
         </div>
       </div>

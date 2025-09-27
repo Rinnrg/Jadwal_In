@@ -25,12 +25,12 @@ const Footer = () => {
             >
               <Image 
                 src="/logo jadwal in.svg" 
-                alt="Jadwal.in Logo" 
+                alt="jadwal_in Logo" 
                 width={32} 
                 height={32}
                 className="w-8 h-8 object-contain"
               />
-              <span>Jadwal.in</span>
+              <span>jadwal_in</span>
             </Link>
             <p className="text-muted-foreground mt-4 max-w-md">
               Platform manajemen jadwal akademik yang memudahkan mahasiswa, dosen, dan kaprodi dalam mengelola aktivitas perkuliahan.
@@ -98,7 +98,7 @@ const Footer = () => {
           className="border-t border-border mt-8 pt-8 text-center"
         >
           <div className="text-sm text-muted-foreground">
-            © {year} Jadwal.in. Semua hak dilindungi.
+            © {year} jadwal_in. Semua hak dilindungi.
           </div>
         </motion.div>
       </div>

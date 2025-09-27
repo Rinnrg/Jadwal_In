@@ -12,6 +12,7 @@ import { AlertCircle, BookOpen, FileText } from "lucide-react"
 import { AssignmentTab } from "@/components/asynchronous/AssignmentTab"
 import { MaterialTab } from "@/components/asynchronous/MaterialTab"
 import { arr } from "@/lib/utils"
+import type { Subject } from "@/data/schema"
 
 export default function AsynchronousPage() {
   const { session } = useSessionStore()
@@ -22,35 +23,35 @@ export default function AsynchronousPage() {
   const availableSubjects = useMemo(() => {
     if (!session) return []
 
-    const dummyManajemenProyek = {
+    const dummyManajemenProyek: Subject = {
       id: "dummy-manajemen-proyek",
       kode: "TI301",
       nama: "Manajemen Proyek",
       semester: 5,
       sks: 3,
       kelas: "A",
-      angkatan: "2022",
+      angkatan: 2022,
       status: "aktif" as const,
+      color: "#8b5cf6",
       pengampuIds: session.role === "dosen" ? [session.id] : [],
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
+      prodi: "Teknik Informatika",
     }
 
-    let subjects = []
+    let subjects: Subject[] = []
 
     if (session.role === "dosen") {
-      subjects = getSubjectsByPengampu(session.id).filter((subject) => subject.status === "aktif")
+      subjects = getSubjectsByPengampu(session.id).filter((subject) => subject.status === "aktif") as Subject[]
       // Add dummy course for dosen
       subjects.push(dummyManajemenProyek)
     } else if (session.role === "mahasiswa") {
       // Mahasiswa can see subjects they are enrolled in (KRS)
       const krsItems = getKrsByUser(session.id)
       const activeSubjects = getActiveSubjects()
-      subjects = activeSubjects.filter((subject) => arr(krsItems).some((krs) => krs.subjectId === subject.id))
+      subjects = activeSubjects.filter((subject) => arr(krsItems).some((krs) => krs.subjectId === subject.id)) as Subject[]
       // Add dummy course for mahasiswa
       subjects.push(dummyManajemenProyek)
     } else if (session.role === "kaprodi") {
-      subjects = getActiveSubjects()
+      subjects = getActiveSubjects() as Subject[]
       // Add dummy course for kaprodi
       subjects.push(dummyManajemenProyek)
     }

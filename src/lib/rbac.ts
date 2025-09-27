@@ -1,6 +1,12 @@
 import type { UserSession } from "@/data/schema"
 import { APP_ROUTES, type RouteConfig } from "@/config/routes"
 
+// Extended RouteConfig to support dropdown menus
+export interface ExtendedRouteConfig extends RouteConfig {
+  children?: ExtendedRouteConfig[]
+  isDropdown?: boolean
+}
+
 // Role-based access control helpers
 export function canAccessSubjects(role: UserSession["role"]): boolean {
   return role === "kaprodi"
@@ -31,35 +37,58 @@ export function canEditGrades(role: UserSession["role"]): boolean {
 }
 
 // Get available menu items based on role
-export function getMenuItems(role: UserSession["role"]): RouteConfig[] {
+export function getMenuItems(role: UserSession["role"]): ExtendedRouteConfig[] {
   const commonItems = [
-    { href: APP_ROUTES.DASHBOARD, label: "Dashboard", icon: "Home" },
-    { href: APP_ROUTES.SCHEDULE, label: "Jadwal", icon: "Calendar" },
-    { href: APP_ROUTES.REMINDERS, label: "Pengingat", icon: "Bell" },
+    { path: APP_ROUTES.DASHBOARD, title: "Dashboard", icon: "home", requiresAuth: true },
+    { path: APP_ROUTES.SCHEDULE, title: "Jadwal", icon: "calendar", requiresAuth: true },
+    { path: APP_ROUTES.REMINDERS, title: "Pengingat", icon: "bell", requiresAuth: true },
   ]
 
   const roleSpecificItems = {
     mahasiswa: [
-      { href: APP_ROUTES.ASYNCHRONOUS, label: "Asynchronous", icon: "BookOpen" },
-      { href: APP_ROUTES.KRS, label: "KRS", icon: "FileText" },
-      { href: APP_ROUTES.KHS, label: "KHS", icon: "GraduationCap" },
+      {
+        path: "#",
+        title: "Perkuliahan",
+        icon: "book",
+        requiresAuth: true,
+        isDropdown: true,
+        children: [
+          { path: APP_ROUTES.ASYNCHRONOUS, title: "Asynchronous", icon: "monitor", requiresAuth: true },
+          { path: APP_ROUTES.KRS, title: "KRS", icon: "file-text", requiresAuth: true },
+          { path: APP_ROUTES.KHS, title: "KHS", icon: "award", requiresAuth: true },
+        ]
+      },
     ],
     dosen: [
-      { href: APP_ROUTES.ATTENDANCE, label: "Kehadiran", icon: "Users" },
-      { href: APP_ROUTES.ASYNCHRONOUS, label: "Asynchronous", icon: "BookOpen" },
-      { href: APP_ROUTES.GRADE_ENTRY, label: "Entry Nilai", icon: "Edit" },
+      {
+        path: "#",
+        title: "Perkuliahan",
+        icon: "book",
+        requiresAuth: true,
+        isDropdown: true,
+        children: [
+          { path: APP_ROUTES.ASYNCHRONOUS, title: "Asynchronous", icon: "monitor", requiresAuth: true },
+          { path: APP_ROUTES.ATTENDANCE, title: "Kehadiran", icon: "users", requiresAuth: true },
+          { path: APP_ROUTES.GRADE_ENTRY, title: "Entry Nilai", icon: "edit", requiresAuth: true },
+        ]
+      },
     ],
     kaprodi: [
-      { href: APP_ROUTES.ATTENDANCE, label: "Kehadiran", icon: "Users" },
-      { href: APP_ROUTES.SUBJECTS, label: "Mata Kuliah", icon: "BookOpen" },
-      { href: APP_ROUTES.GRADE_ENTRY, label: "Entry Nilai", icon: "Edit" },
+      {
+        path: "#",
+        title: "Perkuliahan",
+        icon: "book",
+        requiresAuth: true,
+        isDropdown: true,
+        children: [
+          { path: APP_ROUTES.ASYNCHRONOUS, title: "Asynchronous", icon: "monitor", requiresAuth: true },
+          { path: APP_ROUTES.ATTENDANCE, title: "Kehadiran", icon: "users", requiresAuth: true },
+          { path: APP_ROUTES.GRADE_ENTRY, title: "Entry Nilai", icon: "edit", requiresAuth: true },
+        ]
+      },
+      { path: APP_ROUTES.SUBJECTS, title: "Mata Kuliah", icon: "book", requiresAuth: true },
     ],
   }
 
-  return [...commonItems, ...roleSpecificItems[role]].map((item) => ({
-    path: item.href,
-    title: item.label,
-    icon: item.icon.toLowerCase(),
-    requiresAuth: true,
-  }))
+  return [...commonItems, ...roleSpecificItems[role]]
 }

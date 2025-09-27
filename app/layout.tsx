@@ -15,7 +15,7 @@ const inter = Inter({
 })
 
 export const metadata: Metadata = {
-  title: "Jadwal.in",
+  title: "jadwal_in",
   description: "Platform terpadu untuk mengelola jadwal perkuliahan",
   icons: {
     icon: "/logo jadwal in.svg",
@@ -23,7 +23,7 @@ export const metadata: Metadata = {
     apple: "/logo jadwal in.svg",
   },
   openGraph: {
-    title: "Jadwal.in",
+    title: "jadwal_in",
     description: "Platform terpadu untuk mengelola jadwal perkuliahan",
     images: ["/logo jadwal in.svg"],
   },

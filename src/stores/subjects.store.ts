@@ -45,7 +45,7 @@ export const useSubjectsStore = create<SubjectsState>()(
       },
       getSubjectsByAngkatan: (angkatan) => {
         return get().subjects.filter(
-          (subject) => subject.status === "aktif" && angkatan >= subject.angkatanMin && angkatan <= subject.angkatanMax,
+          (subject) => subject.status === "aktif" && subject.angkatan === angkatan,
         )
       },
       getSubjectsByPengampu: (dosenId) => {
@@ -53,13 +53,22 @@ export const useSubjectsStore = create<SubjectsState>()(
       },
     }),
     {
-      name: "jadwalin:subjects:v2",
+      name: "jadwalin:subjects:v3",
       storage: createJSONStorage(() => localStorage),
       migrate: (persistedState: any, version) => {
-        if (version === 0 || version === 1) {
+        if (version === 0 || version === 1 || version === 2) {
           const subjects = arr(persistedState?.subjects).map((subject: any) => ({
             ...subject,
             pengampuIds: subject.pengampuIds || [],
+            // Handle schema migration from old format to new format
+            angkatan: subject.angkatan || subject.angkatanMin || 2022,
+            kelas: subject.kelas || "A",
+            color: subject.color || "#3b82f6",
+            // Remove old fields that don't exist in new schema
+            angkatanMin: undefined,
+            angkatanMax: undefined,
+            createdAt: undefined,
+            updatedAt: undefined,
           }))
           return { subjects }
         }

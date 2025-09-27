@@ -8,7 +8,7 @@ export function generateICS(events: ScheduleEvent[], subjects: any[]): string {
   let icsContent = [
     "BEGIN:VCALENDAR",
     "VERSION:2.0",
-    "PRODID:-//Jadwal.in//Schedule//EN",
+    "PRODID:-//jadwal_in//Schedule//EN",
     "CALSCALE:GREGORIAN",
     "METHOD:PUBLISH",
   ].join("\r\n")
@@ -39,7 +39,7 @@ export function generateICS(events: ScheduleEvent[], subjects: any[]): string {
         "\r\n" +
         [
           "BEGIN:VEVENT",
-          `UID:${event.id}-${week}@jadwal.in`,
+          `UID:${event.id}-${week}@jadwal_in`,
           `DTSTAMP:${timestamp}`,
           `DTSTART:${formatDateTime(startDateTime)}`,
           `DTEND:${formatDateTime(endDateTime)}`,

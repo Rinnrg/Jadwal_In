@@ -1,8 +1,8 @@
 export const APP_CONFIG = {
-  name: "Jadwal.in",
+  name: "jadwal_in",
   description: "Sistem Manajemen Jadwal Akademik",
   version: "1.0.0",
-  author: "Tim Pengembang Jadwal.in",
+  author: "Tim Pengembang jadwal_in",
 } as const
 
 export const DAYS_OF_WEEK = [

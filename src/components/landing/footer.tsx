@@ -10,12 +10,12 @@ export default function Footer() {
             <Link href="/" className="flex items-center space-x-2 font-light tracking-tighter text-2xl">
               <Image 
                 src="/logo jadwal in.svg" 
-                alt="Jadwal.in Logo" 
+                alt="jadwal_in Logo" 
                 width={32} 
                 height={32}
                 className="w-8 h-8 object-contain"
               />
-              <span>Jadwal.in</span>
+              <span>jadwal_in</span>
             </Link>
             <p className="mt-4 text-muted-foreground max-w-md">
               Platform manajemen jadwal akademik yang memudahkan mahasiswa, dosen, dan kaprodi 
@@ -72,7 +72,7 @@ export default function Footer() {
         
         <div className="mt-8 border-t border-border pt-8">
           <p className="text-base text-muted-foreground text-center">
-            © 2024 Jadwal.in. Semua hak dilindungi.
+            © 2024 jadwal_in. Semua hak dilindungi.
           </p>
         </div>
       </div>

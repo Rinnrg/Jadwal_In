@@ -1,9 +1,11 @@
 import Hero from "@/components/hero";
-import Partners from "@/components/partners";
+import About from "@/src/components/landing/about";
+import Features from "@/src/components/landing/features";
+import HowItWorks from "@/src/components/landing/how-it-works";
+import Benefits from "@/src/components/landing/benefits";
 import Testimonials from "@/components/testimonials";
-import Stats from "@/components/stats";
-import Pricing from "@/components/pricing";
 import Faq from "@/components/faq";
+import Technology from "@/src/components/landing/technology";
 import Footer from "@/components/footer";
 import NavBar from "@/components/navbar";
 
@@ -12,11 +14,13 @@ export default function HomePage() {
     <main className="flex flex-col min-h-dvh">
       <NavBar />
       <Hero />
-      <Partners />
+      <About />
+      <Features />
+      <HowItWorks />
+      <Benefits />
       <Testimonials />
-      <Stats />
-      <Pricing />
       <Faq />
+      <Technology />
       <Footer />
     </main>
   );

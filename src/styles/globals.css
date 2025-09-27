@@ -121,16 +121,24 @@
   * {
     @apply border-border outline-ring/50;
   }
+  
+  /* Optimized theme transitions for better performance */
+  html {
+    overflow-x: hidden;
+    /* Use transform3d to enable hardware acceleration */
+    transform: translate3d(0, 0, 0);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+  
   body {
     @apply bg-background text-foreground;
-    /* Enhanced smooth transitions for theme switching */
-    transition: background-color 0.4s cubic-bezier(0.4, 0, 0.2, 1), color 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-    overflow-x: hidden; /* Prevent horizontal scrolling */
-  }
-
-  html {
-    transition: background-color 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-    overflow-x: hidden; /* Prevent horizontal scrolling */
+    /* Reduced transition duration and complexity for smoother theme switching */
+    transition: background-color 0.2s ease-out, color 0.2s ease-out;
+    overflow-x: hidden;
+    /* Enable hardware acceleration */
+    transform: translate3d(0, 0, 0);
+    will-change: background-color, color;
   }
 
   /* Ensure all main containers don't overflow */
@@ -139,7 +147,7 @@
     overflow-x: hidden;
   }
 
-  /* Added grid pattern background for modern look */
+  /* Optimized grid pattern background with hardware acceleration */
   body::before {
     content: "";
     position: fixed;
@@ -152,6 +160,9 @@
     background-size: 50px 50px;
     pointer-events: none;
     z-index: -1;
+    /* Enable hardware acceleration for background */
+    transform: translate3d(0, 0, 0);
+    transition: background-image 0.2s ease-out;
   }
 
   .dark body::before {
@@ -159,36 +170,51 @@
       linear-gradient(90deg, rgba(59, 130, 246, 0.05) 1px, transparent 1px);
   }
 
-  /* Enhanced interactive element transitions */
+  /* Optimized interactive element transitions - only animate necessary properties */
   button,
   input,
   textarea,
   select,
   [role="button"] {
-    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    transition: background-color 0.15s ease-out, 
+                border-color 0.15s ease-out, 
+                color 0.15s ease-out,
+                transform 0.15s ease-out;
+    will-change: background-color, border-color, color, transform;
   }
 
-  /* Enhanced card transitions with better shadows */
+  /* Optimized card transitions - reduced properties for better performance */
   [class*="card"],
   [class*="bg-"],
   [class*="border"] {
-    transition: background-color 0.3s cubic-bezier(0.4, 0, 0.2, 1), border-color 0.3s cubic-bezier(0.4, 0, 0.2, 1),
-      box-shadow 0.3s cubic-bezier(0.4, 0, 0.2, 1), transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    transition: background-color 0.2s ease-out, 
+                border-color 0.2s ease-out,
+                box-shadow 0.2s ease-out;
+    will-change: background-color, border-color, box-shadow;
   }
 }
 
-/* Enhanced interactive animations and modern effects */
+/* Optimized theme transitions for better performance */
 @layer utilities {
   .theme-transition {
-    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    transition: background-color 0.15s ease-out, 
+                border-color 0.15s ease-out, 
+                color 0.15s ease-out;
+    will-change: background-color, border-color, color;
   }
 
   .theme-transition-fast {
-    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    transition: background-color 0.1s ease-out, 
+                border-color 0.1s ease-out, 
+                color 0.1s ease-out;
+    will-change: background-color, border-color, color;
   }
 
   .theme-transition-slow {
-    transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+    transition: background-color 0.3s ease-out, 
+                border-color 0.3s ease-out, 
+                color 0.3s ease-out;
+    will-change: background-color, border-color, color;
   }
 
   /* Custom z-index utilities for sidebar layering */

@@ -8,7 +8,7 @@ export default function Testimonials() {
       role: "Kaprodi Teknik Informatika",
       avatar: "https://i.pravatar.cc/150?img=1",
       content:
-        "Jadwal.in telah merevolusi cara kami mengelola jadwal perkuliahan. Fitur monitoring dan pelaporan sangat membantu dalam pengambilan keputusan akademik.",
+        "jadwal_in telah merevolusi cara kami mengelola jadwal perkuliahan. Fitur monitoring dan pelaporan sangat membantu dalam pengambilan keputusan akademik.",
       rating: 5,
     },
     {
@@ -32,7 +32,7 @@ export default function Testimonials() {
       role: "Kaprodi Manajemen",
       avatar: "https://i.pravatar.cc/150?img=15",
       content:
-        "Security dan akurasi data adalah prioritas utama kami. Jadwal.in memberikan kepercayaan penuh dalam mengelola data akademik.",
+        "Security dan akurasi data adalah prioritas utama kami. jadwal_in memberikan kepercayaan penuh dalam mengelola data akademik.",
       rating: 5,
     },
     {
@@ -48,7 +48,7 @@ export default function Testimonials() {
       role: "Mahasiswa Semester 4",
       avatar: "https://i.pravatar.cc/150?img=19",
       content:
-        "Sudah mencoba berbagai platform akademik, tapi Jadwal.in paling reliable. Zero error selama 2 semester menggunakan.",
+        "Sudah mencoba berbagai platform akademik, tapi jadwal_in paling reliable. Zero error selama 2 semester menggunakan.",
       rating: 5,
     },
     {
@@ -80,7 +80,7 @@ export default function Testimonials() {
       role: "Wakil Dekan Akademik",
       avatar: "https://i.pravatar.cc/150?img=27",
       content:
-        "Fitur kolaborasi real-time mengubah cara kerja tim akademik. Produktivitas meningkat drastis sejak menggunakan Jadwal.in.",
+        "Fitur kolaborasi real-time mengubah cara kerja tim akademik. Produktivitas meningkat drastis sejak menggunakan jadwal_in.",
       rating: 5,
     },
   ];

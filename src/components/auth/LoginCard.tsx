@@ -12,13 +12,13 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { useSessionStore } from "@/stores/session.store"
 import { showError } from "@/lib/alerts"
-import { Check, Mail, Lock, Eye, EyeOff, ArrowRight } from "lucide-react"
+import { Check, Mail, Lock, Eye, EyeOff, ArrowRight, CheckCircle } from "lucide-react"
 import { ButtonLoading } from "@/components/ui/loading"
 
 const loginSchema = z.object({
   email: z.string()
     .email("Format email tidak valid")
-    .regex(/^[a-zA-Z]+\.\d{5}@(mhs|dsn|kpd)\.[a-zA-Z]+\.ac\.id$/, "Email harus berformat: nama.nim@role.namauniv.ac.id (nim 5 digit, role: mhs/dsn/kpd)"),
+    .regex(/^[a-zA-Z]+\.\d{5}@(mhs|dsn|kpd)\.[a-zA-Z]+\.ac\.id$/, "Email harus dari instansi anda"),
   password: z.string().min(1, "Kata sandi wajib diisi"),
 })
 
@@ -74,6 +74,9 @@ export function LoginCard() {
     },
   })
 
+  // Check if email is valid
+  const isEmailValid = form.watch("email") && !form.formState.errors.email && form.formState.touchedFields.email
+
   const onSubmit = async (data: LoginForm) => {
     setIsLoading(true)
 
@@ -85,7 +88,7 @@ export function LoginCard() {
       const role = getRoleFromEmail(data.email)
       
       if (!role) {
-        showError("Format email tidak dikenali. Gunakan format: role@univ(nama).ac.id")
+        showError("Format email tidak dikenali.")
         return
       }
 
@@ -126,19 +129,17 @@ export function LoginCard() {
         <CardHeader className="text-center pb-8">
           <div className="flex items-center justify-center mb-4">
             <div className="relative">
-              <div className="w-16 h-16 rounded-2xl bg-white dark:bg-gray-800 shadow-lg flex items-center justify-center overflow-hidden">
                 <Image 
                   src="/logo jadwal in.svg" 
-                  alt="Jadwal.in Logo" 
+                  alt="jadwal_in Logo" 
                   width={40} 
                   height={40}
                   className="w-10 h-10 object-contain animate-pulse"
                 />
-              </div>
               <div className="absolute inset-0 bg-primary/10 rounded-2xl blur-xl animate-pulse" />
             </div>
           </div>
-          <CardTitle className="text-3xl font-bold text-foreground mb-2">Jadwal.in</CardTitle>
+          <CardTitle className="text-3xl font-bold text-foreground mb-2">Jadwal_in</CardTitle>
           <CardDescription className="text-muted-foreground text-lg">Sistem Manajemen Jadwal Akademik</CardDescription>
         </CardHeader>
 
@@ -153,21 +154,35 @@ export function LoginCard() {
                 <Input
                   id="email"
                   type="email"
-                  placeholder="nama.12345@mhs.univnama.ac.id"
+                  placeholder="masukkan email anda"
                   aria-describedby="email-error"
                   aria-invalid={!!form.formState.errors.email}
-                  className="
-                    pl-10 h-12 bg-input border-border text-foreground placeholder:text-muted-foreground
-                    focus:bg-background focus:border-primary/40 transition-all duration-300
-                    rounded-xl
-                  "
+                  className={`
+                    pl-10 pr-12 h-12 bg-input border-border text-foreground placeholder:text-muted-foreground
+                    focus:bg-background transition-all duration-300 rounded-xl
+                    ${isEmailValid 
+                      ? 'border-green-500 focus:border-green-500 bg-green-50 dark:bg-green-950/20' 
+                      : form.formState.errors.email 
+                        ? 'border-destructive focus:border-destructive' 
+                        : 'focus:border-primary/40'
+                    }
+                  `}
                   {...form.register("email")}
                   disabled={isLoading}
                 />
+                {isEmailValid && (
+                  <CheckCircle className="absolute right-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-green-500" />
+                )}
               </div>
               {form.formState.errors.email && (
                 <p id="email-error" className="text-sm text-destructive" role="alert">
                   {form.formState.errors.email.message}
+                </p>
+              )}
+              {isEmailValid && (
+                <p className="text-sm text-green-600 dark:text-green-400 flex items-center">
+                  <CheckCircle className="h-4 w-4 mr-1" />
+                  Format email valid
                 </p>
               )}
             </div>
@@ -181,7 +196,7 @@ export function LoginCard() {
                 <Input
                   id="password"
                   type={showPassword ? "text" : "password"}
-                  placeholder="Password bebas"
+                  placeholder="Password"
                   aria-describedby="password-error"
                   aria-invalid={!!form.formState.errors.password}
                   className="

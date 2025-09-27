@@ -3,7 +3,7 @@ import { motion } from "framer-motion";
 
 export default function About() {
   return (
-    <div id="about" className="py-24 bg-muted/50">
+    <div id="about" className="py-24">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="lg:text-center">
           <motion.h2
@@ -13,7 +13,7 @@ export default function About() {
             viewport={{ once: true }}
             className="text-base text-primary font-semibold tracking-wide uppercase"
           >
-            Tentang Jadwal.in
+            Tentang jadwal_in
           </motion.h2>
           <motion.p
             initial={{ opacity: 0, y: 20 }}
@@ -31,9 +31,10 @@ export default function About() {
             viewport={{ once: true }}
             className="mt-4 max-w-3xl text-xl text-muted-foreground lg:mx-auto"
           >
-            Jadwal.in hadir sebagai solusi komprehensif untuk mengatasi tantangan dalam pengelolaan jadwal akademik. 
-            Dengan antarmuka yang intuitif dan fitur yang lengkap, kami membantu institusi pendidikan meningkatkan 
-            efisiensi administrasi akademik dan memberikan pengalaman terbaik bagi mahasiswa, dosen, dan staf akademik.
+            Jadwal_in adalah solusi digital untuk pengelolaan jadwal akademik secara efisien dan 
+            terintegrasi. Dengan antarmuka yang sederhana namun powerful, serta fitur yang dirancang 
+            menyeluruh, platform ini membantu institusi pendidikan mempercepat administrasi akademik sekaligus 
+            menghadirkan pengalaman yang lebih mudah dan nyaman bagi mahasiswa, dosen, dan staf.
           </motion.p>
         </div>
 

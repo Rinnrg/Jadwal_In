@@ -51,7 +51,7 @@ export function PageLoading({ message = "Memuat...", className }: PageLoadingPro
           <div className="w-12 h-12 flex items-center justify-center overflow-hidden">
             <Image 
               src="/logo jadwal in.svg" 
-              alt="Jadwal.in Logo" 
+              alt="jadwal_in Logo" 
               width={32} 
               height={32}
               className="w-8 h-8 object-contain"

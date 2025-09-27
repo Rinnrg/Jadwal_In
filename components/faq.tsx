@@ -10,15 +10,15 @@ import { motion } from "framer-motion";
 export default function Faq() {
   const accordionItems = [
     {
-      title: "Apakah Jadwal.in gratis untuk digunakan?",
+      title: "Apakah jadwal_in gratis untuk digunakan?",
       content: (
         <div className="text-muted-foreground">
-          Ya, Jadwal.in sepenuhnya gratis untuk semua civitas akademika. Kami menyediakan akses penuh ke semua fitur tanpa biaya berlangganan.
+          Ya, jadwal_in sepenuhnya gratis untuk semua civitas akademika. Kami menyediakan akses penuh ke semua fitur tanpa biaya berlangganan.
         </div>
       ),
     },
     {
-      title: "Bagaimana cara mendaftar di Jadwal.in?",
+      title: "Bagaimana cara mendaftar di jadwal_in?",
       content: (
         <div className="text-muted-foreground">
           Pendaftaran dilakukan melalui admin institusi. Hubungi bagian akademik atau IT support di universitas Anda untuk mendapatkan akun dan panduan penggunaan.
@@ -37,7 +37,7 @@ export default function Faq() {
       title: "Bisakah diakses dari perangkat mobile?",
       content: (
         <div className="text-muted-foreground">
-          Ya, Jadwal.in dapat diakses melalui browser di perangkat mobile dan tablet. Interface kami responsive dan user-friendly untuk semua ukuran layar.
+          Ya, jadwal_in dapat diakses melalui browser di perangkat mobile dan tablet. Interface kami responsive dan user-friendly untuk semua ukuran layar.
         </div>
       ),
     },
@@ -67,7 +67,7 @@ export default function Faq() {
           FAQ
         </h4>
         <p className="max-w-xl text-muted-foreground text-center">
-          Pertanyaan yang sering diajukan tentang Jadwal.in.
+          Pertanyaan yang sering diajukan tentang jadwal_in.
         </p>
       </div>
       <div className="flex w-full max-w-lg">

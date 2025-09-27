@@ -59,6 +59,9 @@
 
 .crop-image {
   position: absolute;
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
   user-select: none;
   pointer-events: none;
   object-fit: cover;
@@ -143,20 +146,37 @@
 @layer base {
   * {
     @apply border-border outline-ring/50;
-  }
-  body {
-    @apply bg-background text-foreground;
-    transition: background-color 0.3s ease-in-out, color 0.3s ease-in-out;
-    overflow-x: hidden;
+    box-sizing: border-box;
   }
   
   html {
     overflow-x: hidden;
+    /* Enable hardware acceleration */
+    transform: translate3d(0, 0, 0);
+    /* Prevent flash of unstyled content */
+    color-scheme: light dark;
+    /* Ensure proper text size adjustment across browsers */
+    -webkit-text-size-adjust: 100%;
+    -moz-text-size-adjust: 100%;
+    -ms-text-size-adjust: 100%;
+    text-size-adjust: 100%;
   }
   
-  /* Prevent horizontal scroll caused by any element */
-  * {
-    box-sizing: border-box;
+  body {
+    @apply bg-background text-foreground;
+    /* Optimized transitions for smoother theme switching */
+    transition: background-color 0.15s ease-out, color 0.15s ease-out;
+    overflow-x: hidden;
+    /* Enable hardware acceleration */
+    transform: translate3d(0, 0, 0);
+    will-change: background-color, color;
+    /* Fix for webkit-text-size-adjust compatibility */
+    -webkit-text-size-adjust: 100%;
+    -moz-text-size-adjust: 100%;
+    -ms-text-size-adjust: 100%;
+    text-size-adjust: 100%;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
   }
   
   /* Ensure containers don't overflow */
@@ -164,17 +184,26 @@
     max-width: 100%;
   }
   
-  /* Theme transition classes */
+  /* Optimized theme transition classes */
   .theme-transition {
-    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    transition: background-color 0.15s ease-out, 
+                border-color 0.15s ease-out, 
+                color 0.15s ease-out;
+    will-change: background-color, border-color, color;
   }
   
-  /* Smooth transitions for theme changes */
-  * {
-    transition: background-color 0.3s ease-in-out, 
-                border-color 0.3s ease-in-out, 
-                color 0.3s ease-in-out,
-                box-shadow 0.3s ease-in-out;
+  /* Selective transitions for better performance - only animate theme-related properties */
+  [class*="bg-"], 
+  [class*="text-"], 
+  [class*="border-"],
+  button,
+  input,
+  textarea,
+  select {
+    transition: background-color 0.15s ease-out, 
+                border-color 0.15s ease-out, 
+                color 0.15s ease-out;
+    will-change: background-color, border-color, color;
   }
   
   /* Button press animation */
@@ -220,11 +249,6 @@
     z-index: 1000001 !important;
     position: relative;
     pointer-events: auto !important;
-  }
-  
-  /* Ensure body scrollbar is always reserved to prevent layout shift */
-  body {
-    overflow-y: scroll;
   }
 
   /* Image Crop Dialog Styles */

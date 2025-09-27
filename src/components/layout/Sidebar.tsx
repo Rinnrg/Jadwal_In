@@ -4,7 +4,7 @@ import Link from "next/link"
 import Image from "next/image"
 import { usePathname } from "next/navigation"
 import { useSessionStore } from "@/stores/session.store"
-import { getMenuItems } from "@/lib/rbac"
+import { getMenuItems, type ExtendedRouteConfig } from "@/lib/rbac"
 import { useNavigation } from "@/hooks/useNavigation"
 import { cn } from "@/lib/utils"
 import {
@@ -20,6 +20,8 @@ import {
   Menu,
   Users,
   X,
+  ChevronDown,
+  Monitor,
 } from "lucide-react"
 import { useState } from "react"
 import { motion, AnimatePresence } from "framer-motion"
@@ -34,12 +36,13 @@ const iconMap = {
   award: GraduationCap,
   edit: Edit,
   users: Users,
-  monitor: BookOpen,
+  monitor: Monitor,
 }
 
 export function Sidebar() {
   const [collapsed, setCollapsed] = useState(true)
   const [drawerOpen, setDrawerOpen] = useState(false)
+  const [openDropdowns, setOpenDropdowns] = useState<string[]>([])
   const { session } = useSessionStore()
   const { isActiveRoute } = useNavigation()
   const pathname = usePathname()
@@ -47,6 +50,19 @@ export function Sidebar() {
   if (!session) return null
 
   const menuItems = getMenuItems(session.role)
+
+  const toggleDropdown = (path: string) => {
+    setOpenDropdowns(prev => 
+      prev.includes(path) 
+        ? prev.filter(p => p !== path)
+        : [...prev, path]
+    )
+  }
+
+  const isDropdownActive = (item: ExtendedRouteConfig) => {
+    if (!item.children) return false
+    return item.children.some(child => isActiveRoute(child.path))
+  }
 
   return (
     <>
@@ -99,7 +115,7 @@ export function Sidebar() {
                 <div className="w-8 h-8 flex items-center justify-center flex-shrink-0 overflow-hidden">
                   <Image 
                     src="/logo jadwal in.svg" 
-                    alt="Jadwal.in Logo" 
+                    alt="jadwal_in Logo" 
                     width={24} 
                     height={24}
                     className="w-6 h-6 object-contain"
@@ -115,6 +131,8 @@ export function Sidebar() {
               {menuItems.map((item, index) => {
                 const Icon = iconMap[item.icon as keyof typeof iconMap] || Home
                 const isActive = isActiveRoute(item.path)
+                const isDropdownOpen = openDropdowns.includes(item.path)
+                const hasDropdownActive = isDropdownActive(item)
 
                 return (
                   <motion.div
@@ -123,29 +141,100 @@ export function Sidebar() {
                     animate={{ opacity: 1, x: 0 }}
                     transition={{ duration: 0.3, delay: 0.2 + index * 0.1 }}
                   >
-                    <Link
-                      href={item.path}
-                      className={cn(
-                        "flex items-center px-3 py-3 text-base font-medium rounded-lg transition-colors duration-200 group",
-                        isActive
-                          ? "bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300"
-                          : "text-foreground hover:bg-muted"
-                      )}
-                      onClick={() => setDrawerOpen(false)}
-                    >
-                      <Icon
+                    {item.isDropdown ? (
+                      <div>
+                        <button
+                          onClick={() => toggleDropdown(item.path)}
+                          className={cn(
+                            "flex items-center w-full px-3 py-3 text-base font-medium rounded-lg transition-colors duration-200 group",
+                            hasDropdownActive
+                              ? "bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300"
+                              : "text-foreground hover:bg-muted"
+                          )}
+                        >
+                          <Icon
+                            className={cn(
+                              "h-5 w-5 mr-3 transition-colors",
+                              hasDropdownActive ? "text-blue-600 dark:text-blue-400" : "text-gray-500 dark:text-gray-400 group-hover:text-blue-600 dark:group-hover:text-blue-400"
+                            )}
+                          />
+                          {item.title}
+                          <ChevronDown
+                            className={cn(
+                              "ml-auto h-4 w-4 transition-transform duration-200",
+                              isDropdownOpen ? "rotate-180" : "rotate-0"
+                            )}
+                          />
+                        </button>
+                        <AnimatePresence>
+                          {isDropdownOpen && item.children && (
+                            <motion.div
+                              initial={{ opacity: 0, height: 0 }}
+                              animate={{ opacity: 1, height: "auto" }}
+                              exit={{ opacity: 0, height: 0 }}
+                              transition={{ duration: 0.2 }}
+                              className="ml-6 mt-1 space-y-1"
+                            >
+                              {item.children.map((child) => {
+                                const ChildIcon = iconMap[child.icon as keyof typeof iconMap] || Home
+                                const isChildActive = isActiveRoute(child.path)
+
+                                return (
+                                  <Link
+                                    key={child.path}
+                                    href={child.path}
+                                    className={cn(
+                                      "flex items-center px-3 py-2 text-sm font-medium rounded-lg transition-colors duration-200 group",
+                                      isChildActive
+                                        ? "bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300"
+                                        : "text-foreground hover:bg-muted"
+                                    )}
+                                    onClick={() => setDrawerOpen(false)}
+                                  >
+                                    <ChildIcon
+                                      className={cn(
+                                        "h-4 w-4 mr-3 transition-colors",
+                                        isChildActive ? "text-blue-600 dark:text-blue-400" : "text-gray-500 dark:text-gray-400 group-hover:text-blue-600 dark:group-hover:text-blue-400"
+                                      )}
+                                    />
+                                    {child.title}
+                                    {isChildActive && (
+                                      <div className="ml-auto">
+                                        <div className="w-2 h-2 bg-blue-600 dark:bg-blue-400 rounded-full" />
+                                      </div>
+                                    )}
+                                  </Link>
+                                )
+                              })}
+                            </motion.div>
+                          )}
+                        </AnimatePresence>
+                      </div>
+                    ) : (
+                      <Link
+                        href={item.path}
                         className={cn(
-                          "h-5 w-5 mr-3 transition-colors",
-                          isActive ? "text-blue-600 dark:text-blue-400" : "text-gray-500 dark:text-gray-400 group-hover:text-blue-600 dark:group-hover:text-blue-400"
+                          "flex items-center px-3 py-3 text-base font-medium rounded-lg transition-colors duration-200 group",
+                          isActive
+                            ? "bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300"
+                            : "text-foreground hover:bg-muted"
                         )}
-                      />
-                      {item.title}
-                      {isActive && (
-                        <div className="ml-auto">
-                          <div className="w-2 h-2 bg-blue-600 dark:bg-blue-400 rounded-full" />
-                        </div>
-                      )}
-                    </Link>
+                        onClick={() => setDrawerOpen(false)}
+                      >
+                        <Icon
+                          className={cn(
+                            "h-5 w-5 mr-3 transition-colors",
+                            isActive ? "text-blue-600 dark:text-blue-400" : "text-gray-500 dark:text-gray-400 group-hover:text-blue-600 dark:group-hover:text-blue-400"
+                          )}
+                        />
+                        {item.title}
+                        {isActive && (
+                          <div className="ml-auto">
+                            <div className="w-2 h-2 bg-blue-600 dark:bg-blue-400 rounded-full" />
+                          </div>
+                        )}
+                      </Link>
+                    )}
                   </motion.div>
                 )
               })}
@@ -172,7 +261,7 @@ export function Sidebar() {
             <div className="w-9 h-9 flex items-center justify-center flex-shrink-0 transition-all duration-300 hover:scale-105 overflow-hidden">
               <Image 
                 src="/logo jadwal in.svg" 
-                alt="Jadwal.in Logo" 
+                alt="jadwal_in Logo" 
                 width={28} 
                 height={28}
                 className="w-7 h-7 object-contain"
@@ -195,44 +284,148 @@ export function Sidebar() {
             {menuItems.map((item, index) => {
               const Icon = iconMap[item.icon as keyof typeof iconMap] || Home
               const isActive = isActiveRoute(item.path)
+              const isDropdownOpen = openDropdowns.includes(item.path)
+              const hasDropdownActive = isDropdownActive(item)
 
               return (
-                <Link
-                  key={item.path}
-                  href={item.path}
-                  className={cn(
-                    "flex items-center px-3 py-3 text-sm font-medium rounded-xl transition-all duration-300 ease-out group/item relative overflow-hidden",
-                    isActive
-                      ? "bg-gradient-to-r from-blue-50 to-blue-100/50 dark:from-blue-900/30 dark:to-blue-800/20 text-blue-700 dark:text-blue-300 shadow-sm border border-blue-200/50 dark:border-blue-700/30"
-                      : "text-gray-700 dark:text-gray-300 hover:bg-gray-50/80 dark:hover:bg-gray-800/50 hover:text-gray-900 dark:hover:text-white hover:shadow-sm hover:scale-[1.02]",
-                  )}
-                >
-                  <Icon
-                    className={cn(
-                      "h-5 w-5 flex-shrink-0 transition-all duration-300",
-                      isActive ? "text-blue-600 dark:text-blue-400 scale-110" : "text-gray-500 dark:text-gray-400 group-hover/item:text-blue-600 dark:group-hover/item:text-blue-400 group-hover/item:scale-105",
-                    )}
-                  />
+                <div key={item.path}>
+                  {item.isDropdown ? (
+                    <div>
+                      <button
+                        onClick={() => toggleDropdown(item.path)}
+                        className={cn(
+                          "flex items-center w-full px-3 py-3 text-sm font-medium rounded-xl transition-all duration-300 ease-out group/item relative overflow-hidden",
+                          hasDropdownActive
+                            ? "bg-gradient-to-r from-blue-50 to-blue-100/50 dark:from-blue-900/30 dark:to-blue-800/20 text-blue-700 dark:text-blue-300 shadow-sm border border-blue-200/50 dark:border-blue-700/30"
+                            : "text-gray-700 dark:text-gray-300 hover:bg-gray-50/80 dark:hover:bg-gray-800/50 hover:text-gray-900 dark:hover:text-white hover:shadow-sm hover:scale-[1.02]",
+                        )}
+                      >
+                        <Icon
+                          className={cn(
+                            "h-5 w-5 flex-shrink-0 transition-all duration-300",
+                            hasDropdownActive ? "text-blue-600 dark:text-blue-400 scale-110" : "text-gray-500 dark:text-gray-400 group-hover/item:text-blue-600 dark:group-hover/item:text-blue-400 group-hover/item:scale-105",
+                          )}
+                        />
 
-                  <span
-                    className={cn(
-                      "ml-3 transition-all duration-500 ease-out truncate",
-                      collapsed ? "w-0 opacity-0" : "w-auto opacity-100",
-                    )}
-                  >
-                    {item.title}
-                  </span>
+                        <span
+                          className={cn(
+                            "ml-3 transition-all duration-500 ease-out truncate",
+                            collapsed ? "w-0 opacity-0" : "w-auto opacity-100",
+                          )}
+                        >
+                          {item.title}
+                        </span>
 
-                  {isActive && !collapsed && (
-                    <div className="ml-auto">
-                      <div className="w-2 h-2 bg-blue-600 dark:bg-blue-400 rounded-full animate-pulse" />
+                        {!collapsed && (
+                          <ChevronDown
+                            className={cn(
+                              "ml-auto h-4 w-4 transition-all duration-300",
+                              isDropdownOpen ? "rotate-180" : "rotate-0",
+                              hasDropdownActive ? "text-blue-600 dark:text-blue-400" : "text-gray-500 dark:text-gray-400"
+                            )}
+                          />
+                        )}
+
+                        {hasDropdownActive && !collapsed && (
+                          <div className="ml-auto mr-6">
+                            <div className="w-2 h-2 bg-blue-600 dark:bg-blue-400 rounded-full animate-pulse" />
+                          </div>
+                        )}
+                        
+                        {hasDropdownActive && (
+                          <div className="absolute left-0 top-0 w-1 h-full bg-gradient-to-b from-blue-500 to-blue-600 rounded-r-full" />
+                        )}
+                      </button>
+
+                      <AnimatePresence>
+                        {isDropdownOpen && !collapsed && item.children && (
+                          <motion.div
+                            initial={{ opacity: 0, height: 0 }}
+                            animate={{ opacity: 1, height: "auto" }}
+                            exit={{ opacity: 0, height: 0 }}
+                            transition={{ duration: 0.2 }}
+                            className="ml-4 mt-1 space-y-1"
+                          >
+                            {item.children.map((child) => {
+                              const ChildIcon = iconMap[child.icon as keyof typeof iconMap] || Home
+                              const isChildActive = isActiveRoute(child.path)
+
+                              return (
+                                <Link
+                                  key={child.path}
+                                  href={child.path}
+                                  className={cn(
+                                    "flex items-center px-3 py-2 text-sm font-medium rounded-lg transition-all duration-300 ease-out group/child relative overflow-hidden",
+                                    isChildActive
+                                      ? "bg-gradient-to-r from-blue-50 to-blue-100/50 dark:from-blue-900/30 dark:to-blue-800/20 text-blue-700 dark:text-blue-300 shadow-sm border border-blue-200/50 dark:border-blue-700/30"
+                                      : "text-gray-600 dark:text-gray-400 hover:bg-gray-50/60 dark:hover:bg-gray-800/30 hover:text-gray-900 dark:hover:text-white hover:shadow-sm hover:scale-[1.02]",
+                                  )}
+                                >
+                                  <ChildIcon
+                                    className={cn(
+                                      "h-4 w-4 flex-shrink-0 transition-all duration-300",
+                                      isChildActive ? "text-blue-600 dark:text-blue-400 scale-110" : "text-gray-500 dark:text-gray-400 group-hover/child:text-blue-600 dark:group-hover/child:text-blue-400 group-hover/child:scale-105",
+                                    )}
+                                  />
+
+                                  <span className="ml-3 transition-all duration-300 truncate">
+                                    {child.title}
+                                  </span>
+
+                                  {isChildActive && (
+                                    <div className="ml-auto">
+                                      <div className="w-2 h-2 bg-blue-600 dark:bg-blue-400 rounded-full animate-pulse" />
+                                    </div>
+                                  )}
+                                  
+                                  {isChildActive && (
+                                    <div className="absolute left-0 top-0 w-1 h-full bg-gradient-to-b from-blue-500 to-blue-600 rounded-r-full" />
+                                  )}
+                                </Link>
+                              )
+                            })}
+                          </motion.div>
+                        )}
+                      </AnimatePresence>
                     </div>
+                  ) : (
+                    <Link
+                      href={item.path}
+                      className={cn(
+                        "flex items-center px-3 py-3 text-sm font-medium rounded-xl transition-all duration-300 ease-out group/item relative overflow-hidden",
+                        isActive
+                          ? "bg-gradient-to-r from-blue-50 to-blue-100/50 dark:from-blue-900/30 dark:to-blue-800/20 text-blue-700 dark:text-blue-300 shadow-sm border border-blue-200/50 dark:border-blue-700/30"
+                          : "text-gray-700 dark:text-gray-300 hover:bg-gray-50/80 dark:hover:bg-gray-800/50 hover:text-gray-900 dark:hover:text-white hover:shadow-sm hover:scale-[1.02]",
+                      )}
+                    >
+                      <Icon
+                        className={cn(
+                          "h-5 w-5 flex-shrink-0 transition-all duration-300",
+                          isActive ? "text-blue-600 dark:text-blue-400 scale-110" : "text-gray-500 dark:text-gray-400 group-hover/item:text-blue-600 dark:group-hover/item:text-blue-400 group-hover/item:scale-105",
+                        )}
+                      />
+
+                      <span
+                        className={cn(
+                          "ml-3 transition-all duration-500 ease-out truncate",
+                          collapsed ? "w-0 opacity-0" : "w-auto opacity-100",
+                        )}
+                      >
+                        {item.title}
+                      </span>
+
+                      {isActive && !collapsed && (
+                        <div className="ml-auto">
+                          <div className="w-2 h-2 bg-blue-600 dark:bg-blue-400 rounded-full animate-pulse" />
+                        </div>
+                      )}
+                      
+                      {isActive && (
+                        <div className="absolute left-0 top-0 w-1 h-full bg-gradient-to-b from-blue-500 to-blue-600 rounded-r-full" />
+                      )}
+                    </Link>
                   )}
-                  
-                  {isActive && (
-                    <div className="absolute left-0 top-0 w-1 h-full bg-gradient-to-b from-blue-500 to-blue-600 rounded-r-full" />
-                  )}
-                </Link>
+                </div>
               )
             })}
           </div>

@@ -15,8 +15,6 @@ import { AvatarUploader } from "@/components/profile/AvatarUploader"
 import { showSuccess, showError } from "@/lib/alerts"
 
 const profileFormSchema = z.object({
-  nim: z.string().optional(),
-  angkatan: z.number().min(2000, "Angkatan minimal 2000").max(2030, "Angkatan maksimal 2030"),
   kelas: z.string().min(1, "Kelas harus diisi").optional(), // Added kelas field validation
   prodi: z.string().optional(),
   bio: z.string().optional(),
@@ -34,11 +32,29 @@ export function ProfileForm({ profile, onSuccess }: ProfileFormProps) {
   const { session } = useSessionStore()
   const { updateProfile, createProfile } = useProfileStore()
 
+  // Extract angkatan from email
+  const getAngkatanFromEmail = (email: string): number => {
+    // Extract NIM from email (assuming format: nim.tahun@domain or similar)
+    const nimMatch = email.match(/(\d{2,4})\d+/)
+    if (nimMatch) {
+      const prefix = nimMatch[1]
+      // If prefix is 2 digits (like 22), assume it's year suffix (2022)
+      if (prefix.length === 2) {
+        return 2000 + parseInt(prefix)
+      }
+      // If prefix is 4 digits, use as is
+      if (prefix.length === 4) {
+        return parseInt(prefix)
+      }
+    }
+    return new Date().getFullYear()
+  }
+
+  const angkatan = session ? getAngkatanFromEmail(session.email) : new Date().getFullYear()
+
   const form = useForm<ProfileFormData>({
     resolver: zodResolver(profileFormSchema),
     defaultValues: {
-      nim: profile?.nim || "",
-      angkatan: profile?.angkatan || new Date().getFullYear(),
       kelas: profile?.kelas || "", // Added kelas default value
       prodi: profile?.prodi || "",
       bio: profile?.bio || "",
@@ -51,8 +67,8 @@ export function ProfileForm({ profile, onSuccess }: ProfileFormProps) {
 
     try {
       const profileData: Omit<Profile, "userId"> = {
-        nim: data.nim || undefined,
-        angkatan: data.angkatan,
+        nim: undefined, // NIM removed from form
+        angkatan: angkatan, // Use calculated angkatan from email
         kelas: data.kelas || "A", // Default kelas to "A" if empty for mahasiswa
         prodi: data.prodi || undefined,
         bio: data.bio || undefined,
@@ -86,7 +102,7 @@ export function ProfileForm({ profile, onSuccess }: ProfileFormProps) {
         // Create new profile with minimal required data
         const newProfile = {
           userId: session.id,
-          angkatan: new Date().getFullYear(),
+          angkatan: angkatan, // Use calculated angkatan from email
           kelas: session.role === "mahasiswa" ? "A" : "DOSEN", // Default based on role
           avatarUrl
         }
@@ -137,30 +153,16 @@ export function ProfileForm({ profile, onSuccess }: ProfileFormProps) {
                 <p className="text-xs text-muted-foreground">Email tidak dapat diubah</p>
               </div>
 
-              {session.role === "mahasiswa" && (
-                <div className="space-y-2">
-                  <Label htmlFor="nim">NIM</Label>
-                  <Input id="nim" placeholder="Contoh: 2022001" {...form.register("nim")} />
-                </div>
-              )}
-
               <div className="space-y-2">
-                <Label htmlFor="angkatan">
-                  Angkatan {session.role === "mahasiswa" && <span className="text-destructive">*</span>}
-                </Label>
+                <Label htmlFor="angkatan">Angkatan</Label>
                 <Input
                   id="angkatan"
                   type="number"
-                  min="2000"
-                  max="2030"
-                  {...form.register("angkatan", { valueAsNumber: true })}
+                  value={angkatan}
+                  disabled
+                  className="bg-muted"
                 />
-                {form.formState.errors.angkatan && (
-                  <p className="text-sm text-destructive">{form.formState.errors.angkatan.message}</p>
-                )}
-                {session.role === "mahasiswa" && (
-                  <p className="text-xs text-muted-foreground">Wajib diisi untuk akses KRS</p>
-                )}
+                <p className="text-xs text-muted-foreground">Angkatan diambil dari email</p>
               </div>
 
               {session.role === "mahasiswa" && (

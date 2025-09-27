@@ -14,7 +14,7 @@ export class NavigationHelper {
 
   static getPageTitle(path: string): string {
     const config = ROUTE_CONFIGS[path]
-    return config?.title || "Jadwal.in"
+    return config?.title || "jadwal_in"
   }
 
   static getPageDescription(path: string): string {
