@@ -50,7 +50,7 @@ export function Topbar() {
   return (
     <header
       className="
-        fixed top-0 left-0 right-0 z-50
+        fixed top-0 left-0 right-0 z-[100]
         h-16 bg-white/95 dark:bg-gray-900/95 backdrop-blur-sm 
         border-b border-gray-200 dark:border-gray-700
         transition-all duration-300

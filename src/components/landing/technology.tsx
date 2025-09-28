@@ -117,7 +117,7 @@ const technologies = [
 
 export default function Technology() {
   return (
-    <div id="technology" className="py-24 bg-gradient-to-br from-muted/20 to-background">
+    <div id="technology" className="py-24 bg-gradient-to-br">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="text-center">
           <motion.h2

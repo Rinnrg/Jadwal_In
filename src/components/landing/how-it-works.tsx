@@ -31,7 +31,7 @@ const steps = [
 
 export default function HowItWorks() {
   return (
-    <div id="how-it-works" className="py-24 bg-gradient-to-br from-muted/30 to-background">
+    <div id="how-it-works" className="py-24 bg-gradient-to-br ">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="text-center">
           <motion.h2

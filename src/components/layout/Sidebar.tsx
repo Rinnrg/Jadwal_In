@@ -70,7 +70,7 @@ export function Sidebar() {
       <button
         onClick={() => setDrawerOpen(!drawerOpen)}
         className="
-          fixed z-[60] top-4 left-4 p-3 rounded-xl
+          fixed z-[110] top-4 left-4 p-3 rounded-xl
           sm:hidden
           bg-white/95 dark:bg-gray-900/95 backdrop-blur-md border border-gray-200/50 dark:border-gray-700/50 shadow-lg
           hover:bg-white dark:hover:bg-gray-900 hover:shadow-xl hover:scale-105
@@ -97,7 +97,7 @@ export function Sidebar() {
             exit={{ opacity: 0, height: 0 }}
             transition={{ duration: 0.3, ease: "easeInOut" }}
             className="
-              fixed top-16 left-4 right-4 z-[110] sm:hidden
+              fixed top-16 left-4 right-4 z-[120] sm:hidden
               bg-white/95 dark:bg-gray-900/95 backdrop-blur-xl 
               border border-gray-200/50 dark:border-gray-700/50 
               rounded-xl shadow-xl overflow-hidden
@@ -248,7 +248,7 @@ export function Sidebar() {
       {/* Desktop Sidebar */}
       <aside
         className={cn(
-          "group fixed left-0 top-16 z-[60] h-[calc(100vh-4rem)] bg-white/95 dark:bg-gray-900/95 backdrop-blur-xl border-r border-gray-200/50 dark:border-gray-700/50 shadow-xl transition-all duration-500 ease-out hidden sm:block",
+          "group fixed left-0 top-16 z-[90] h-[calc(100vh-4rem)] bg-white/95 dark:bg-gray-900/95 backdrop-blur-xl border-r border-gray-200/50 dark:border-gray-700/50 shadow-xl transition-all duration-500 ease-out hidden sm:block",
           collapsed ? "w-16" : "w-64"
         )}
         onMouseEnter={() => setCollapsed(false)}

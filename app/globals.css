@@ -151,8 +151,6 @@
   
   html {
     overflow-x: hidden;
-    /* Enable hardware acceleration */
-    transform: translate3d(0, 0, 0);
     /* Prevent flash of unstyled content */
     color-scheme: light dark;
     /* Ensure proper text size adjustment across browsers */
@@ -167,9 +165,6 @@
     /* Optimized transitions for smoother theme switching */
     transition: background-color 0.15s ease-out, color 0.15s ease-out;
     overflow-x: hidden;
-    /* Enable hardware acceleration */
-    transform: translate3d(0, 0, 0);
-    will-change: background-color, color;
     /* Fix for webkit-text-size-adjust compatibility */
     -webkit-text-size-adjust: 100%;
     -moz-text-size-adjust: 100%;
