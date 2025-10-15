@@ -16,6 +16,7 @@ import { Badge } from "@/components/ui/badge"
 import { Search, Save, FileDown, Users, BookOpen, TrendingUp, AlertCircle } from "lucide-react"
 import { useState, useMemo } from "react"
 import { arr } from "@/lib/utils"
+import type { Subject } from "@/data/schema"
 
 const gradeOptions = [
   { value: "A", label: "A (4.0)", color: "bg-green-100 text-green-800" },
@@ -50,21 +51,20 @@ export default function EntryNilaiPage() {
       semester: 5,
       sks: 3,
       kelas: "A",
-      angkatan: "2022",
+      angkatan: 2022,
       status: "aktif" as const,
+      color: "#3b82f6",
       pengampuIds: session.role === "dosen" ? [session.id] : [],
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
     }
 
-    let subjects: typeof dummyManajemenProyek[] = []
+    let subjects: Subject[] = []
 
     if (session.role === "kaprodi") {
-      subjects = useSubjectsStore.getState().subjects.filter((subject) => subject.status === "aktif")
+      subjects = [...useSubjectsStore.getState().subjects.filter((subject) => subject.status === "aktif")]
       subjects.push(dummyManajemenProyek)
     } else if (session.role === "dosen") {
       // Use the same logic as asynchronous page - get subjects by pengampu
-      subjects = getSubjectsByPengampu(session.id).filter((subject) => subject.status === "aktif")
+      subjects = [...getSubjectsByPengampu(session.id).filter((subject) => subject.status === "aktif")]
       subjects.push(dummyManajemenProyek)
     }
 
