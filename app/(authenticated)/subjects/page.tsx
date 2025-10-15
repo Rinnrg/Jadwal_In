@@ -89,18 +89,18 @@ export default function SubjectsPage() {
 
   const subjectStats = {
     total: subjects.length,
-    active: subjects.filter((s) => s.isActive).length,
-    totalCredits: subjects.reduce((acc, s) => acc + s.credits, 0),
+    active: subjects.filter((s) => s.status === "aktif").length,
+    totalCredits: subjects.reduce((acc, s) => acc + s.sks, 0),
     avgCredits:
       subjects.length > 0
-        ? Math.round((subjects.reduce((acc, s) => acc + s.credits, 0) / subjects.length) * 10) / 10
+        ? Math.round((subjects.reduce((acc, s) => acc + s.sks, 0) / subjects.length) * 10) / 10
         : 0,
   }
 
   const filteredSubjects = subjects.filter(
     (subject) =>
-      subject.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      subject.code.toLowerCase().includes(searchQuery.toLowerCase()),
+      subject.nama.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      subject.kode.toLowerCase().includes(searchQuery.toLowerCase()),
   )
 
   return (
