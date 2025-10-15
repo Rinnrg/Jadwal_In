@@ -54,8 +54,15 @@ const generateNameFromEmail = (email: string, role: string): string => {
     word.charAt(0).toUpperCase() + word.slice(1).toLowerCase()
   ).join(' ')
   
-  const capitalizedRole = role.charAt(0).toUpperCase() + role.slice(1)
-  return `${formattedNama} - ${nim} (${capitalizedRole})`
+  // Extract angkatan from first 2 digits of NIM for mahasiswa
+  if (role === 'mahasiswa' && nim && nim.length >= 2) {
+    const yearPrefix = nim.substring(0, 2)
+    const angkatan = 2000 + parseInt(yearPrefix)
+    return `${formattedNama} (Angkatan ${angkatan})`
+  }
+  
+  // For dosen and kaprodi, just return the name
+  return formattedNama
 }
 
 export function LoginCard() {

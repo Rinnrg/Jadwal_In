@@ -48,7 +48,7 @@ export default function HowItWorks() {
             whileInView={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6, delay: 0.1 }}
             viewport={{ once: true }}
-            className="mt-2 text-3xl leading-8 font-extrabold tracking-tight text-foreground sm:text-4xl"
+            className="mt-2 text-2xl sm:text-3xl md:text-4xl leading-7 sm:leading-8 font-extrabold tracking-tight text-foreground"
           >
             Mudah Digunakan dalam 4 Langkah
           </motion.p>
@@ -57,7 +57,7 @@ export default function HowItWorks() {
             whileInView={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6, delay: 0.2 }}
             viewport={{ once: true }}
-            className="mt-4 max-w-2xl text-xl text-muted-foreground mx-auto"
+            className="mt-4 max-w-2xl text-sm sm:text-base md:text-lg lg:text-xl text-muted-foreground mx-auto"
           >
             Proses yang sederhana namun powerful untuk mengelola seluruh aktivitas akademik Anda
           </motion.p>
@@ -78,15 +78,12 @@ export default function HowItWorks() {
                   <div className={`mx-auto flex items-center justify-center w-16 h-16 rounded-full bg-gradient-to-r ${step.color} text-white shadow-lg group-hover:scale-110 transition-transform duration-300`}>
                     <step.icon className="w-8 h-8" />
                   </div>
-                  <div className="absolute -top-2 -right-2 w-8 h-8 bg-primary text-primary-foreground rounded-full flex items-center justify-center text-sm font-bold">
-                    {index + 1}
-                  </div>
                 </div>
                 <div className="mt-6">
-                  <h3 className="text-lg font-semibold text-foreground group-hover:text-primary transition-colors duration-300">
+                  <h3 className="text-base sm:text-lg font-semibold text-foreground group-hover:text-primary transition-colors duration-300">
                     {step.title}
                   </h3>
-                  <p className="mt-2 text-base text-muted-foreground">
+                  <p className="mt-2 text-sm sm:text-base text-muted-foreground">
                     {step.description}
                   </p>
                 </div>

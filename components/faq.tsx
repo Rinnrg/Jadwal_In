@@ -63,10 +63,10 @@ export default function Faq() {
       className="relative w-full max-w-(--breakpoint-xl) mx-auto px-4 py-28 gap-5 md:px-8 flex flex-col justify-center items-center"
     >
       <div className="flex flex-col gap-3 justify-center items-center">
-        <h4 className="text-2xl font-bold sm:text-3xl bg-linear-to-b from-foreground to-muted-foreground text-transparent bg-clip-text">
+        <h4 className="text-xl sm:text-2xl md:text-3xl font-bold bg-linear-to-b from-foreground to-muted-foreground text-transparent bg-clip-text">
           FAQ
         </h4>
-        <p className="max-w-xl text-muted-foreground text-center">
+        <p className="max-w-xl text-sm sm:text-base text-muted-foreground text-center">
           Pertanyaan yang sering diajukan tentang jadwal_in.
         </p>
       </div>

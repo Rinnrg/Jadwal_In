@@ -48,7 +48,7 @@ export default function Benefits() {
             whileInView={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6, delay: 0.1 }}
             viewport={{ once: true }}
-            className="mt-2 text-3xl leading-8 font-extrabold tracking-tight text-foreground sm:text-4xl"
+            className="mt-2 text-2xl sm:text-3xl md:text-4xl leading-7 sm:leading-8 font-extrabold tracking-tight text-foreground"
           >
             Mengapa Memilih jadwal_in?
           </motion.p>
@@ -57,7 +57,7 @@ export default function Benefits() {
             whileInView={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6, delay: 0.2 }}
             viewport={{ once: true }}
-            className="mt-4 max-w-3xl text-xl text-muted-foreground mx-auto"
+            className="mt-4 max-w-3xl text-sm sm:text-base md:text-lg lg:text-xl text-muted-foreground mx-auto"
           >
             Platform yang dirancang khusus untuk memenuhi kebutuhan institusi pendidikan modern dengan standar kualitas tinggi
           </motion.p>
@@ -81,12 +81,12 @@ export default function Benefits() {
                     <div className="flex items-center justify-center w-12 h-12 rounded-lg bg-primary text-primary-foreground group-hover:scale-110 transition-transform duration-300">
                       <benefit.icon className="w-6 h-6" />
                     </div>
-                    <h3 className="text-xl font-semibold text-foreground group-hover:text-primary transition-colors duration-300">
+                    <h3 className="text-lg sm:text-xl font-semibold text-foreground group-hover:text-primary transition-colors duration-300">
                       {benefit.title}
                     </h3>
                   </div>
                   
-                  <p className="text-muted-foreground mb-6 leading-relaxed">
+                  <p className="text-sm sm:text-base text-muted-foreground mb-6 leading-relaxed">
                     {benefit.description}
                   </p>
                   
@@ -98,7 +98,7 @@ export default function Benefits() {
                         whileInView={{ opacity: 1, scale: 1 }}
                         transition={{ duration: 0.3, delay: (index * 0.1) + (featureIndex * 0.05) }}
                         viewport={{ once: true }}
-                        className="flex items-center space-x-2 text-sm"
+                        className="flex items-center space-x-2 text-xs sm:text-sm"
                       >
                         <div className="w-1.5 h-1.5 rounded-full bg-primary" />
                         <span className="text-muted-foreground">{feature}</span>

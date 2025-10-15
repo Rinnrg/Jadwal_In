@@ -21,19 +21,19 @@ const Footer = () => {
           <div className="col-span-1 md:col-span-2">
             <Link
               href="/"
-              className="flex items-center space-x-2 text-2xl font-medium hover:opacity-80 transition-opacity"
+              className="flex items-center space-x-2 text-lg sm:text-xl md:text-2xl font-medium hover:opacity-80 transition-opacity"
             >
               <Image 
                 src="/logo jadwal in.svg" 
                 alt="jadwal_in Logo" 
                 width={32} 
                 height={32}
-                className="w-8 h-8 object-contain"
+                className="w-6 h-6 sm:w-7 sm:h-7 md:w-8 md:h-8 object-contain"
               />
               <span>jadwal_in</span>
             </Link>
-            <p className="text-muted-foreground mt-4 max-w-md">
-              Platform manajemen jadwal akademik yang memudahkan mahasiswa, dosen, dan kaprodi dalam mengelola aktivitas perkuliahan.
+            <p className="text-sm sm:text-base text-muted-foreground mt-4 max-w-md">
+              Platform manajemen jadwal akademik yang memudahkan mahasiswa, dosen, dan kaprodi dalam mengelola aktivitas perkulaahan.
             </p>
           </div>
 

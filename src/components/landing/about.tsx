@@ -20,7 +20,7 @@ export default function About() {
             whileInView={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6, delay: 0.1 }}
             viewport={{ once: true }}
-            className="mt-2 text-3xl leading-8 font-extrabold tracking-tight text-foreground sm:text-4xl"
+            className="mt-2 text-2xl sm:text-3xl md:text-4xl leading-7 sm:leading-8 font-extrabold tracking-tight text-foreground"
           >
             Digitalisasi Sistem Akademik Modern
           </motion.p>
@@ -29,7 +29,7 @@ export default function About() {
             whileInView={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6, delay: 0.2 }}
             viewport={{ once: true }}
-            className="mt-4 max-w-3xl text-xl text-muted-foreground lg:mx-auto"
+            className="mt-4 max-w-3xl text-sm sm:text-base md:text-lg lg:text-xl text-muted-foreground lg:mx-auto"
           >
             Jadwal_in adalah solusi digital untuk pengelolaan jadwal akademik secara efisien dan 
             terintegrasi. Dengan antarmuka yang sederhana namun powerful, serta fitur yang dirancang 
@@ -47,9 +47,9 @@ export default function About() {
               viewport={{ once: true }}
               className="text-center"
             >
-              <div className="text-4xl font-bold text-primary">1000+</div>
-              <div className="mt-2 text-lg font-medium text-foreground">Mahasiswa Aktif</div>
-              <div className="mt-1 text-sm text-muted-foreground">Menggunakan sistem kami</div>
+              <div className="text-2xl sm:text-3xl md:text-4xl font-bold text-primary">1000+</div>
+              <div className="mt-2 text-base sm:text-lg font-medium text-foreground">Mahasiswa Aktif</div>
+              <div className="mt-1 text-xs sm:text-sm text-muted-foreground">Menggunakan sistem kami</div>
             </motion.div>
             <motion.div
               initial={{ opacity: 0, y: 30 }}
@@ -58,9 +58,9 @@ export default function About() {
               viewport={{ once: true }}
               className="text-center"
             >
-              <div className="text-4xl font-bold text-primary">50+</div>
-              <div className="mt-2 text-lg font-medium text-foreground">Dosen</div>
-              <div className="mt-1 text-sm text-muted-foreground">Terdaftar dalam sistem</div>
+              <div className="text-2xl sm:text-3xl md:text-4xl font-bold text-primary">50+</div>
+              <div className="mt-2 text-base sm:text-lg font-medium text-foreground">Dosen</div>
+              <div className="mt-1 text-xs sm:text-sm text-muted-foreground">Terdaftar dalam sistem</div>
             </motion.div>
             <motion.div
               initial={{ opacity: 0, y: 30 }}
@@ -69,9 +69,9 @@ export default function About() {
               viewport={{ once: true }}
               className="text-center"
             >
-              <div className="text-4xl font-bold text-primary">99%</div>
-              <div className="mt-2 text-lg font-medium text-foreground">Uptime</div>
-              <div className="mt-1 text-sm text-muted-foreground">Keandalan sistem</div>
+              <div className="text-2xl sm:text-3xl md:text-4xl font-bold text-primary">99%</div>
+              <div className="mt-2 text-base sm:text-lg font-medium text-foreground">Uptime</div>
+              <div className="mt-1 text-xs sm:text-sm text-muted-foreground">Keandalan sistem</div>
             </motion.div>
           </div>
         </div>

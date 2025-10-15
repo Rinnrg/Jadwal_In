@@ -11,6 +11,39 @@ interface SessionState {
   logout: () => void
 }
 
+// Helper function to migrate old name format to new format
+const migrateSessionName = (session: UserSession): UserSession => {
+  // Check if name is in old format: "Nama - NIM (Role)"
+  const oldFormatMatch = session.name.match(/^(.+?)\s*-\s*(\d+)\s*\((.+?)\)$/)
+  
+  if (oldFormatMatch && session.role === 'mahasiswa') {
+    const [, nama, nim, role] = oldFormatMatch
+    
+    // Extract angkatan from first 2 digits of NIM
+    if (nim && nim.length >= 2) {
+      const yearPrefix = nim.substring(0, 2)
+      const angkatan = 2000 + parseInt(yearPrefix)
+      
+      return {
+        ...session,
+        name: `${nama.trim()} (Angkatan ${angkatan})`
+      }
+    }
+  }
+  
+  // Check if name is in old format for dosen/kaprodi: "Nama - NIM (Role)"
+  const dosenFormatMatch = session.name.match(/^(.+?)\s*-\s*\d+\s*\((.+?)\)$/)
+  if (dosenFormatMatch && (session.role === 'dosen' || session.role === 'kaprodi')) {
+    const [, nama] = dosenFormatMatch
+    return {
+      ...session,
+      name: nama.trim()
+    }
+  }
+  
+  return session
+}
+
 export const useSessionStore = create<SessionState>()(
   persist(
     (set, get) => ({
@@ -36,6 +69,15 @@ export const useSessionStore = create<SessionState>()(
           if (state) {
             state.hasHydrated = true
             state.isLoading = false
+            
+            // Migrate old session format to new format
+            if (state.session) {
+              const migratedSession = migrateSessionName(state.session)
+              if (migratedSession.name !== state.session.name) {
+                console.log('Migrating session name format:', state.session.name, '->', migratedSession.name)
+                state.session = migratedSession
+              }
+            }
           }
         }
       },

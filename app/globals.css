@@ -102,6 +102,8 @@
   --sidebar-ring: oklch(0.439 0 0);
 }
 
+
+
 @theme inline {
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
@@ -163,7 +165,8 @@
   body {
     @apply bg-background text-foreground;
     /* Optimized transitions for smoother theme switching */
-    transition: background-color 0.15s ease-out, color 0.15s ease-out;
+    transition: background 0.5s cubic-bezier(0.25, 0.46, 0.45, 0.94), 
+                color 0.3s ease-out;
     overflow-x: hidden;
     /* Fix for webkit-text-size-adjust compatibility */
     -webkit-text-size-adjust: 100%;
@@ -172,6 +175,57 @@
     text-size-adjust: 100%;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
+  }
+
+
+
+  @keyframes shimmer {
+    0% {
+      transform: translateX(-100%);
+    }
+    100% {
+      transform: translateX(100%);
+    }
+  }
+
+  .animate-shimmer {
+    animation: shimmer 2s ease-in-out infinite;
+  }
+
+  /* Theme switcher specific animations - Improved */
+  .animate-press-feedback {
+    animation: press-feedback 0.15s cubic-bezier(0.34, 1.56, 0.64, 1);
+  }
+
+  .animate-ripple-effect {
+    background: radial-gradient(circle at center, 
+      rgba(59, 130, 246, 0.15) 0%, 
+      rgba(59, 130, 246, 0.05) 50%, 
+      transparent 80%);
+    animation: ripple-expand 0.6s ease-out;
+  }
+
+  @keyframes press-feedback {
+    0% {
+      transform: scale(1);
+    }
+    50% {
+      transform: scale(0.95);
+    }
+    100% {
+      transform: scale(1);
+    }
+  }
+
+  @keyframes ripple-expand {
+    0% {
+      transform: scale(0.8);
+      opacity: 0.6;
+    }
+    100% {
+      transform: scale(1.8);
+      opacity: 0;
+    }
   }
   
   /* Ensure containers don't overflow */
@@ -262,4 +316,109 @@
   .crop-container:active {
     cursor: grabbing;
   }
+
+
+
+
+
+  /* Fade in animation */
+  @keyframes fade-in {
+    from {
+      opacity: 0;
+      transform: translateY(4px) scale(0.95);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0) scale(1);
+    }
+  }
+
+  .animate-fade-in {
+    animation: fade-in 0.3s cubic-bezier(0.23, 1, 0.32, 1);
+  }
+
+  /* Scale in animation for avatar */
+  @keyframes scale-in {
+    from {
+      opacity: 0;
+      transform: scale(0.5);
+    }
+    to {
+      opacity: 1;
+      transform: scale(1);
+    }
+  }
+
+  .animate-scale-in {
+    animation: scale-in 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+  }
+
+  /* Slow spin animation for sun */
+  @keyframes spin-slow {
+    from {
+      transform: rotate(0deg);
+    }
+    to {
+      transform: rotate(360deg);
+    }
+  }
+
+  .animate-spin-slow {
+    animation: spin-slow 20s linear infinite;
+  }
+
+  /* Slow bounce animation */
+  @keyframes bounce-slow {
+    0%, 100% {
+      transform: translateY(0);
+    }
+    50% {
+      transform: translateY(-10px);
+    }
+  }
+
+  .animate-bounce-slow {
+    animation: bounce-slow 3s ease-in-out infinite;
+  }
+
+  /* Twinkle animation for stars */
+  @keyframes twinkle {
+    0%, 100% {
+      opacity: 1;
+      transform: scale(1);
+    }
+    50% {
+      opacity: 0.3;
+      transform: scale(0.8);
+    }
+  }
+
+  .animate-twinkle {
+    animation: twinkle 2s ease-in-out infinite;
+  }
+
+
+
+  /* Glass morphism utility classes - More transparent */
+  .glass-surface {
+    background: rgba(255, 255, 255, 0.025);
+    -webkit-backdrop-filter: blur(16px) saturate(115%);
+    backdrop-filter: blur(16px) saturate(115%);
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    box-shadow: 
+      0 3px 15px rgba(0, 0, 0, 0.04),
+      inset 0 1px 0 rgba(255, 255, 255, 0.06);
+  }
+
+  .dark .glass-surface {
+    background: rgba(255, 255, 255, 0.015);
+    border: 1px solid rgba(255, 255, 255, 0.04);
+    box-shadow: 
+      0 3px 18px rgba(0, 0, 0, 0.15),
+      inset 0 1px 0 rgba(255, 255, 255, 0.03);
+  }
+
+
+
+
 }

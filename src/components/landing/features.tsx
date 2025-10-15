@@ -44,7 +44,7 @@ export default function Features() {
             whileInView={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6, delay: 0.1 }}
             viewport={{ once: true }}
-            className="mt-2 text-3xl leading-8 font-extrabold tracking-tight text-foreground sm:text-4xl"
+            className="mt-2 text-2xl sm:text-3xl md:text-4xl leading-7 sm:leading-8 font-extrabold tracking-tight text-foreground"
           >
             Solusi Lengkap Manajemen Akademik
           </motion.p>
@@ -53,7 +53,7 @@ export default function Features() {
             whileInView={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6, delay: 0.2 }}
             viewport={{ once: true }}
-            className="mt-4 max-w-2xl text-xl text-muted-foreground lg:mx-auto"
+            className="mt-4 max-w-2xl text-sm sm:text-base md:text-lg lg:text-xl text-muted-foreground lg:mx-auto"
           >
             Platform terintegrasi yang memudahkan pengelolaan jadwal, KRS, dan kehadiran untuk seluruh civitas akademika.
           </motion.p>
@@ -74,11 +74,11 @@ export default function Features() {
                   <div className="absolute flex items-center justify-center h-12 w-12 rounded-md bg-primary text-primary-foreground">
                     <feature.icon className="h-6 w-6" aria-hidden="true" />
                   </div>
-                  <p className="ml-16 text-lg leading-6 font-medium text-foreground">
+                  <p className="ml-16 text-base sm:text-lg leading-6 font-medium text-foreground">
                     {feature.name}
                   </p>
                 </dt>
-                <dd className="mt-2 ml-16 text-base text-muted-foreground">
+                <dd className="mt-2 ml-16 text-sm sm:text-base text-muted-foreground">
                   {feature.description}
                 </dd>
               </motion.div>

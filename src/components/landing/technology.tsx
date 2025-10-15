@@ -134,7 +134,7 @@ export default function Technology() {
             whileInView={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6, delay: 0.1 }}
             viewport={{ once: true }}
-            className="mt-2 text-3xl leading-8 font-extrabold tracking-tight text-foreground sm:text-4xl"
+            className="mt-2 text-2xl sm:text-3xl md:text-4xl leading-7 sm:leading-8 font-extrabold tracking-tight text-foreground"
           >
             Dibangun dengan Teknologi Modern
           </motion.p>
@@ -143,7 +143,7 @@ export default function Technology() {
             whileInView={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6, delay: 0.2 }}
             viewport={{ once: true }}
-            className="mt-4 max-w-3xl text-xl text-muted-foreground mx-auto"
+            className="mt-4 max-w-3xl text-sm sm:text-base md:text-lg lg:text-xl text-muted-foreground mx-auto"
           >
             Stack teknologi terdepan untuk performa, keamanan, dan user experience yang optimal
           </motion.p>

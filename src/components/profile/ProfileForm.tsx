@@ -34,19 +34,25 @@ export function ProfileForm({ profile, onSuccess }: ProfileFormProps) {
 
   // Extract angkatan from email
   const getAngkatanFromEmail = (email: string): number => {
-    // Extract NIM from email (assuming format: nim.tahun@domain or similar)
-    const nimMatch = email.match(/(\d{2,4})\d+/)
-    if (nimMatch) {
-      const prefix = nimMatch[1]
-      // If prefix is 2 digits (like 22), assume it's year suffix (2022)
-      if (prefix.length === 2) {
-        return 2000 + parseInt(prefix)
-      }
-      // If prefix is 4 digits, use as is
-      if (prefix.length === 4) {
-        return parseInt(prefix)
+    // Extract NIM from email (assuming format: nama.NIM@domain)
+    const emailParts = email.split('@')[0]
+    const parts = emailParts.split('.')
+    
+    if (parts.length >= 2) {
+      const nim = parts[1]
+      // Extract first 2 digits from NIM
+      if (nim && nim.length >= 2) {
+        const yearPrefix = nim.substring(0, 2)
+        const year = parseInt(yearPrefix)
+        
+        // Convert to full year (22 -> 2022, 20 -> 2020)
+        if (!isNaN(year)) {
+          return 2000 + year
+        }
       }
     }
+    
+    // Default to current year if cannot extract
     return new Date().getFullYear()
   }
 

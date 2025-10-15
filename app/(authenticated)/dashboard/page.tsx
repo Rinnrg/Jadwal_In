@@ -1,8 +1,10 @@
 "use client"
 
 import { useSessionStore } from "@/stores/session.store"
+import { useProfileStore } from "@/stores/profile.store"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import {
   Calendar,
   BookOpen,
@@ -25,6 +27,7 @@ import Link from "next/link"
 
 export default function DashboardPage() {
   const { session } = useSessionStore()
+  const { getProfile, profiles } = useProfileStore()
   const [currentTime, setCurrentTime] = useState(new Date())
 
   useEffect(() => {
@@ -32,7 +35,118 @@ export default function DashboardPage() {
     return () => clearInterval(timer)
   }, [])
 
+  // Fungsi untuk menentukan ucapan berdasarkan waktu
+  const getGreeting = () => {
+    const hour = currentTime.getHours()
+    if (hour >= 5 && hour < 11) return "Selamat Pagi"
+    if (hour >= 11 && hour < 15) return "Selamat Siang"
+    if (hour >= 15 && hour < 18) return "Selamat Sore"
+    return "Selamat Malam"
+  }
+
+  // Fungsi untuk mendapatkan warna berdasarkan waktu
+  const getTimeBasedColors = () => {
+    const hour = currentTime.getHours()
+    if (hour >= 5 && hour < 11) {
+      return {
+        text: "text-yellow-600 dark:text-yellow-400",
+        gradient: "from-yellow-400 to-orange-500",
+        cardBg: "bg-gradient-to-br from-yellow-50 to-orange-50 dark:from-yellow-950/20 dark:to-orange-950/20",
+        cardBorder: "border-yellow-200 dark:border-yellow-800",
+        icon: "sun"
+      }
+    }
+    if (hour >= 11 && hour < 15) {
+      return {
+        text: "text-blue-600 dark:text-blue-400",
+        gradient: "from-blue-400 to-cyan-500",
+        cardBg: "bg-gradient-to-br from-blue-50 to-cyan-50 dark:from-blue-950/20 dark:to-cyan-950/20",
+        cardBorder: "border-blue-200 dark:border-blue-800",
+        icon: "noon"
+      }
+    }
+    if (hour >= 15 && hour < 18) {
+      return {
+        text: "text-orange-600 dark:text-orange-400",
+        gradient: "from-orange-400 to-red-500",
+        cardBg: "bg-gradient-to-br from-orange-50 to-red-50 dark:from-orange-950/20 dark:to-red-950/20",
+        cardBorder: "border-orange-200 dark:border-orange-800",
+        icon: "sunset"
+      }
+    }
+    return {
+      text: "text-indigo-600 dark:text-indigo-400",
+      gradient: "from-indigo-400 to-purple-500",
+      cardBg: "bg-gradient-to-br from-indigo-50 to-purple-50 dark:from-indigo-950/20 dark:to-purple-950/20",
+      cardBorder: "border-indigo-200 dark:border-indigo-800",
+      icon: "night"
+    }
+  }
+
+  // Fungsi untuk menghitung posisi celestial body (matahari/bulan)
+  const getCelestialPosition = () => {
+    const hour = currentTime.getHours()
+    const minute = currentTime.getMinutes()
+    const totalMinutes = hour * 60 + minute
+    
+    // Siang (matahari): 05:00 (300 menit) sampai 18:00 (1080 menit) = 780 menit range
+    // Malam (bulan): 18:00 (1080 menit) sampai 05:00 next day (300 menit) = 660 menit range
+    
+    let position = { x: 0, y: 0, rotation: 0 }
+    
+    if (hour >= 5 && hour < 18) {
+      // Matahari (05:00 - 18:00)
+      const sunStart = 5 * 60 // 05:00
+      const sunEnd = 18 * 60 // 18:00
+      const sunDuration = sunEnd - sunStart // 780 menit
+      const elapsed = totalMinutes - sunStart
+      const progress = elapsed / sunDuration // 0 to 1
+      
+      // Gerakan seperti busur: mulai dari kiri bawah, naik ke tengah, turun ke kanan bawah
+      const angle = Math.PI * progress // 0 to π (180 derajat)
+      position.x = Math.sin(angle) * 50 // Horizontal movement (-50 to 50)
+      position.y = -Math.sin(angle) * 40 // Vertical movement (0 to -40 to 0)
+      position.rotation = progress * 360
+    } else {
+      // Bulan (18:00 - 05:00)
+      let moonMinutes = totalMinutes
+      if (hour < 5) {
+        moonMinutes = totalMinutes + 24 * 60 // Tambah 24 jam untuk hari berikutnya
+      }
+      
+      const moonStart = 18 * 60 // 18:00
+      const moonEnd = 29 * 60 // 05:00 next day (24 + 5)
+      const moonDuration = moonEnd - moonStart // 660 menit
+      const elapsed = moonMinutes - moonStart
+      const progress = elapsed / moonDuration // 0 to 1
+      
+      // Gerakan seperti busur: mulai dari kiri bawah, naik ke tengah, turun ke kanan bawah
+      const angle = Math.PI * progress // 0 to π (180 derajat)
+      position.x = Math.sin(angle) * 50
+      position.y = -Math.sin(angle) * 40
+      position.rotation = progress * 360
+    }
+    
+    return position
+  }
+
+  // Fungsi untuk mendapatkan inisial nama
+  const getInitials = (name: string) => {
+    return name
+      .split(" ")
+      .map(n => n[0])
+      .join("")
+      .toUpperCase()
+      .slice(0, 2)
+  }
+
   if (!session) return null
+
+  const profile = getProfile(session.id)
+  const avatarUrl = profile?.avatarUrl || session.image
+  const timeColors = getTimeBasedColors()
+  const celestialPos = getCelestialPosition()
+  const isSunTime = currentTime.getHours() >= 5 && currentTime.getHours() < 18
 
   const quickActions = [
     { title: "Buat Jadwal", icon: Calendar, href: "/schedule", color: "text-blue-500" },
@@ -49,26 +163,156 @@ export default function DashboardPage() {
 
   return (
     <div className="space-y-6 animate-fade-in w-full max-w-none overflow-x-hidden">
+      {/* Header Section dengan Ucapan, Profile, Nama, Role, dan Tanggal */}
       <div className="animate-slide-up">
-        <div className="flex items-center justify-between mb-3">
-          <div>
-            <h1 className="text-4xl font-bold tracking-tight gradient-primary bg-clip-text text-transparent animate-float">
-              Dashboard
-            </h1>
-            <p className="text-muted-foreground text-lg mt-1 animate-slide-in-left" style={{ animationDelay: "0.1s" }}>
-              Selamat datang kembali, {session.name}
-            </p>
-            <p className="text-sm text-muted-foreground mt-0.5 animate-slide-in-left" style={{ animationDelay: "0.2s" }}>
-              {currentTime.toLocaleDateString("id-ID", {
-                weekday: "long",
-                year: "numeric",
-                month: "long",
-                day: "numeric",
-              })}{" "}
-              - {currentTime.toLocaleTimeString("id-ID")}
-            </p>
+        <Card className={`${timeColors.cardBg} border-2 ${timeColors.cardBorder} transition-all duration-1000 ease-in-out relative overflow-hidden`}>
+          {/* Sky Background - Full Card */}
+          <div className={`absolute inset-0 bg-gradient-to-b ${
+            isSunTime 
+              ? 'from-blue-200 via-blue-100 to-blue-50 dark:from-blue-950/40 dark:via-blue-900/30 dark:to-blue-800/20' 
+              : 'from-indigo-950 via-indigo-900 to-indigo-800 dark:from-indigo-950/60 dark:via-indigo-900/40 dark:to-indigo-800/30'
+          } transition-all duration-1000`}></div>
+          
+          {/* Fade gradient overlay - gelap di kiri (teks terlihat), terang di kanan (tata surya terlihat) */}
+          <div className="absolute inset-0 bg-gradient-to-r from-background/100 via-background/30 to-transparent dark:from-background/90 dark:via-background/70 dark:to-transparent"></div>
+          
+          {/* Horizon line */}
+          <div className="absolute bottom-0 left-0 right-0 h-1/3 bg-gradient-to-t from-green-200/40 via-green-100/20 to-transparent dark:from-green-950/30 dark:via-green-900/15 dark:to-transparent"></div>
+          
+          {/* Decorative Background Pattern */}
+          <div className="absolute inset-0 opacity-5 pointer-events-none">
+            <svg className="w-full h-full" xmlns="http://www.w3.org/2000/svg">
+              <defs>
+                <pattern id="grid" width="40" height="40" patternUnits="userSpaceOnUse">
+                  <circle cx="20" cy="20" r="1.5" fill="currentColor" className={timeColors.text} />
+                </pattern>
+              </defs>
+              <rect width="100%" height="100%" fill="url(#grid)" />
+            </svg>
           </div>
-        </div>
+          
+          {/* Celestial body (Sun/Moon) - Positioned in background */}
+          <div 
+            className="absolute right-8 top-1/2 transition-all duration-500 ease-out z-0"
+            style={{
+              transform: `translate(${celestialPos.x}%, calc(-50% + ${celestialPos.y}%))`,
+            }}
+          >
+            {isSunTime ? (
+              // Sun
+              <div className="relative">
+                <div 
+                  className={`w-32 h-32 lg:w-40 lg:h-40 rounded-full bg-gradient-to-br ${timeColors.gradient} shadow-2xl transition-all duration-1000`}
+                  style={{
+                    boxShadow: `0 0 60px ${currentTime.getHours() < 11 ? 'rgba(251, 191, 36, 0.7)' : currentTime.getHours() < 15 ? 'rgba(59, 130, 246, 0.6)' : 'rgba(249, 115, 22, 0.8)'}`
+                  }}
+                ></div>
+                {/* Sun rays */}
+                <div className="absolute inset-0 animate-spin-slow">
+                  {[...Array(12)].map((_, i) => (
+                    <div
+                      key={i}
+                      className={`absolute w-2 h-10 lg:w-3 lg:h-12 bg-gradient-to-t ${timeColors.gradient} rounded-full opacity-40`}
+                      style={{
+                        left: '50%',
+                        top: '-2.5rem',
+                        transform: `translateX(-50%) rotate(${i * 30}deg)`,
+                        transformOrigin: '0.25rem 4rem'
+                      }}
+                    ></div>
+                  ))}
+                </div>
+              </div>
+            ) : (
+              // Moon with stars
+              <div className="relative">
+                <div 
+                  className={`w-32 h-32 lg:w-40 lg:h-40 rounded-full bg-gradient-to-br ${timeColors.gradient} shadow-2xl transition-all duration-1000`}
+                  style={{
+                    boxShadow: '0 0 60px rgba(99, 102, 241, 0.6)'
+                  }}
+                >
+                  {/* Moon craters */}
+                  <div className="absolute top-6 left-6 w-5 h-5 rounded-full bg-indigo-600/30"></div>
+                  <div className="absolute top-16 left-12 w-6 h-6 rounded-full bg-indigo-600/20"></div>
+                  <div className="absolute top-10 right-8 w-4 h-4 rounded-full bg-indigo-600/25"></div>
+                  <div className="absolute bottom-8 left-8 w-3 h-3 rounded-full bg-indigo-600/20"></div>
+                </div>
+                {/* Stars scattered around */}
+                <div className="absolute -top-12 -right-16 w-3 h-3 bg-yellow-200 rounded-full animate-twinkle shadow-lg shadow-yellow-200/50"></div>
+                <div className="absolute -top-8 -left-20 w-2 h-2 bg-yellow-100 rounded-full animate-twinkle" style={{ animationDelay: "0.3s" }}></div>
+                <div className="absolute -bottom-10 -right-20 w-3 h-3 bg-yellow-200 rounded-full animate-twinkle" style={{ animationDelay: "0.6s" }}></div>
+                <div className="absolute -bottom-16 left-16 w-2 h-2 bg-yellow-100 rounded-full animate-twinkle" style={{ animationDelay: "0.9s" }}></div>
+                <div className="absolute top-20 -left-16 w-2.5 h-2.5 bg-yellow-200 rounded-full animate-twinkle" style={{ animationDelay: "1.2s" }}></div>
+                <div className="absolute top-4 right-20 w-2 h-2 bg-yellow-100 rounded-full animate-twinkle" style={{ animationDelay: "1.5s" }}></div>
+              </div>
+            )}
+          </div>
+          
+          {/* Clouds for daytime - scattered across card */}
+          {isSunTime && (
+            <div className="absolute inset-0 pointer-events-none z-0">
+              <div className="absolute top-12 right-32 w-24 h-10 bg-white/50 dark:bg-gray-400/20 rounded-full blur-sm animate-float"></div>
+              <div className="absolute top-24 right-64 w-20 h-8 bg-white/40 dark:bg-gray-400/15 rounded-full blur-sm animate-float" style={{ animationDelay: "0.5s" }}></div>
+              <div className="absolute bottom-20 right-48 w-28 h-12 bg-white/45 dark:bg-gray-400/18 rounded-full blur-sm animate-float" style={{ animationDelay: "1s" }}></div>
+            </div>
+          )}
+          
+          <CardContent className="pt-6 relative z-10">
+            <div className="flex flex-col items-start space-y-3.5">
+                {/* Tanggal */}
+                <div className="flex items-center space-x-2 text-muted-foreground animate-slide-in-left transition-colors duration-500">
+                  <Calendar className="h-4 w-4" />
+                  <p className="text-sm md:text-base">
+                    {currentTime.toLocaleDateString("id-ID", {
+                      weekday: "long",
+                      year: "numeric",
+                      month: "long",
+                      day: "numeric",
+                    })}{" "}
+                    - {currentTime.toLocaleTimeString("id-ID")}
+                  </p>
+                </div>
+                
+                {/* Ucapan Selamat */}
+                <p className="text-xl md:text-2xl text-muted-foreground transition-colors duration-500">
+                  {getGreeting()}
+                </p>
+                
+                {/* Foto Profile - diperbesar */}
+                <Avatar className="h-28 w-28 border-4 border-primary/20 shadow-lg animate-scale-in transition-all duration-500">
+                  <AvatarImage src={avatarUrl} alt={session.name} />
+                  <AvatarFallback className={`text-3xl font-bold bg-gradient-to-br ${timeColors.gradient} text-white transition-all duration-1000`}>
+                    {getInitials(session.name)}
+                  </AvatarFallback>
+                </Avatar>
+                
+                {/* Nama */}
+                <h2 className="text-2xl md:text-3xl font-bold text-foreground animate-slide-in-left transition-colors duration-500">
+                  {session.name.split(" (")[0]}
+                </h2>
+                
+                {/* Role & Angkatan Badges */}
+                <div className="flex items-center gap-2 flex-wrap">
+                  {/* Role Badge */}
+                  <div className={`inline-flex items-center px-3 py-1.5 rounded-full ${timeColors.cardBg} border ${timeColors.cardBorder} animate-slide-in-left transition-all duration-1000`} style={{ animationDelay: "0.1s" }}>
+                    <span className={`text-xs font-semibold ${timeColors.text} uppercase tracking-wide transition-colors duration-1000`}>
+                      {session.role === "mahasiswa" ? "Mahasiswa" : session.role === "dosen" ? "Dosen" : "Kepala Program Studi"}
+                    </span>
+                  </div>
+                  
+                  {/* Angkatan Badge - Only for Mahasiswa */}
+                  {session.role === "mahasiswa" && session.name.includes("(Angkatan") && (
+                    <div className={`inline-flex items-center px-3 py-1.5 rounded-full ${timeColors.cardBg} border ${timeColors.cardBorder} animate-slide-in-left transition-all duration-1000`} style={{ animationDelay: "0.15s" }}>
+                      <span className={`text-xs font-semibold ${timeColors.text} uppercase tracking-wide transition-colors duration-1000`}>
+                        {session.name.match(/Angkatan (\d{4})/)?.[0] || ""}
+                      </span>
+                    </div>
+                  )}
+                </div>
+            </div>
+          </CardContent>
+        </Card>
       </div>
 
       <div className={`grid gap-6 grid-cols-1 sm:grid-cols-2 w-full ${session.role === "mahasiswa" ? "lg:grid-cols-4" : "lg:grid-cols-3"}`}>
