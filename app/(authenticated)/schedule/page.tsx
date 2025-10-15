@@ -83,12 +83,22 @@ export default function SchedulePage() {
       return
     }
 
+    if (!session) {
+      showError("Session tidak ditemukan")
+      return
+    }
+
     exportICS(userEvents, subjects, `jadwal-${session.name.replace(/\s+/g, "-")}.ics`)
     showSuccess("Jadwal berhasil diekspor ke file ICS")
   }
 
   const handleImportICS = async () => {
     if (!importFile) return
+
+    if (!session) {
+      showError("Session tidak ditemukan")
+      return
+    }
 
     try {
       const content = await importFile.text()
@@ -101,7 +111,7 @@ export default function SchedulePage() {
 
       const confirmed = await confirmAction(
         "Import Jadwal",
-        `Ditemukan ${parsedEvents.length} jadwal. Apakah Anda ingin mengimpor semua jadwal ini?`,
+        `Ditemukan ${parsedEvents.length} jadwal. Lanjutkan import?`,
         "Ya, Import",
       )
 
@@ -135,6 +145,11 @@ export default function SchedulePage() {
   }
 
   const handleClearSchedule = async () => {
+    if (!session) {
+      showError("Session tidak ditemukan")
+      return
+    }
+
     const confirmed = await confirmAction(
       "Hapus Semua Jadwal",
       "Apakah Anda yakin ingin menghapus semua jadwal? Tindakan ini tidak dapat dibatalkan.",
