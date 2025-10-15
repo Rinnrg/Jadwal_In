@@ -57,7 +57,7 @@ export default function EntryNilaiPage() {
       updatedAt: new Date().toISOString(),
     }
 
-    let subjects = []
+    let subjects: typeof dummyManajemenProyek[] = []
 
     if (session.role === "kaprodi") {
       subjects = useSubjectsStore.getState().subjects.filter((subject) => subject.status === "aktif")
