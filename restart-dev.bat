@@ -1,0 +1,13 @@
+@echo off
+cd /d "c:\Users\ASUS\Desktop\jadwalim"
+echo Killing existing Node processes...
+taskkill /f /im node.exe 2>nul
+
+echo Removing .next cache...
+if exist .next rmdir /s /q .next
+
+echo Installing dependencies...
+npm install
+
+echo Starting development server...
+npm run dev

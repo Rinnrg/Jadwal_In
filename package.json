@@ -46,6 +46,7 @@
     "cmdk": "latest",
     "date-fns": "latest",
     "date-fns-tz": "latest",
+    "embla-carousel-react": "^8.6.0",
     "framer-motion": "^12.23.22",
     "geist": "latest",
     "immer": "latest",
