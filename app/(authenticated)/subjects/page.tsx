@@ -6,9 +6,7 @@ import { useSubjectsStore } from "@/stores/subjects.store"
 import { canAccessSubjects, canEditSubject } from "@/lib/rbac"
 import type { Subject } from "@/data/schema"
 import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Badge } from "@/components/ui/badge"
-import { Input } from "@/components/ui/input"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { SubjectForm } from "@/components/subjects/SubjectForm"
 import { SubjectTable } from "@/components/subjects/SubjectTable"
 import {
@@ -16,14 +14,12 @@ import {
   ArrowLeft,
   BookOpen,
   Users,
-  Clock,
-  Award,
-  Search,
-  Filter,
-  Sparkles,
-  TrendingUp,
   Activity,
   Target,
+  Award,
+  Clock,
+  TrendingUp,
+  Sparkles,
 } from "lucide-react"
 
 export default function SubjectsPage() {
@@ -31,7 +27,6 @@ export default function SubjectsPage() {
   const { subjects } = useSubjectsStore()
   const [showForm, setShowForm] = useState(false)
   const [editingSubject, setEditingSubject] = useState<Subject | null>(null)
-  const [searchQuery, setSearchQuery] = useState("")
 
   if (!session || !canAccessSubjects(session.role)) {
     return (
@@ -66,12 +61,12 @@ export default function SubjectsPage() {
     return (
       <div className="space-y-8 animate-fade-in">
         <div className="flex items-center space-x-6 animate-slide-in-left">
-          <Button variant="ghost" onClick={handleCancel} className="button-modern">
+          <Button variant="ghost" onClick={handleCancel} className="button-modern cursor-pointer">
             <ArrowLeft className="h-5 w-5 mr-2" />
             Kembali
           </Button>
           <div>
-            <h1 className="text-4xl font-bold tracking-tight gradient-primary bg-clip-text text-transparent">
+            <h1 className="text-4xl font-bold tracking-tight">
               {editingSubject ? "Edit Mata Kuliah" : "Tambah Mata Kuliah"}
             </h1>
             <p className="text-muted-foreground text-lg mt-2">
@@ -97,17 +92,11 @@ export default function SubjectsPage() {
         : 0,
   }
 
-  const filteredSubjects = subjects.filter(
-    (subject) =>
-      subject.nama.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      subject.kode.toLowerCase().includes(searchQuery.toLowerCase()),
-  )
-
   return (
-    <div className="space-y-8 animate-fade-in max-w-7xl mx-auto">
+    <div className="space-y-8 animate-fade-in max-w-7xl mx-auto pb-16">
       <div className="flex items-center justify-between animate-slide-up">
         <div>
-          <h1 className="text-5xl font-bold tracking-tight gradient-primary bg-clip-text text-transparent animate-float">
+          <h1 className="text-5xl font-bold tracking-tight animate-float">
             Mata Kuliah
           </h1>
           <p className="text-muted-foreground text-xl mt-2 animate-slide-in-left" style={{ animationDelay: "0.1s" }}>
@@ -117,7 +106,7 @@ export default function SubjectsPage() {
         {canEditSubject(session.role) && (
           <Button
             onClick={() => setShowForm(true)}
-            className="button-modern gradient-primary text-white px-6 py-3 rounded-xl shadow-lg animate-slide-in-right"
+            className="px-6 py-3 rounded-xl shadow-lg animate-slide-in-right cursor-pointer"
           >
             <Plus className="h-5 w-5 mr-2" />
             Tambah Mata Kuliah
@@ -187,47 +176,7 @@ export default function SubjectsPage() {
         </Card>
       </div>
 
-      <Card
-        className="glass-effect border-2 border-primary/20 card-interactive animate-slide-up"
-        style={{ animationDelay: "0.3s" }}
-      >
-        <CardHeader>
-          <div className="flex items-center justify-between">
-            <div>
-              <CardTitle className="flex items-center space-x-3 text-2xl">
-                <Sparkles className="h-6 w-6 text-primary animate-pulse" />
-                <span>Daftar Mata Kuliah</span>
-              </CardTitle>
-              <CardDescription className="text-base mt-2">Kelola dan pantau mata kuliah program studi</CardDescription>
-            </div>
-            <Badge variant="secondary" className="px-4 py-2 text-sm">
-              {filteredSubjects.length} mata kuliah
-            </Badge>
-          </div>
-
-          <div className="flex items-center space-x-4 mt-6">
-            <div className="relative flex-1 max-w-md">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-              <Input
-                placeholder="Cari mata kuliah..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-10 h-12 border-2 border-primary/20 focus:border-primary/50"
-              />
-            </div>
-            <Button
-              variant="outline"
-              className="button-modern border-2 border-primary/20 hover:border-primary/50 bg-transparent"
-            >
-              <Filter className="h-4 w-4 mr-2" />
-              Filter
-            </Button>
-          </div>
-        </CardHeader>
-        <CardContent>
-          <SubjectTable onEdit={canEditSubject(session.role) ? handleEdit : undefined} />
-        </CardContent>
-      </Card>
+      <SubjectTable onEdit={canEditSubject(session.role) ? handleEdit : undefined} />
     </div>
   )
 }

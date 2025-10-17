@@ -6,14 +6,13 @@ import { useSessionStore } from "@/stores/session.store"
 import { useNavigation } from "@/hooks/useNavigation"
 import { Button } from "@/components/ui/button"
 import { UserMenu } from "@/components/layout/UserMenu"
-import { Moon, Sun, Monitor, ChevronRight, Search, Bell, Sparkles } from "lucide-react"
-import { useTheme } from "next-themes"
+import { ChevronRight, Search, Bell, Sparkles } from "lucide-react"
+import ThemeSwitcher from "@/src/components/landing/theme-switcher"
 import Link from "next/link"
 import { useState, useEffect } from "react"
 
 export function Topbar() {
   const { session } = useSessionStore()
-  const { theme, setTheme } = useTheme()
   const { getBreadcrumbs, getPageTitle } = useNavigation()
   const [searchFocused, setSearchFocused] = useState(false)
   const [mounted, setMounted] = useState(false)
@@ -21,29 +20,6 @@ export function Topbar() {
   useEffect(() => {
     setMounted(true)
   }, [])
-
-  const toggleTheme = () => {
-    if (theme === "light") {
-      setTheme("dark")
-    } else if (theme === "dark") {
-      setTheme("system")
-    } else {
-      setTheme("light")
-    }
-  }
-
-  const getThemeIcon = () => {
-    if (!mounted) return <Monitor className="h-4 w-4" />
-
-    switch (theme) {
-      case "light":
-        return <Sun className="h-4 w-4" />
-      case "dark":
-        return <Moon className="h-4 w-4" />
-      default:
-        return <Monitor className="h-4 w-4" />
-    }
-  }
 
   const breadcrumbs = getBreadcrumbs()
 
@@ -81,18 +57,7 @@ export function Topbar() {
         </div>
 
         <div className="flex items-center space-x-3">
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={toggleTheme}
-            className="h-9 w-9 rounded-lg hover:bg-accent/10 dark:hover:bg-accent/20 transition-all duration-300 relative overflow-hidden group"
-            title={`Current theme: ${theme}. Click to switch.`}
-          >
-            <div className="transition-transform duration-300 group-hover:rotate-12 group-hover:scale-110">
-              {getThemeIcon()}
-            </div>
-            <div className="absolute inset-0 rounded-lg bg-gradient-to-r from-blue-500/0 via-purple-500/0 to-pink-500/0 group-hover:from-blue-500/10 group-hover:via-purple-500/10 group-hover:to-pink-500/10 transition-all duration-500" />
-          </Button>
+          <ThemeSwitcher />
 
           {session && <UserMenu />}
         </div>

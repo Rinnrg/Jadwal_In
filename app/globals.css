@@ -160,6 +160,8 @@
     -moz-text-size-adjust: 100%;
     -ms-text-size-adjust: 100%;
     text-size-adjust: 100%;
+    /* Fix scrollbar width calculation */
+    scrollbar-gutter: stable;
   }
   
   body {
@@ -175,6 +177,17 @@
     text-size-adjust: 100%;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
+  }
+  
+  /* Fix for Radix UI adding padding when modal/popover opens */
+  body[style*="padding-right"] {
+    padding-right: 0px !important;
+  }
+  
+  /* Prevent layout shift when modals/popovers open */
+  body[data-scroll-locked] {
+    margin-right: 0 !important;
+    padding-right: 0 !important;
   }
 
 

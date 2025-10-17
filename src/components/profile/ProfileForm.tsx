@@ -17,8 +17,6 @@ import { showSuccess, showError } from "@/lib/alerts"
 const profileFormSchema = z.object({
   kelas: z.string().min(1, "Kelas harus diisi").optional(), // Added kelas field validation
   prodi: z.string().optional(),
-  bio: z.string().optional(),
-  website: z.string().url("URL tidak valid").optional().or(z.literal("")),
 })
 
 type ProfileFormData = z.infer<typeof profileFormSchema>
@@ -63,8 +61,6 @@ export function ProfileForm({ profile, onSuccess }: ProfileFormProps) {
     defaultValues: {
       kelas: profile?.kelas || "", // Added kelas default value
       prodi: profile?.prodi || "",
-      bio: profile?.bio || "",
-      website: profile?.website || "",
     },
   })
 
@@ -77,8 +73,6 @@ export function ProfileForm({ profile, onSuccess }: ProfileFormProps) {
         angkatan: angkatan, // Use calculated angkatan from email
         kelas: data.kelas || "A", // Default kelas to "A" if empty for mahasiswa
         prodi: data.prodi || undefined,
-        bio: data.bio || undefined,
-        website: data.website || undefined,
         avatarUrl: profile?.avatarUrl,
       }
 
@@ -168,7 +162,7 @@ export function ProfileForm({ profile, onSuccess }: ProfileFormProps) {
                   disabled
                   className="bg-muted"
                 />
-                <p className="text-xs text-muted-foreground">Angkatan diambil dari email</p>
+                <p className="text-xs text-muted-foreground">Angkatan tidak dapat diubah</p>
               </div>
 
               {session.role === "mahasiswa" && (
@@ -187,24 +181,6 @@ export function ProfileForm({ profile, onSuccess }: ProfileFormProps) {
               <div className="space-y-2 md:col-span-2">
                 <Label htmlFor="prodi">Program Studi</Label>
                 <Input id="prodi" placeholder="Contoh: Teknik Informatika" {...form.register("prodi")} />
-              </div>
-
-              <div className="space-y-2 md:col-span-2">
-                <Label htmlFor="website">Website/Portfolio</Label>
-                <Input id="website" type="url" placeholder="https://..." {...form.register("website")} />
-                {form.formState.errors.website && (
-                  <p className="text-sm text-destructive">{form.formState.errors.website.message}</p>
-                )}
-              </div>
-
-              <div className="space-y-2 md:col-span-2">
-                <Label htmlFor="bio">Bio</Label>
-                <Textarea
-                  id="bio"
-                  placeholder="Ceritakan sedikit tentang diri Anda..."
-                  rows={3}
-                  {...form.register("bio")}
-                />
               </div>
             </div>
 

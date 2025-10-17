@@ -15,6 +15,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { ColorPicker } from "@/components/subjects/ColorPicker"
 import { showSuccess, showError, confirmAction } from "@/lib/alerts"
 import { parseTimeToMinutes, minutesToTimeString } from "@/lib/time"
+import { ActivityLogger } from "@/lib/activity-logger"
 import { AlertTriangle } from "lucide-react"
 
 const scheduleFormSchema = z
@@ -127,9 +128,17 @@ export function ScheduleForm({ userId, event, onSuccess, onCancel, defaultDay }:
       if (event) {
         updateEvent(event.id, eventData)
         showSuccess("Jadwal berhasil diperbarui")
+        
+        // Log activity
+        const courseName = selectedSubject ? `${selectedSubject.kode} - ${selectedSubject.nama}` : "Jadwal Pribadi"
+        ActivityLogger.scheduleUpdated(userId, courseName)
       } else {
         addEvent(eventData)
         showSuccess("Jadwal berhasil ditambahkan")
+        
+        // Log activity
+        const courseName = selectedSubject ? `${selectedSubject.kode} - ${selectedSubject.nama}` : "Jadwal Pribadi"
+        ActivityLogger.scheduleAdded(userId, courseName)
       }
       onSuccess?.()
     } catch (error) {

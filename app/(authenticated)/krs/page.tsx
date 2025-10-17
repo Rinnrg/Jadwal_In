@@ -11,6 +11,7 @@ import { KrsPicker } from "@/components/krs/KrsPicker"
 import { KrsTable } from "@/components/krs/KrsTable"
 import { Trash2, Download } from "lucide-react"
 import { confirmAction, showSuccess } from "@/lib/alerts"
+import { ActivityLogger } from "@/lib/activity-logger"
 
 export default function KrsPage() {
   const { session } = useSessionStore()
@@ -44,6 +45,9 @@ export default function KrsPage() {
     if (confirmed) {
       clearKrsByUserAndTerm(session.id, currentTerm)
       showSuccess("Semua mata kuliah berhasil dihapus dari KRS")
+      
+      // Log activity
+      ActivityLogger.krsCleared(session.id)
     }
   }
 

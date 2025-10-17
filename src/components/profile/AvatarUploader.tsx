@@ -69,7 +69,7 @@ export function AvatarUploader({ currentAvatar, userName, onAvatarChange, disabl
   const handleCropComplete = (croppedImage: string) => {
     setPreviewUrl(croppedImage)
     onAvatarChange(croppedImage)
-    showSuccess("Avatar berhasil diperbarui dan disimpan")
+    showSuccess("Foto profil berhasil di-crop dan disimpan!")
     setCropDialogOpen(false)
     setSelectedImage(null)
   }

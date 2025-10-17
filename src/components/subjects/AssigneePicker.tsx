@@ -1,13 +1,8 @@
 "use client"
 
-import { useState, useEffect } from "react"
-import { Check, ChevronsUpDown, X } from "lucide-react"
-import { Button } from "@/components/ui/button"
-import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command"
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
-import { Badge } from "@/components/ui/badge"
+import { useEffect } from "react"
 import { useUsersStore, seedInitialUsers } from "@/stores/users.store"
-import { cn } from "@/lib/utils"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 
 interface AssigneePickerProps {
   value: string[]
@@ -16,74 +11,61 @@ interface AssigneePickerProps {
 }
 
 export function AssigneePicker({ value, onChange, placeholder = "Pilih dosen pengampu..." }: AssigneePickerProps) {
-  const [open, setOpen] = useState(false)
   const { users, getDosenUsers } = useUsersStore()
 
   useEffect(() => {
-    if (users.length === 0) {
+    // Always ensure initial users are seeded
+    const dosenCount = users.filter(u => u.role === "dosen").length
+    if (dosenCount === 0) {
       seedInitialUsers()
     }
-  }, [users.length])
+  }, [users])
 
   const dosenUsers = getDosenUsers()
-  const selectedUsers = dosenUsers.filter((user) => value.includes(user.id))
+  const selectedDosenId = value.length > 0 ? value[0] : ""
+  const selectedDosen = dosenUsers.find(user => user.id === selectedDosenId)
 
-  const handleSelect = (userId: string) => {
-    if (value.includes(userId)) {
-      onChange(value.filter((id) => id !== userId))
+  const handleValueChange = (dosenId: string) => {
+    if (dosenId === "none") {
+      onChange([])
     } else {
-      onChange([...value, userId])
+      onChange([dosenId])
     }
-  }
-
-  const handleRemove = (userId: string) => {
-    onChange(value.filter((id) => id !== userId))
   }
 
   return (
     <div className="space-y-2">
-      <Popover open={open} onOpenChange={setOpen}>
-        <PopoverTrigger asChild>
-          <Button
-            variant="outline"
-            role="combobox"
-            aria-expanded={open}
-            className="w-full justify-between bg-transparent"
-          >
-            {selectedUsers.length > 0 ? `${selectedUsers.length} dosen dipilih` : placeholder}
-            <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-          </Button>
-        </PopoverTrigger>
-        <PopoverContent className="w-full p-0">
-          <Command>
-            <CommandInput placeholder="Cari dosen..." />
-            <CommandList>
-              <CommandEmpty>Tidak ada dosen ditemukan.</CommandEmpty>
-              <CommandGroup>
-                {dosenUsers.map((user) => (
-                  <CommandItem key={user.id} value={user.name} onSelect={() => handleSelect(user.id)}>
-                    <Check className={cn("mr-2 h-4 w-4", value.includes(user.id) ? "opacity-100" : "opacity-0")} />
-                    <div>
-                      <p className="font-medium">{user.name}</p>
-                      <p className="text-sm text-muted-foreground">{user.email}</p>
-                    </div>
-                  </CommandItem>
-                ))}
-              </CommandGroup>
-            </CommandList>
-          </Command>
-        </PopoverContent>
-      </Popover>
+      <Select value={selectedDosenId || "none"} onValueChange={handleValueChange}>
+        <SelectTrigger className="w-full">
+          <SelectValue placeholder={placeholder}>
+            {selectedDosen ? selectedDosen.name : placeholder}
+          </SelectValue>
+        </SelectTrigger>
+        <SelectContent>
+          <SelectItem value="none">
+            <span className="text-muted-foreground">Tidak ada dosen</span>
+          </SelectItem>
+          {dosenUsers.length === 0 ? (
+            <SelectItem value="empty" disabled>
+              <span className="text-amber-600">Belum ada data dosen</span>
+            </SelectItem>
+          ) : (
+            dosenUsers.map((user) => (
+              <SelectItem key={user.id} value={user.id}>
+                <div className="flex flex-col">
+                  <span className="font-medium">{user.name}</span>
+                  <span className="text-xs text-muted-foreground">{user.email}</span>
+                </div>
+              </SelectItem>
+            ))
+          )}
+        </SelectContent>
+      </Select>
 
-      {selectedUsers.length > 0 && (
-        <div className="flex flex-wrap gap-2">
-          {selectedUsers.map((user) => (
-            <Badge key={user.id} variant="secondary" className="flex items-center gap-1">
-              {user.name}
-              <X className="h-3 w-3 cursor-pointer hover:text-destructive" onClick={() => handleRemove(user.id)} />
-            </Badge>
-          ))}
-        </div>
+      {dosenUsers.length === 0 && (
+        <p className="text-sm text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-900/20 p-3 rounded-lg border border-amber-200 dark:border-amber-800">
+          ⚠️ Belum ada data dosen. Data dosen akan ditambahkan secara otomatis saat halaman dimuat ulang.
+        </p>
       )}
     </div>
   )

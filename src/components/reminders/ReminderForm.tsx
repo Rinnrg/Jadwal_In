@@ -14,6 +14,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { showSuccess, showError } from "@/lib/alerts"
 import { toUTC, toZoned } from "@/lib/time"
+import { ActivityLogger } from "@/lib/activity-logger"
 
 const reminderFormSchema = z.object({
   title: z.string().min(1, "Judul pengingat wajib diisi"),
@@ -69,9 +70,15 @@ export function ReminderForm({ userId, reminder, onSuccess, onCancel }: Reminder
       if (reminder) {
         updateReminder(reminder.id, reminderData)
         showSuccess("Pengingat berhasil diperbarui")
+        
+        // Log activity
+        ActivityLogger.reminderUpdated(userId, data.title)
       } else {
         addReminder(reminderData)
         showSuccess("Pengingat berhasil ditambahkan")
+        
+        // Log activity
+        ActivityLogger.reminderCreated(userId, data.title)
       }
 
       onSuccess?.()

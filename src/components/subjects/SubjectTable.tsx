@@ -8,9 +8,8 @@ import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Input } from "@/components/ui/input"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { MoreHorizontal, Edit, Trash2, Search, Archive, ArchiveRestore } from "lucide-react"
+import { Card, CardContent } from "@/components/ui/card"
+import { Edit, Trash2, Search } from "lucide-react"
 import { confirmAction, showSuccess } from "@/lib/alerts"
 import { arr } from "@/lib/utils"
 
@@ -19,10 +18,9 @@ interface SubjectTableProps {
 }
 
 export function SubjectTable({ onEdit }: SubjectTableProps) {
-  const { subjects, deleteSubject, updateSubject } = useSubjectsStore()
+  const { subjects, deleteSubject } = useSubjectsStore()
   const { getUserById } = useUsersStore()
   const [searchTerm, setSearchTerm] = useState("")
-  const [statusFilter, setStatusFilter] = useState<"all" | "aktif" | "arsip">("all")
   const [angkatanFilter, setAngkatanFilter] = useState("")
   const [kelasFilter, setKelasFilter] = useState("")
 
@@ -35,11 +33,10 @@ export function SubjectTable({ onEdit }: SubjectTableProps) {
       subject.nama.toLowerCase().includes(searchTerm.toLowerCase()) ||
       subject.prodi?.toLowerCase().includes(searchTerm.toLowerCase())
 
-    const matchesStatus = statusFilter === "all" || subject.status === statusFilter
     const matchesAngkatan = !angkatanFilter || subject.angkatan?.toString() === angkatanFilter
     const matchesKelas = !kelasFilter || subject.kelas?.toLowerCase() === kelasFilter.toLowerCase()
 
-    return matchesSearch && matchesStatus && matchesAngkatan && matchesKelas
+    return matchesSearch && matchesAngkatan && matchesKelas
   })
 
   const handleDelete = async (subject: Subject) => {
@@ -53,26 +50,6 @@ export function SubjectTable({ onEdit }: SubjectTableProps) {
       deleteSubject(subject.id)
       showSuccess("Mata kuliah berhasil dihapus")
     }
-  }
-
-  const handleToggleStatus = async (subject: Subject) => {
-    const newStatus = subject.status === "aktif" ? "arsip" : "aktif"
-    const action = newStatus === "arsip" ? "mengarsipkan" : "mengaktifkan"
-
-    const confirmed = await confirmAction(
-      `${action === "mengarsipkan" ? "Arsipkan" : "Aktifkan"} Mata Kuliah`,
-      `Apakah Anda yakin ingin ${action} mata kuliah "${subject.nama}"?`,
-      `Ya, ${action === "mengarsipkan" ? "Arsipkan" : "Aktifkan"}`,
-    )
-
-    if (confirmed) {
-      updateSubject(subject.id, { status: newStatus })
-      showSuccess(`Mata kuliah berhasil ${action === "mengarsipkan" ? "diarsipkan" : "diaktifkan"}`)
-    }
-  }
-
-  const getStatusBadge = (status: Subject["status"]) => {
-    return status === "aktif" ? <Badge variant="default">Aktif</Badge> : <Badge variant="secondary">Arsip</Badge>
   }
 
   const renderPengampuChips = (pengampuIds: string[]) => {
@@ -102,12 +79,13 @@ export function SubjectTable({ onEdit }: SubjectTableProps) {
 
   return (
     <Card>
-      <CardHeader>
-        <CardTitle>Daftar Mata Kuliah</CardTitle>
-        <CardDescription>Kelola mata kuliah dalam katalog program studi</CardDescription>
-      </CardHeader>
-      <CardContent>
-        <div className="space-y-4 mb-6">
+      <CardContent className="pt-6">
+        <div className="space-y-6">
+          <div>
+            <h2 className="text-2xl font-bold tracking-tight">Daftar Mata Kuliah</h2>
+            <p className="text-muted-foreground">Kelola mata kuliah dalam katalog program studi</p>
+          </div>
+          
           <div className="flex flex-col sm:flex-row gap-4">
             <div className="relative flex-1">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
@@ -118,32 +96,6 @@ export function SubjectTable({ onEdit }: SubjectTableProps) {
                 className="pl-10"
               />
             </div>
-            <div className="flex gap-2">
-              <Button
-                variant={statusFilter === "all" ? "default" : "outline"}
-                size="sm"
-                onClick={() => setStatusFilter("all")}
-                className="hover:scale-105 transition-transform duration-200"
-              >
-                Semua
-              </Button>
-              <Button
-                variant={statusFilter === "aktif" ? "default" : "outline"}
-                size="sm"
-                onClick={() => setStatusFilter("aktif")}
-                className="hover:scale-105 transition-transform duration-200"
-              >
-                Aktif
-              </Button>
-              <Button
-                variant={statusFilter === "arsip" ? "default" : "outline"}
-                size="sm"
-                onClick={() => setStatusFilter("arsip")}
-                className="hover:scale-105 transition-transform duration-200"
-              >
-                Arsip
-              </Button>
-            </div>
           </div>
 
           <div className="flex flex-col sm:flex-row gap-4">
@@ -151,7 +103,7 @@ export function SubjectTable({ onEdit }: SubjectTableProps) {
               <select
                 value={angkatanFilter}
                 onChange={(e) => setAngkatanFilter(e.target.value)}
-                className="w-full px-3 py-2 border border-input bg-background rounded-md text-sm"
+                className="w-full px-3 py-2 border border-input bg-background rounded-md text-sm cursor-pointer"
                 aria-label="Filter berdasarkan angkatan"
               >
                 <option value="">Semua Angkatan</option>
@@ -166,7 +118,7 @@ export function SubjectTable({ onEdit }: SubjectTableProps) {
               <select
                 value={kelasFilter}
                 onChange={(e) => setKelasFilter(e.target.value)}
-                className="w-full px-3 py-2 border border-input bg-background rounded-md text-sm"
+                className="w-full px-3 py-2 border border-input bg-background rounded-md text-sm cursor-pointer"
                 aria-label="Filter berdasarkan kelas"
               >
                 <option value="">Semua Kelas</option>
@@ -178,12 +130,11 @@ export function SubjectTable({ onEdit }: SubjectTableProps) {
               </select>
             </div>
           </div>
-        </div>
 
-        {filteredSubjects.length === 0 ? (
+          {filteredSubjects.length === 0 ? (
           <div className="text-center py-8">
             <p className="text-muted-foreground">
-              {searchTerm || statusFilter !== "all" || angkatanFilter || kelasFilter
+              {searchTerm || angkatanFilter || kelasFilter
                 ? "Tidak ada mata kuliah yang sesuai dengan filter"
                 : "Belum ada mata kuliah. Tambahkan mata kuliah pertama Anda."}
             </p>
@@ -200,8 +151,6 @@ export function SubjectTable({ onEdit }: SubjectTableProps) {
                   <TableHead>Angkatan</TableHead>
                   <TableHead>Kelas</TableHead>
                   <TableHead>Pengampu</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead>Warna</TableHead>
                   <TableHead className="w-[50px]"></TableHead>
                 </TableRow>
               </TableHeader>
@@ -209,7 +158,7 @@ export function SubjectTable({ onEdit }: SubjectTableProps) {
                 {filteredSubjects.map((subject, index) => (
                   <TableRow
                     key={subject.id}
-                    className="hover:bg-muted/50 transition-all duration-300 hover:shadow-md hover:scale-[1.01] animate-slide-in-left group"
+                    className="hover:bg-muted/50 transition-colors duration-200 animate-slide-in-left"
                     style={{ animationDelay: `${index * 0.05}s` }}
                   >
                     <TableCell className="font-medium">{subject.kode}</TableCell>
@@ -224,7 +173,7 @@ export function SubjectTable({ onEdit }: SubjectTableProps) {
                     <TableCell>{subject.angkatan || "—"}</TableCell>
                     <TableCell>
                       {subject.kelas ? (
-                        <Badge variant="outline" className="hover:scale-110 transition-transform duration-200">
+                        <Badge variant="outline">
                           {subject.kelas}
                         </Badge>
                       ) : (
@@ -232,47 +181,26 @@ export function SubjectTable({ onEdit }: SubjectTableProps) {
                       )}
                     </TableCell>
                     <TableCell>{renderPengampuChips(subject.pengampuIds)}</TableCell>
-                    <TableCell>{getStatusBadge(subject.status)}</TableCell>
                     <TableCell>
-                      <div
-                        className="w-6 h-6 rounded-full border hover:scale-125 transition-transform duration-200 cursor-pointer shadow-md"
-                        style={{ backgroundColor: subject.color }}
-                      />
-                    </TableCell>
-                    <TableCell>
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button
-                            variant="ghost"
-                            className="h-8 w-8 p-0 hover:scale-110 transition-transform duration-200"
-                          >
-                            <MoreHorizontal className="h-4 w-4" />
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                          <DropdownMenuItem onClick={() => onEdit?.(subject)}>
-                            <Edit className="mr-2 h-4 w-4" />
-                            Edit
-                          </DropdownMenuItem>
-                          <DropdownMenuItem onClick={() => handleToggleStatus(subject)}>
-                            {subject.status === "aktif" ? (
-                              <>
-                                <Archive className="mr-2 h-4 w-4" />
-                                Arsipkan
-                              </>
-                            ) : (
-                              <>
-                                <ArchiveRestore className="mr-2 h-4 w-4" />
-                                Aktifkan
-                              </>
-                            )}
-                          </DropdownMenuItem>
-                          <DropdownMenuItem onClick={() => handleDelete(subject)} className="text-destructive">
-                            <Trash2 className="mr-2 h-4 w-4" />
-                            Hapus
-                          </DropdownMenuItem>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
+                      <div className="flex items-center gap-2">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="h-8 px-3 cursor-pointer hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors duration-200"
+                          onClick={() => onEdit?.(subject)}
+                        >
+                          <Edit className="h-4 w-4 mr-1.5" />
+                          Edit
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="h-8 w-8 p-0 cursor-pointer hover:bg-destructive/10 text-destructive transition-colors duration-200"
+                          onClick={() => handleDelete(subject)}
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </div>
                     </TableCell>
                   </TableRow>
                 ))}
@@ -280,6 +208,7 @@ export function SubjectTable({ onEdit }: SubjectTableProps) {
             </Table>
           </div>
         )}
+      </div>
       </CardContent>
     </Card>
   )

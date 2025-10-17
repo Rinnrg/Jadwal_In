@@ -63,7 +63,7 @@ export default function RemindersPage() {
             <h1 className="text-3xl font-bold tracking-tight">
               {editingReminder ? "Edit Pengingat" : "Tambah Pengingat"}
             </h1>
-            <p className="text-muted-foreground">
+            <p className="text-gray-900 dark:text-gray-100 font-bold">
               {editingReminder ? "Perbarui informasi pengingat" : "Buat pengingat baru untuk tugas atau kegiatan"}
             </p>
           </div>
@@ -84,7 +84,7 @@ export default function RemindersPage() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold tracking-tight">Pengingat</h1>
-          <p className="text-muted-foreground">Kelola pengingat tugas dan kegiatan Anda</p>
+          <p className="text-gray-900 dark:text-gray-100 font-bold">Kelola pengingat tugas dan kegiatan Anda</p>
         </div>
         <div className="flex items-center space-x-2">
           <Button variant="outline" onClick={handleClearAll} disabled={activeReminders.length === 0}>
@@ -103,33 +103,33 @@ export default function RemindersPage() {
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Total Aktif</CardTitle>
-            <Bell className="h-4 w-4 text-muted-foreground" />
+            <Bell className="h-4 w-4 text-blue-500" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{activeReminders.length}</div>
-            <p className="text-xs text-muted-foreground">Pengingat aktif</p>
+            <div className="text-2xl font-bold text-blue-600 dark:text-blue-400">{activeReminders.length}</div>
+            <p className="text-xs text-gray-700 dark:text-gray-300 font-semibold">Pengingat aktif</p>
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Mendatang (24j)</CardTitle>
-            <CheckCircle className="h-4 w-4 text-muted-foreground" />
+            <CheckCircle className="h-4 w-4 text-green-500" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{upcomingReminders.length}</div>
-            <p className="text-xs text-muted-foreground">Dalam 24 jam</p>
+            <div className="text-2xl font-bold text-green-600 dark:text-green-400">{upcomingReminders.length}</div>
+            <p className="text-xs text-gray-700 dark:text-gray-300 font-semibold">Dalam 24 jam</p>
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Terlambat</CardTitle>
-            <AlertTriangle className="h-4 w-4 text-muted-foreground" />
+            <AlertTriangle className="h-4 w-4 text-red-500" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-destructive">{overdueReminders.length}</div>
-            <p className="text-xs text-muted-foreground">Perlu perhatian</p>
+            <p className="text-xs text-gray-700 dark:text-gray-300 font-semibold">Perlu perhatian</p>
           </CardContent>
         </Card>
       </div>
@@ -151,8 +151,8 @@ export default function RemindersPage() {
               {upcomingReminders.slice(0, 3).map((reminder) => (
                 <div key={reminder.id} className="flex items-center justify-between p-2 bg-white/50 rounded-md">
                   <div>
-                    <p className="font-medium">{reminder.title}</p>
-                    <p className="text-sm text-muted-foreground">{new Date(reminder.dueUTC).toLocaleString("id-ID")}</p>
+                    <p className="font-medium text-gray-800 dark:text-gray-200">{reminder.title}</p>
+                    <p className="text-sm text-gray-600 dark:text-gray-400 font-medium">{new Date(reminder.dueUTC).toLocaleString("id-ID")}</p>
                   </div>
                   <Button variant="ghost" size="sm" onClick={() => handleEdit(reminder)}>
                     Edit
@@ -160,7 +160,7 @@ export default function RemindersPage() {
                 </div>
               ))}
               {upcomingReminders.length > 3 && (
-                <p className="text-sm text-muted-foreground text-center">
+                <p className="text-sm text-gray-600 dark:text-gray-400 font-medium text-center">
                   +{upcomingReminders.length - 3} pengingat lainnya
                 </p>
               )}
@@ -186,8 +186,8 @@ export default function RemindersPage() {
               {overdueReminders.slice(0, 3).map((reminder) => (
                 <div key={reminder.id} className="flex items-center justify-between p-2 bg-white/50 rounded-md">
                   <div>
-                    <p className="font-medium">{reminder.title}</p>
-                    <p className="text-sm text-muted-foreground">{new Date(reminder.dueUTC).toLocaleString("id-ID")}</p>
+                    <p className="font-medium text-gray-800 dark:text-gray-200">{reminder.title}</p>
+                    <p className="text-sm text-gray-600 dark:text-gray-400 font-medium">{new Date(reminder.dueUTC).toLocaleString("id-ID")}</p>
                   </div>
                   <Button variant="ghost" size="sm" onClick={() => handleEdit(reminder)}>
                     Edit
@@ -195,7 +195,7 @@ export default function RemindersPage() {
                 </div>
               ))}
               {overdueReminders.length > 3 && (
-                <p className="text-sm text-muted-foreground text-center">
+                <p className="text-sm text-gray-600 dark:text-gray-400 font-medium text-center">
                   +{overdueReminders.length - 3} pengingat lainnya
                 </p>
               )}

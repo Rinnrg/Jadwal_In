@@ -12,6 +12,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Trash2, Calendar } from "lucide-react"
 import { confirmAction, showSuccess } from "@/lib/alerts"
 import { fmtDateTime } from "@/lib/time"
+import { ActivityLogger } from "@/lib/activity-logger"
 
 interface KrsTableProps {
   userId: string
@@ -48,6 +49,9 @@ export function KrsTable({ userId, term, onScheduleSuggestion }: KrsTableProps) 
     if (confirmed) {
       removeKrsItem(krsItem.id)
       showSuccess(`${displayName} berhasil dihapus dari KRS`)
+      
+      // Log activity
+      ActivityLogger.krsRemoved(userId, displayName)
     }
   }
 

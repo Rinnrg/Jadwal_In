@@ -12,6 +12,7 @@ import { MoreHorizontal, Edit, Trash2, Copy, MapPin, ExternalLink } from "lucide
 import { confirmAction, showSuccess } from "@/lib/alerts"
 import { fmt24, nowUTC } from "@/lib/time"
 import { cn } from "@/lib/utils"
+import { ActivityLogger } from "@/lib/activity-logger"
 
 interface ScheduleGridProps {
   userId: string
@@ -46,6 +47,9 @@ export function ScheduleGrid({ userId, onEditEvent, onAddEvent }: ScheduleGridPr
     if (confirmed) {
       deleteEvent(event.id)
       showSuccess("Jadwal berhasil dihapus")
+      
+      // Log activity
+      ActivityLogger.scheduleDeleted(userId, eventName)
     }
   }
 

@@ -9,12 +9,12 @@ export default function Hero() {
   const router = useRouter();
   const [isNavigating, setIsNavigating] = useState(false);
 
-  const handleNavigateToLogin = async () => {
+  const handleNavigateToDashboard = async () => {
     setIsNavigating(true);
     
     // Delay untuk menampilkan animasi loading
     setTimeout(() => {
-      router.push('/login');
+      router.push('/dashboard');
     }, 800);
   };
 
@@ -66,7 +66,7 @@ export default function Hero() {
               className="relative group"
             >
               <Button 
-                onClick={handleNavigateToLogin}
+                onClick={handleNavigateToDashboard}
                 disabled={isNavigating}
                 className="relative overflow-hidden shadow-lg bg-gradient-to-r from-[#4285F4] via-[#4285F4] to-[#3367D6] hover:from-[#3367D6] hover:via-[#4285F4] hover:to-[#5AA3F5] text-white border-0 px-8 py-3 transition-all duration-300 hover:shadow-2xl hover:shadow-[#4285F4]/25 disabled:opacity-70"
               >

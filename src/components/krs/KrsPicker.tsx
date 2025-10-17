@@ -13,6 +13,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Search, Plus, Users } from "lucide-react"
 import { showSuccess, showError } from "@/lib/alerts"
+import { ActivityLogger } from "@/lib/activity-logger"
 
 interface KrsPickerProps {
   userId: string
@@ -70,6 +71,11 @@ export function KrsPicker({ userId, term }: KrsPickerProps) {
       addKrsItem(userId, offering.subjectId, term, offering.id)
       const subject = getSubjectById(offering.subjectId)
       showSuccess(`${subject?.nama} (Kelas ${offering.kelas}) berhasil ditambahkan ke KRS`)
+      
+      // Log activity
+      if (subject) {
+        ActivityLogger.krsAdded(userId, `${subject.kode} - ${subject.nama}`, subject.sks)
+      }
     } catch (error) {
       showError("Gagal menambahkan mata kuliah ke KRS")
     }

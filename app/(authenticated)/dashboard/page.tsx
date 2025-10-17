@@ -2,6 +2,9 @@
 
 import { useSessionStore } from "@/stores/session.store"
 import { useProfileStore } from "@/stores/profile.store"
+import { useActivityStore } from "@/stores/activity.store"
+import { useScheduleStore } from "@/stores/schedule.store"
+import { useSubjectsStore } from "@/stores/subjects.store"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
@@ -21,13 +24,24 @@ import {
   CheckCircle,
   AlertCircle,
   Star,
+  Edit,
+  Trash2,
+  Upload,
+  Download,
+  User,
+  FileText,
 } from "lucide-react"
 import { useState, useEffect } from "react"
 import Link from "next/link"
+import { formatDistanceToNow } from "date-fns"
+import { id as idLocale } from "date-fns/locale"
 
 export default function DashboardPage() {
   const { session } = useSessionStore()
   const { getProfile, profiles } = useProfileStore()
+  const { getActivitiesByUser } = useActivityStore()
+  const { getEventsByDay } = useScheduleStore()
+  const { getSubjectById } = useSubjectsStore()
   const [currentTime, setCurrentTime] = useState(new Date())
 
   useEffect(() => {
@@ -148,18 +162,102 @@ export default function DashboardPage() {
   const celestialPos = getCelestialPosition()
   const isSunTime = currentTime.getHours() >= 5 && currentTime.getHours() < 18
 
-  const quickActions = [
-    { title: "Buat Jadwal", icon: Calendar, href: "/schedule", color: "text-blue-500" },
-    { title: "Tambah Mata Kuliah", icon: BookOpen, href: "/subjects", color: "text-green-500" },
-    { title: "Lihat KRS", icon: Users, href: "/krs", color: "text-purple-500" },
-    { title: "Pengingat", icon: Bell, href: "/reminders", color: "text-orange-500" },
-  ]
+  // Get today's schedule
+  const currentDayOfWeek = currentTime.getDay()
+  const todayEvents = getEventsByDay(session.id, currentDayOfWeek)
+  
+  // Format time helper
+  const formatTime = (utcMinutes: number) => {
+    const hours = Math.floor(utcMinutes / 60)
+    const minutes = utcMinutes % 60
+    return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`
+  }
+  
+  // Get color classes for event
+  const getEventColorClasses = (color?: string) => {
+    const colorMap: Record<string, { bg: string; border: string; dot: string }> = {
+      blue: { 
+        bg: "bg-blue-50 dark:bg-blue-950/20", 
+        border: "border-blue-200 dark:border-blue-800",
+        dot: "bg-blue-500"
+      },
+      green: { 
+        bg: "bg-green-50 dark:bg-green-950/20", 
+        border: "border-green-200 dark:border-green-800",
+        dot: "bg-green-500"
+      },
+      purple: { 
+        bg: "bg-purple-50 dark:bg-purple-950/20", 
+        border: "border-purple-200 dark:border-purple-800",
+        dot: "bg-purple-500"
+      },
+      orange: { 
+        bg: "bg-orange-50 dark:bg-orange-950/20", 
+        border: "border-orange-200 dark:border-orange-800",
+        dot: "bg-orange-500"
+      },
+      red: { 
+        bg: "bg-red-50 dark:bg-red-950/20", 
+        border: "border-red-200 dark:border-red-800",
+        dot: "bg-red-500"
+      },
+      yellow: { 
+        bg: "bg-yellow-50 dark:bg-yellow-950/20", 
+        border: "border-yellow-200 dark:border-yellow-800",
+        dot: "bg-yellow-500"
+      },
+    }
+    return colorMap[color || "blue"] || colorMap.blue
+  }
 
-  const recentActivities = [
-    { title: "Jadwal Algoritma ditambahkan", time: "2 jam lalu", icon: CheckCircle, color: "text-green-500" },
-    { title: "Reminder tugas diperbarui", time: "4 jam lalu", icon: Bell, color: "text-blue-500" },
-    { title: "KRS semester baru dibuka", time: "1 hari lalu", icon: Star, color: "text-yellow-500" },
-  ]
+  // Quick actions based on user role
+  const quickActions = session.role === "mahasiswa" 
+    ? [
+        { title: "Lihat Jadwal", icon: Calendar, href: "/jadwal", color: "text-blue-500" },
+        { title: "Lihat KRS", icon: Users, href: "/krs", color: "text-purple-500" },
+        { title: "Kehadiran", icon: CheckCircle, href: "/kehadiran", color: "text-green-500" },
+        { title: "Pengingat", icon: Bell, href: "/reminders", color: "text-orange-500" },
+      ]
+    : [
+        { title: "Buat Jadwal", icon: Calendar, href: "/jadwal", color: "text-blue-500" },
+        { title: "Tambah Mata Kuliah", icon: BookOpen, href: "/subjects", color: "text-green-500" },
+        { title: "Kelola KRS", icon: Users, href: "/krs", color: "text-purple-500" },
+        { title: "Pengingat", icon: Bell, href: "/reminders", color: "text-orange-500" },
+      ]
+
+  // Get icon component from icon name string
+  const getIconComponent = (iconName: string) => {
+    const icons: Record<string, any> = {
+      Calendar,
+      BookOpen,
+      Users,
+      Clock,
+      CheckCircle,
+      Bell,
+      Star,
+      Plus,
+      Edit,
+      Trash2,
+      Upload,
+      Download,
+      User,
+      FileText,
+      AlertCircle,
+      Activity,
+    }
+    return icons[iconName] || Star
+  }
+
+  // Get user activities from store
+  const userActivities = session ? getActivitiesByUser(session.id, 5) : []
+  
+  // Format activities for display
+  const recentActivities = userActivities.map((activity: any) => ({
+    title: activity.title,
+    time: formatDistanceToNow(activity.timestamp, { addSuffix: true, locale: idLocale }),
+    icon: getIconComponent(activity.icon),
+    color: activity.color,
+  }))
 
   return (
     <div className="space-y-6 animate-fade-in w-full max-w-none overflow-x-hidden">
@@ -174,7 +272,7 @@ export default function DashboardPage() {
           } transition-all duration-1000`}></div>
           
           {/* Fade gradient overlay - gelap di kiri (teks terlihat), terang di kanan (tata surya terlihat) */}
-          <div className="absolute inset-0 bg-gradient-to-r from-background/100 via-background/30 to-transparent dark:from-background/90 dark:via-background/70 dark:to-transparent"></div>
+          <div className="absolute inset-0 bg-gradient-to-r from-background/95 via-background/40 to-transparent dark:from-background/85 dark:via-background/60 dark:to-transparent md:from-background/100 md:via-background/30 md:dark:from-background/90 md:dark:via-background/70"></div>
           
           {/* Horizon line */}
           <div className="absolute bottom-0 left-0 right-0 h-1/3 bg-gradient-to-t from-green-200/40 via-green-100/20 to-transparent dark:from-green-950/30 dark:via-green-900/15 dark:to-transparent"></div>
@@ -191,9 +289,9 @@ export default function DashboardPage() {
             </svg>
           </div>
           
-          {/* Celestial body (Sun/Moon) - Positioned in background */}
+          {/* Celestial body (Sun/Moon) - Positioned in background, hidden on mobile */}
           <div 
-            className="absolute right-8 top-1/2 transition-all duration-500 ease-out z-0"
+            className="hidden md:block absolute right-8 top-1/2 transition-all duration-500 ease-out z-0"
             style={{
               transform: `translate(${celestialPos.x}%, calc(-50% + ${celestialPos.y}%))`,
             }}
@@ -249,21 +347,21 @@ export default function DashboardPage() {
             )}
           </div>
           
-          {/* Clouds for daytime - scattered across card */}
+          {/* Clouds for daytime - scattered across card, hidden on mobile */}
           {isSunTime && (
-            <div className="absolute inset-0 pointer-events-none z-0">
+            <div className="hidden md:block absolute inset-0 pointer-events-none z-0">
               <div className="absolute top-12 right-32 w-24 h-10 bg-white/50 dark:bg-gray-400/20 rounded-full blur-sm animate-float"></div>
               <div className="absolute top-24 right-64 w-20 h-8 bg-white/40 dark:bg-gray-400/15 rounded-full blur-sm animate-float" style={{ animationDelay: "0.5s" }}></div>
               <div className="absolute bottom-20 right-48 w-28 h-12 bg-white/45 dark:bg-gray-400/18 rounded-full blur-sm animate-float" style={{ animationDelay: "1s" }}></div>
             </div>
           )}
           
-          <CardContent className="pt-6 relative z-10">
-            <div className="flex flex-col items-start space-y-3.5">
+          <CardContent className="pt-6 relative z-10 px-4 md:px-6">
+            <div className="flex flex-col items-start space-y-3.5 w-full">
                 {/* Tanggal */}
                 <div className="flex items-center space-x-2 text-muted-foreground animate-slide-in-left transition-colors duration-500">
-                  <Calendar className="h-4 w-4" />
-                  <p className="text-sm md:text-base">
+                  <Calendar className="h-4 w-4 flex-shrink-0" />
+                  <p className="text-sm md:text-base break-words">
                     {currentTime.toLocaleDateString("id-ID", {
                       weekday: "long",
                       year: "numeric",
@@ -279,16 +377,16 @@ export default function DashboardPage() {
                   {getGreeting()}
                 </p>
                 
-                {/* Foto Profile - diperbesar */}
-                <Avatar className="h-28 w-28 border-4 border-primary/20 shadow-lg animate-scale-in transition-all duration-500">
+                {/* Foto Profile - diperbesar, lebih visible di mobile */}
+                <Avatar className="h-24 w-24 md:h-28 md:w-28 border-4 border-primary/20 shadow-lg animate-scale-in transition-all duration-500">
                   <AvatarImage src={avatarUrl} alt={session.name} />
-                  <AvatarFallback className={`text-3xl font-bold bg-gradient-to-br ${timeColors.gradient} text-white transition-all duration-1000`}>
+                  <AvatarFallback className={`text-2xl md:text-3xl font-bold bg-gradient-to-br ${timeColors.gradient} text-white transition-all duration-1000`}>
                     {getInitials(session.name)}
                   </AvatarFallback>
                 </Avatar>
                 
                 {/* Nama */}
-                <h2 className="text-2xl md:text-3xl font-bold text-foreground animate-slide-in-left transition-colors duration-500">
+                <h2 className="text-xl md:text-2xl lg:text-3xl font-bold text-foreground animate-slide-in-left transition-colors duration-500 break-words max-w-full">
                   {session.name.split(" (")[0]}
                 </h2>
                 
@@ -325,11 +423,11 @@ export default function DashboardPage() {
             <Calendar className="h-6 w-6 text-blue-500 group-hover:scale-125 transition-transform duration-300" />
           </CardHeader>
           <CardContent>
-            <div className="text-4xl font-bold text-blue-600 mb-2">3</div>
-            <p className="text-sm text-muted-foreground">Kelas tersedia</p>
+            <div className="text-4xl font-bold text-blue-600 mb-2">{todayEvents.length}</div>
+            <p className="text-sm text-muted-foreground">{todayEvents.length === 1 ? 'Kelas tersedia' : 'Kelas tersedia'}</p>
             <div className="mt-3 flex items-center text-xs text-blue-600">
-              <TrendingUp className="h-3 w-3 mr-1" />
-              +2 dari kemarin
+              <Target className="h-3 w-3 mr-1" />
+              {todayEvents.length === 0 ? 'Tidak ada kelas' : `${todayEvents.length} jadwal aktif`}
             </div>
           </CardContent>
         </Card>
@@ -399,22 +497,24 @@ export default function DashboardPage() {
             </CardTitle>
             <CardDescription>Akses cepat ke fitur utama</CardDescription>
           </CardHeader>
-          <CardContent className="space-y-3">
-            {quickActions.map((action, index) => (
-              <Link key={action.href} href={action.href}>
-                <Button
-                  variant="ghost"
-                  className="w-full justify-between p-4 h-auto button-modern border border-primary/10 hover:border-primary/30"
-                  style={{ animationDelay: `${index * 0.1}s` }}
-                >
-                  <div className="flex items-center space-x-3">
-                    <action.icon className={`h-5 w-5 ${action.color}`} />
-                    <span className="font-medium">{action.title}</span>
-                  </div>
-                  <ArrowRight className="h-4 w-4" />
-                </Button>
-              </Link>
-            ))}
+          <CardContent className="space-y-4">
+            <div className="space-y-3">
+              {quickActions.map((action, index) => (
+                <Link key={action.href} href={action.href}>
+                  <Button
+                    variant="ghost"
+                    className="w-full justify-between p-4 h-auto button-modern border border-primary/10 hover:border-primary/30"
+                    style={{ animationDelay: `${index * 0.1}s` }}
+                  >
+                    <div className="flex items-center space-x-3">
+                      <action.icon className={`h-5 w-5 ${action.color}`} />
+                      <span className="font-medium">{action.title}</span>
+                    </div>
+                    <ArrowRight className="h-4 w-4" />
+                  </Button>
+                </Link>
+              ))}
+            </div>
           </CardContent>
         </Card>
 
@@ -427,19 +527,28 @@ export default function DashboardPage() {
             <CardDescription>Aktivitas terbaru Anda</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
-            {recentActivities.map((activity, index) => (
-              <div
-                key={index}
-                className="flex items-start space-x-3 p-3 rounded-lg hover:bg-muted/50 transition-all duration-200 animate-slide-in-left"
-                style={{ animationDelay: `${index * 0.1}s` }}
-              >
-                <activity.icon className={`h-5 w-5 mt-0.5 ${activity.color}`} />
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium">{activity.title}</p>
-                  <p className="text-xs text-muted-foreground">{activity.time}</p>
-                </div>
+            {recentActivities.length === 0 ? (
+              <div className="text-center py-8">
+                <p className="text-sm text-muted-foreground">Belum ada aktivitas.</p>
+                <p className="text-xs text-muted-foreground mt-1">
+                  Mulai menambahkan jadwal, KRS, atau pengingat untuk melihat aktivitas Anda di sini.
+                </p>
               </div>
-            ))}
+            ) : (
+              recentActivities.map((activity, index) => (
+                <div
+                  key={index}
+                  className="flex items-start space-x-3 p-3 rounded-lg hover:bg-muted/50 transition-all duration-200 animate-slide-in-left"
+                  style={{ animationDelay: `${index * 0.1}s` }}
+                >
+                  <activity.icon className={`h-5 w-5 mt-0.5 ${activity.color}`} />
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium">{activity.title}</p>
+                    <p className="text-xs text-muted-foreground">{activity.time}</p>
+                  </div>
+                </div>
+              ))
+            )}
           </CardContent>
         </Card>
 
@@ -452,30 +561,39 @@ export default function DashboardPage() {
             <CardDescription>Jadwal hari ini</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div className="space-y-3">
-              <div className="flex items-center space-x-3 p-3 rounded-lg bg-blue-50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-800">
-                <div className="w-3 h-3 rounded-full bg-blue-500 animate-pulse" />
-                <div className="flex-1">
-                  <p className="text-sm font-medium">Algoritma & Struktur Data</p>
-                  <p className="text-xs text-muted-foreground">08:00 - 10:00</p>
-                </div>
+            {todayEvents.length === 0 ? (
+              <div className="text-center py-8">
+                <p className="text-sm text-muted-foreground">Tidak ada jadwal hari ini.</p>
+                <p className="text-xs text-muted-foreground mt-1">
+                  Tambahkan jadwal kuliah Anda di halaman Jadwal.
+                </p>
               </div>
-              <div className="flex items-center space-x-3 p-3 rounded-lg bg-green-50 dark:bg-green-950/20 border border-green-200 dark:border-green-800">
-                <div className="w-3 h-3 rounded-full bg-green-500 animate-pulse" />
-                <div className="flex-1">
-                  <p className="text-sm font-medium">Database Systems</p>
-                  <p className="text-xs text-muted-foreground">10:30 - 12:30</p>
-                </div>
+            ) : (
+              <div className="space-y-3">
+                {todayEvents.map((event) => {
+                  const subject = event.subjectId ? getSubjectById(event.subjectId) : null
+                  const eventColors = getEventColorClasses(event.color || subject?.color)
+                  const title = subject?.nama || "Event"
+                  
+                  return (
+                    <div 
+                      key={event.id}
+                      className={`flex items-center space-x-3 p-3 rounded-lg ${eventColors.bg} border ${eventColors.border}`}
+                    >
+                      <div className={`w-3 h-3 rounded-full ${eventColors.dot} animate-pulse`} />
+                      <div className="flex-1">
+                        <p className="text-sm font-medium">{title}</p>
+                        <p className="text-xs text-muted-foreground">
+                          {formatTime(event.startUTC)} - {formatTime(event.endUTC)}
+                          {event.location && ` • ${event.location}`}
+                        </p>
+                      </div>
+                    </div>
+                  )
+                })}
               </div>
-              <div className="flex items-center space-x-3 p-3 rounded-lg bg-purple-50 dark:bg-purple-950/20 border border-purple-200 dark:border-purple-800">
-                <div className="w-3 h-3 rounded-full bg-purple-500 animate-pulse" />
-                <div className="flex-1">
-                  <p className="text-sm font-medium">Web Development</p>
-                  <p className="text-xs text-muted-foreground">14:00 - 16:00</p>
-                </div>
-              </div>
-            </div>
-            <Link href="/schedule">
+            )}
+            <Link href="/jadwal">
               <Button className="w-full button-modern">
                 View Full Schedule
                 <ArrowRight className="h-4 w-4 ml-2" />

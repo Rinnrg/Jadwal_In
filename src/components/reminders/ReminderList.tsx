@@ -14,6 +14,7 @@ import { MoreHorizontal, Edit, Trash2, Search, Clock, AlertTriangle, CheckCircle
 import { confirmAction, showSuccess } from "@/lib/alerts"
 import { fmtDateTime, nowUTC } from "@/lib/time"
 import { cn } from "@/lib/utils"
+import { ActivityLogger } from "@/lib/activity-logger"
 
 interface ReminderListProps {
   userId: string
@@ -71,12 +72,20 @@ export function ReminderList({ userId, onEdit }: ReminderListProps) {
     if (confirmed) {
       deleteReminder(reminder.id)
       showSuccess("Pengingat berhasil dihapus")
+      
+      // Log activity
+      ActivityLogger.reminderDeleted(userId, reminder.title)
     }
   }
 
   const handleToggle = (reminder: Reminder) => {
     toggleReminder(reminder.id)
     showSuccess(`Pengingat ${reminder.isActive ? "dinonaktifkan" : "diaktifkan"}`)
+    
+    // Log activity for completion
+    if (!reminder.isActive) {
+      ActivityLogger.reminderCompleted(userId, reminder.title)
+    }
   }
 
   const getReminderStatus = (reminder: Reminder) => {

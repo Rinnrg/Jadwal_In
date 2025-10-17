@@ -9,7 +9,6 @@ import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Switch } from "@/components/ui/switch"
-import { ColorPicker } from "@/components/subjects/ColorPicker"
 import { AssigneePicker } from "@/components/subjects/AssigneePicker"
 import type { Subject } from "@/data/schema"
 import { useSubjectsStore } from "@/stores/subjects.store"
@@ -21,17 +20,16 @@ const subjectFormSchema = z
     kode: z.string().min(1, "Kode mata kuliah wajib diisi"),
     nama: z.string().min(1, "Nama mata kuliah wajib diisi"),
     sks: z.number().min(1, "SKS minimal 1").max(6, "SKS maksimal 6"),
-    semester: z.number().min(1, "Semester minimal 1").max(8, "Semester maksimal 8"),
     prodi: z.string().optional(),
-    status: z.enum(["aktif", "arsip"]),
     angkatan: z.number().min(2020, "Angkatan minimal 2020"),
     kelas: z.string().min(1, "Kelas wajib diisi"),
     color: z.string(),
-    pengampuIds: z.array(z.string()).default([]),
+    pengampuIds: z.array(z.string()),
     hasDefaultSlot: z.boolean(),
     defaultDay: z.number().min(0).max(6).optional(),
     defaultStartTime: z.string().optional(),
     defaultEndTime: z.string().optional(),
+    defaultRuang: z.string().optional(),
   })
   .refine(
     (data) => {
@@ -56,6 +54,22 @@ interface SubjectFormProps {
 
 const dayNames = ["Minggu", "Senin", "Selasa", "Rabu", "Kamis", "Jumat", "Sabtu"]
 
+// Preset colors for subjects
+const subjectColors = [
+  "#3b82f6", // blue
+  "#10b981", // green
+  "#8b5cf6", // purple
+  "#f59e0b", // amber
+  "#ef4444", // red
+  "#06b6d4", // cyan
+  "#ec4899", // pink
+  "#84cc16", // lime
+]
+
+const getRandomColor = () => {
+  return subjectColors[Math.floor(Math.random() * subjectColors.length)]
+}
+
 export function SubjectForm({ subject, onSuccess, onCancel }: SubjectFormProps) {
   const { subjects, addSubject, updateSubject } = useSubjectsStore()
 
@@ -65,14 +79,12 @@ export function SubjectForm({ subject, onSuccess, onCancel }: SubjectFormProps) 
       kode: subject?.kode || "",
       nama: subject?.nama || "",
       sks: subject?.sks || 3,
-      semester: subject?.semester || 1,
       prodi: subject?.prodi || "",
-      status: subject?.status || "aktif",
       angkatan: subject?.angkatan || 2024,
       kelas: subject?.kelas || "",
-      color: subject?.color || "#3b82f6",
+      color: subject?.color || getRandomColor(),
       pengampuIds: subject?.pengampuIds || [],
-      hasDefaultSlot: !!subject?.slotDefault,
+      hasDefaultSlot: subject ? !!subject?.slotDefault : true,
       defaultDay: subject?.slotDefault?.day,
       defaultStartTime: subject?.slotDefault
         ? minutesToTimeString(Math.floor(subject.slotDefault.startUTC / (1000 * 60)) % (24 * 60))
@@ -80,6 +92,7 @@ export function SubjectForm({ subject, onSuccess, onCancel }: SubjectFormProps) 
       defaultEndTime: subject?.slotDefault
         ? minutesToTimeString(Math.floor(subject.slotDefault.endUTC / (1000 * 60)) % (24 * 60))
         : "",
+      defaultRuang: subject?.slotDefault?.ruang || "",
     },
   })
 
@@ -98,9 +111,9 @@ export function SubjectForm({ subject, onSuccess, onCancel }: SubjectFormProps) 
       kode: data.kode,
       nama: data.nama,
       sks: data.sks,
-      semester: data.semester,
+      semester: 1, // default semester
       prodi: data.prodi,
-      status: data.status,
+      status: "aktif", // default status
       angkatan: data.angkatan,
       kelas: data.kelas,
       color: data.color,
@@ -111,6 +124,7 @@ export function SubjectForm({ subject, onSuccess, onCancel }: SubjectFormProps) 
               day: data.defaultDay,
               startUTC: parseTimeToMinutes(data.defaultStartTime) * 60 * 1000,
               endUTC: parseTimeToMinutes(data.defaultEndTime) * 60 * 1000,
+              ruang: data.defaultRuang,
             }
           : undefined,
     }
@@ -165,38 +179,8 @@ export function SubjectForm({ subject, onSuccess, onCancel }: SubjectFormProps) 
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="semester">Semester</Label>
-              <Input
-                id="semester"
-                type="number"
-                min="1"
-                max="8"
-                {...form.register("semester", { valueAsNumber: true })}
-              />
-              {form.formState.errors.semester && (
-                <p className="text-sm text-destructive">{form.formState.errors.semester.message}</p>
-              )}
-            </div>
-
-            <div className="space-y-2">
               <Label htmlFor="prodi">Program Studi</Label>
               <Input id="prodi" placeholder="Contoh: Teknik Informatika" {...form.register("prodi")} />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="status">Status</Label>
-              <Select
-                value={form.watch("status")}
-                onValueChange={(value) => form.setValue("status", value as "aktif" | "arsip")}
-              >
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="aktif">Aktif</SelectItem>
-                  <SelectItem value="arsip">Arsip</SelectItem>
-                </SelectContent>
-              </Select>
             </div>
 
             <div className="space-y-2">
@@ -216,60 +200,74 @@ export function SubjectForm({ subject, onSuccess, onCancel }: SubjectFormProps) 
             </div>
           </div>
 
-          <div className="space-y-2">
+          <div className="space-y-2 pt-2">
             <Label>Dosen Pengampu</Label>
             <AssigneePicker
               value={form.watch("pengampuIds")}
               onChange={(value) => form.setValue("pengampuIds", value)}
               placeholder="Pilih dosen pengampu..."
             />
-            <p className="text-sm text-muted-foreground">Pilih dosen yang berhak mengelola mata kuliah ini</p>
+            <p className="text-sm text-muted-foreground">
+              Pilih satu dosen yang bertanggung jawab mengelola mata kuliah ini
+            </p>
           </div>
 
-          <div className="space-y-2">
-            <Label>Warna</Label>
-            <ColorPicker value={form.watch("color")} onChange={(color) => form.setValue("color", color)} />
-          </div>
-
-          <div className="space-y-4">
+          <div className="space-y-4 pt-4 border-t">
             <div className="flex items-center space-x-2">
               <Switch
                 id="hasDefaultSlot"
                 checked={form.watch("hasDefaultSlot")}
                 onCheckedChange={(checked) => form.setValue("hasDefaultSlot", checked)}
               />
-              <Label htmlFor="hasDefaultSlot">Jadwal Default</Label>
+              <Label htmlFor="hasDefaultSlot" className="text-base font-semibold">Jadwal Default</Label>
             </div>
+            <p className="text-sm text-muted-foreground -mt-2">
+              Atur waktu default untuk mata kuliah ini
+            </p>
 
             {form.watch("hasDefaultSlot") && (
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 p-4 border rounded-lg">
-                <div className="space-y-2">
-                  <Label>Hari</Label>
-                  <Select
-                    value={form.watch("defaultDay")?.toString()}
-                    onValueChange={(value) => form.setValue("defaultDay", Number.parseInt(value))}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Pilih hari" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {dayNames.map((day, index) => (
-                        <SelectItem key={index} value={index.toString()}>
-                          {day}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+              <div className="space-y-4 p-6 border-2 rounded-lg bg-muted/30 mt-4">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div className="space-y-2">
+                    <Label>Hari</Label>
+                    <Select
+                      value={form.watch("defaultDay")?.toString()}
+                      onValueChange={(value) => form.setValue("defaultDay", Number.parseInt(value))}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Pilih hari" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {dayNames.map((day, index) => (
+                          <SelectItem key={index} value={index.toString()}>
+                            {day}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label>Jam Mulai</Label>
+                    <Input type="time" {...form.register("defaultStartTime")} />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label>Jam Selesai</Label>
+                    <Input type="time" {...form.register("defaultEndTime")} />
+                  </div>
                 </div>
 
                 <div className="space-y-2">
-                  <Label>Jam Mulai</Label>
-                  <Input type="time" {...form.register("defaultStartTime")} />
-                </div>
-
-                <div className="space-y-2">
-                  <Label>Jam Selesai</Label>
-                  <Input type="time" {...form.register("defaultEndTime")} />
+                  <Label htmlFor="defaultRuang">Ruang</Label>
+                  <Input 
+                    id="defaultRuang" 
+                    placeholder="Contoh: Lab Komputer 1, Ruang 301" 
+                    {...form.register("defaultRuang")} 
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    Lokasi/ruang default untuk mata kuliah ini
+                  </p>
                 </div>
               </div>
             )}

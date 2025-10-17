@@ -74,6 +74,7 @@ export function getMenuItems(role: UserSession["role"]): ExtendedRouteConfig[] {
       },
     ],
     kaprodi: [
+      { path: APP_ROUTES.SUBJECTS, title: "Mata Kuliah", icon: "library", requiresAuth: true },
       {
         path: "#",
         title: "Perkuliahan",
@@ -86,7 +87,6 @@ export function getMenuItems(role: UserSession["role"]): ExtendedRouteConfig[] {
           { path: APP_ROUTES.GRADE_ENTRY, title: "Entry Nilai", icon: "edit", requiresAuth: true },
         ]
       },
-      { path: APP_ROUTES.SUBJECTS, title: "Mata Kuliah", icon: "book", requiresAuth: true },
     ],
   }
 

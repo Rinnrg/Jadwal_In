@@ -66,7 +66,11 @@ export const useUsersStore = create<UsersState>()(
 // Seed some initial dosen users if store is empty
 export const seedInitialUsers = () => {
   const store = useUsersStore.getState()
-  if (store.users.length === 0) {
+  const dosenUsers = store.users.filter(u => u.role === "dosen")
+  
+  // Only seed if there are no dosen users
+  if (dosenUsers.length === 0) {
+    console.log("Seeding initial dosen users...")
     store.addUser({
       name: "Dr. Ahmad Wijaya",
       email: "ahmad.wijaya@university.ac.id",
@@ -82,5 +86,16 @@ export const seedInitialUsers = () => {
       email: "budi.santoso@university.ac.id",
       role: "dosen",
     })
+    store.addUser({
+      name: "Dr. Rina Kusuma",
+      email: "rina.kusuma@university.ac.id",
+      role: "dosen",
+    })
+    store.addUser({
+      name: "Prof. Muhammad Hasan",
+      email: "muhammad.hasan@university.ac.id",
+      role: "dosen",
+    })
+    console.log("Initial dosen users seeded successfully")
   }
 }

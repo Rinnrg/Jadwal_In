@@ -22,6 +22,7 @@ import {
   X,
   ChevronDown,
   Monitor,
+  Library,
 } from "lucide-react"
 import { useState } from "react"
 import { motion, AnimatePresence } from "framer-motion"
@@ -37,6 +38,7 @@ const iconMap = {
   edit: Edit,
   users: Users,
   monitor: Monitor,
+  library: Library,
 }
 
 export function Sidebar() {
@@ -70,13 +72,14 @@ export function Sidebar() {
       <button
         onClick={() => setDrawerOpen(!drawerOpen)}
         className="
-          fixed z-[110] top-4 left-4 p-3 rounded-xl
+          fixed z-[110] top-1/2 -translate-y-1/2 left-4 p-3 rounded-xl
           sm:hidden
-          bg-white/95 dark:bg-gray-900/95 backdrop-blur-md border border-gray-200/50 dark:border-gray-700/50 shadow-lg
-          hover:bg-white dark:hover:bg-gray-900 hover:shadow-xl hover:scale-105
+          bg-transparent
+          hover:scale-105
           active:scale-95
           transition-all duration-300 ease-out
         "
+        style={{ top: '2rem' }}
         title="Menu"
         aria-label="Toggle menu"
       >

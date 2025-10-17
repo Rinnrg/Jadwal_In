@@ -53,6 +53,7 @@ export const SubjectSchema = z.object({
       day: z.number().min(0).max(6),
       startUTC: z.number(),
       endUTC: z.number(),
+      ruang: z.string().optional(), // Added ruang field for default location
     })
     .optional(),
 })

@@ -354,7 +354,7 @@
 
   /* New gradient backgrounds for modern look */
   .gradient-primary {
-    background: linear-gradient(135deg, #f59e0b 0%, #fbbf24 100%);
+    background: linear-gradient(135deg, #1e40af 0%, #7c3aed 100%);
   }
 
   .dark .gradient-primary {
