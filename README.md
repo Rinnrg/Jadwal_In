@@ -1,4 +1,4 @@
-🚀 Jadwal_In: Sistem Manajemen Jadwal Akademik Modern
+## 🚀 Jadwal_In: Sistem Manajemen Jadwal Akademik Modern
 
 [![Build Status](https://img.shields.io/badge/Status-Active-brightgreen)](https://github.com/your-username/your-repo-name)
 [![Latest Release](https://img.shields.io/badge/Version-1.0.0-blue)](https://github.com/your-username/your-repo-name/releases)
