@@ -9,7 +9,7 @@ export interface ExtendedRouteConfig extends RouteConfig {
 
 // Role-based access control helpers
 export function canAccessSubjects(role: UserSession["role"]): boolean {
-  return role === "kaprodi"
+  return role === "kaprodi" || role === "super_admin"
 }
 
 export function canAccessKRS(role: UserSession["role"]): boolean {
@@ -21,19 +21,23 @@ export function canAccessKHS(role: UserSession["role"]): boolean {
 }
 
 export function canAccessAttendance(role: UserSession["role"]): boolean {
-  return role === "dosen" || role === "kaprodi"
+  return role === "dosen" || role === "kaprodi" || role === "super_admin"
 }
 
 export function canAccessEntryNilai(role: UserSession["role"]): boolean {
-  return role === "dosen" || role === "kaprodi"
+  return role === "dosen" || role === "kaprodi" || role === "super_admin"
 }
 
 export function canEditSubject(role: UserSession["role"]): boolean {
-  return role === "kaprodi"
+  return role === "kaprodi" || role === "super_admin"
 }
 
 export function canEditGrades(role: UserSession["role"]): boolean {
-  return role === "dosen"
+  return role === "dosen" || role === "super_admin"
+}
+
+export function canAccessRoleManagement(role: UserSession["role"]): boolean {
+  return role === "super_admin"
 }
 
 // Get available menu items based on role
@@ -44,7 +48,7 @@ export function getMenuItems(role: UserSession["role"]): ExtendedRouteConfig[] {
     { path: APP_ROUTES.REMINDERS, title: "Pengingat", icon: "bell", requiresAuth: true },
   ]
 
-  const roleSpecificItems = {
+  const roleSpecificItems: Record<UserSession["role"], ExtendedRouteConfig[]> = {
     mahasiswa: [
       {
         path: "#",
@@ -87,6 +91,22 @@ export function getMenuItems(role: UserSession["role"]): ExtendedRouteConfig[] {
           { path: APP_ROUTES.GRADE_ENTRY, title: "Entry Nilai", icon: "edit", requiresAuth: true },
         ]
       },
+    ],
+    super_admin: [
+      { path: APP_ROUTES.SUBJECTS, title: "Mata Kuliah", icon: "library", requiresAuth: true },
+      {
+        path: "#",
+        title: "Perkuliahan",
+        icon: "book",
+        requiresAuth: true,
+        isDropdown: true,
+        children: [
+          { path: APP_ROUTES.ASYNCHRONOUS, title: "Asynchronous", icon: "monitor", requiresAuth: true },
+          { path: APP_ROUTES.ATTENDANCE, title: "Kehadiran", icon: "users", requiresAuth: true },
+          { path: APP_ROUTES.GRADE_ENTRY, title: "Entry Nilai", icon: "edit", requiresAuth: true },
+        ]
+      },
+      { path: APP_ROUTES.ROLE_MANAGEMENT, title: "Role Management", icon: "user-cog", requiresAuth: true },
     ],
   }
 

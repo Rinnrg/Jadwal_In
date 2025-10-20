@@ -11,6 +11,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { useSessionStore } from "@/stores/session.store"
+import { useUsersStore } from "@/stores/users.store"
 import { showError } from "@/lib/alerts"
 import { Check, Mail, Lock, Eye, EyeOff, ArrowRight, CheckCircle } from "lucide-react"
 import { ButtonLoading } from "@/components/ui/loading"
@@ -18,14 +19,24 @@ import { ButtonLoading } from "@/components/ui/loading"
 const loginSchema = z.object({
   email: z.string()
     .email("Format email tidak valid")
-    .regex(/^[a-zA-Z]+\.\d{5}@(mhs|dsn|kpd)\.[a-zA-Z]+\.ac\.id$/, "Email harus dari instansi anda"),
+    .refine((email) => {
+      // Allow super admin email
+      if (email === "gacor@unesa.ac.id") return true
+      // Check regular format for other users
+      return /^[a-zA-Z]+\.\d{5}@(mhs|dsn|kpd)\.[a-zA-Z]+\.ac\.id$/.test(email)
+    }, "Email harus dari instansi anda"),
   password: z.string().min(1, "Kata sandi wajib diisi"),
 })
 
 type LoginForm = z.infer<typeof loginSchema>
 
 // Function to determine role from email
-const getRoleFromEmail = (email: string): "kaprodi" | "dosen" | "mahasiswa" | null => {
+const getRoleFromEmail = (email: string): "kaprodi" | "dosen" | "mahasiswa" | "super_admin" | null => {
+  // Check for super admin email
+  if (email === "gacor@unesa.ac.id") {
+    return "super_admin"
+  }
+  
   const emailParts = email.split('@')
   if (emailParts.length < 2) return null
   
@@ -46,6 +57,11 @@ const getRoleFromEmail = (email: string): "kaprodi" | "dosen" | "mahasiswa" | nu
 
 // Function to generate user name from email
 const generateNameFromEmail = (email: string, role: string): string => {
+  // Super admin has a special name
+  if (role === 'super_admin') {
+    return 'Super Administrator'
+  }
+  
   const emailParts = email.split('@')[0]
   const [nama, nim] = emailParts.split('.')
   
@@ -68,6 +84,7 @@ const generateNameFromEmail = (email: string, role: string): string => {
 export function LoginCard() {
   const router = useRouter()
   const { setSession } = useSessionStore()
+  const { users } = useUsersStore()
   const [isLoading, setIsLoading] = useState(false)
   const [showSuccess, setShowSuccess] = useState(false)
   const [showPassword, setShowPassword] = useState(false)
@@ -91,20 +108,50 @@ export function LoginCard() {
       // Simulate API call delay
       await new Promise((resolve) => setTimeout(resolve, 1500))
 
-      // Determine role from email
-      const role = getRoleFromEmail(data.email)
+      // Check if user exists in users store
+      const existingUser = users.find(u => u.email === data.email)
       
-      if (!role) {
-        showError("Format email tidak dikenali.")
-        return
-      }
+      let user
+      
+      if (existingUser) {
+        // User exists in store - use stored data
+        // For super admin, validate password
+        if (existingUser.role === 'super_admin') {
+          if (data.password !== 'gacorkang') {
+            setIsLoading(false)
+            showError("Password super admin salah.")
+            return
+          }
+        }
+        // For other users, validate password if stored
+        else if (existingUser.password && existingUser.password !== data.password) {
+          setIsLoading(false)
+          showError("Password salah.")
+          return
+        }
+        
+        user = {
+          id: existingUser.id,
+          email: existingUser.email,
+          name: existingUser.name,
+          role: existingUser.role,
+        }
+      } else {
+        // User doesn't exist - auto-register from email
+        const role = getRoleFromEmail(data.email)
+        
+        if (!role) {
+          setIsLoading(false)
+          showError("Format email tidak dikenali.")
+          return
+        }
 
-      // Create user object from email
-      const user = {
-        id: Date.now().toString(),
-        email: data.email,
-        name: generateNameFromEmail(data.email, role),
-        role: role,
+        user = {
+          id: Date.now().toString(),
+          email: data.email,
+          name: generateNameFromEmail(data.email, role),
+          role: role,
+        }
       }
 
       // Show success animation
@@ -122,10 +169,10 @@ export function LoginCard() {
           role: user.role,
         })
         router.push("/dashboard")
+        setIsLoading(false)
       }, 1000)
     } catch (error) {
       showError("Terjadi kesalahan saat login")
-    } finally {
       setIsLoading(false)
     }
   }

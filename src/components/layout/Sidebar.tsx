@@ -23,6 +23,8 @@ import {
   ChevronDown,
   Monitor,
   Library,
+  UserCog,
+  Settings,
 } from "lucide-react"
 import { useState } from "react"
 import { motion, AnimatePresence } from "framer-motion"
@@ -39,6 +41,8 @@ const iconMap = {
   users: Users,
   monitor: Monitor,
   library: Library,
+  "user-cog": UserCog,
+  settings: Settings,
 }
 
 export function Sidebar() {
