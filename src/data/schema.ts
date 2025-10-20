@@ -6,7 +6,7 @@ export const UserSessionSchema = z.object({
   email: z.string().email(),
   name: z.string(),
   image: z.string().optional(),
-  role: z.enum(["mahasiswa", "dosen", "kaprodi"]),
+  role: z.enum(["mahasiswa", "dosen", "kaprodi", "super_admin"]),
 })
 
 export type UserSession = z.infer<typeof UserSessionSchema>
@@ -16,7 +16,8 @@ export const UserSchema = z.object({
   id: z.string(),
   name: z.string(),
   email: z.string().email(),
-  role: z.enum(["mahasiswa", "dosen", "kaprodi"]),
+  role: z.enum(["mahasiswa", "dosen", "kaprodi", "super_admin"]),
+  password: z.string().optional(), // For super admin to manage user passwords
 })
 
 export type User = z.infer<typeof UserSchema>

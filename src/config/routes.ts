@@ -23,6 +23,7 @@ export const APP_ROUTES = {
   ASYNCHRONOUS: "/asynchronous",
   PROFILE: "/profile",
   REMINDERS: "/reminders",
+  ROLE_MANAGEMENT: "/role-management",
 } as const
 
 export const ROUTE_CONFIGS: Record<string, RouteConfig> = {
@@ -107,6 +108,14 @@ export const ROUTE_CONFIGS: Record<string, RouteConfig> = {
     description: "Manajemen pengingat",
     icon: "bell",
     requiresAuth: true,
+  },
+  [APP_ROUTES.ROLE_MANAGEMENT]: {
+    path: APP_ROUTES.ROLE_MANAGEMENT,
+    title: "Role Management",
+    description: "Manajemen pengguna dan role",
+    icon: "user-cog",
+    requiresAuth: true,
+    roles: ["super_admin"],
   },
 }
 

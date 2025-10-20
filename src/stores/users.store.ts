@@ -63,12 +63,25 @@ export const useUsersStore = create<UsersState>()(
   ),
 )
 
-// Seed some initial dosen users if store is empty
+// Seed some initial users if store is empty
 export const seedInitialUsers = () => {
   const store = useUsersStore.getState()
   const dosenUsers = store.users.filter(u => u.role === "dosen")
+  const superAdminUsers = store.users.filter(u => u.role === "super_admin")
   
-  // Only seed if there are no dosen users
+  // Seed super admin if not exists
+  if (superAdminUsers.length === 0) {
+    console.log("Seeding super admin user...")
+    store.addUser({
+      name: "Super Administrator",
+      email: "gacor@unesa.ac.id",
+      role: "super_admin",
+      password: "gacorkang", // Stored for management purposes
+    })
+    console.log("Super admin user seeded successfully")
+  }
+  
+  // Only seed dosen if there are no dosen users
   if (dosenUsers.length === 0) {
     console.log("Seeding initial dosen users...")
     store.addUser({
