@@ -11,80 +11,21 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { useSessionStore } from "@/stores/session.store"
-import { useUsersStore } from "@/stores/users.store"
 import { showError } from "@/lib/alerts"
 import { Check, Mail, Lock, Eye, EyeOff, ArrowRight, CheckCircle } from "lucide-react"
 import { ButtonLoading } from "@/components/ui/loading"
 
 const loginSchema = z.object({
   email: z.string()
-    .email("Format email tidak valid")
-    .refine((email) => {
-      // Allow super admin email
-      if (email === "gacor@unesa.ac.id") return true
-      // Check regular format for other users
-      return /^[a-zA-Z]+\.\d{5}@(mhs|dsn|kpd)\.[a-zA-Z]+\.ac\.id$/.test(email)
-    }, "Email harus dari instansi anda"),
+    .email("Format email tidak valid"),
   password: z.string().min(1, "Kata sandi wajib diisi"),
 })
 
 type LoginForm = z.infer<typeof loginSchema>
 
-// Function to determine role from email
-const getRoleFromEmail = (email: string): "kaprodi" | "dosen" | "mahasiswa" | "super_admin" | null => {
-  // Check for super admin email
-  if (email === "gacor@unesa.ac.id") {
-    return "super_admin"
-  }
-  
-  const emailParts = email.split('@')
-  if (emailParts.length < 2) return null
-  
-  const domain = emailParts[1].toLowerCase()
-  const roleCode = domain.split('.')[0]
-  
-  switch (roleCode) {
-    case 'mhs':
-      return 'mahasiswa'
-    case 'dsn':
-      return 'dosen'
-    case 'kpd':
-      return 'kaprodi'
-    default:
-      return null
-  }
-}
-
-// Function to generate user name from email
-const generateNameFromEmail = (email: string, role: string): string => {
-  // Super admin has a special name
-  if (role === 'super_admin') {
-    return 'Super Administrator'
-  }
-  
-  const emailParts = email.split('@')[0]
-  const [nama, nim] = emailParts.split('.')
-  
-  // Capitalize first letter of each word in nama
-  const formattedNama = nama.split(/(?=[A-Z])/).map(word => 
-    word.charAt(0).toUpperCase() + word.slice(1).toLowerCase()
-  ).join(' ')
-  
-  // Extract angkatan from first 2 digits of NIM for mahasiswa
-  if (role === 'mahasiswa' && nim && nim.length >= 2) {
-    const yearPrefix = nim.substring(0, 2)
-    const angkatan = 2000 + parseInt(yearPrefix)
-    return `${formattedNama} (Angkatan ${angkatan})`
-  }
-  
-  // For dosen and kaprodi, just return the name
-  return formattedNama
-}
-
 export function LoginCard() {
   const router = useRouter()
   const { setSession } = useSessionStore()
-  const { users } = useUsersStore()
   const [isLoading, setIsLoading] = useState(false)
   const [showSuccess, setShowSuccess] = useState(false)
   const [showPassword, setShowPassword] = useState(false)
@@ -105,54 +46,24 @@ export function LoginCard() {
     setIsLoading(true)
 
     try {
-      // Simulate API call delay
-      await new Promise((resolve) => setTimeout(resolve, 1500))
-
-      // Check if user exists in users store
-      const existingUser = users.find(u => u.email === data.email)
-      
-      let user
-      
-      if (existingUser) {
-        // User exists in store - use stored data
-        // For super admin, validate password
-        if (existingUser.role === 'super_admin') {
-          if (data.password !== 'gacorkang') {
-            setIsLoading(false)
-            showError("Password super admin salah.")
-            return
-          }
-        }
-        // For other users, validate password if stored
-        else if (existingUser.password && existingUser.password !== data.password) {
-          setIsLoading(false)
-          showError("Password salah.")
-          return
-        }
-        
-        user = {
-          id: existingUser.id,
-          email: existingUser.email,
-          name: existingUser.name,
-          role: existingUser.role,
-        }
-      } else {
-        // User doesn't exist - auto-register from email
-        const role = getRoleFromEmail(data.email)
-        
-        if (!role) {
-          setIsLoading(false)
-          showError("Format email tidak dikenali.")
-          return
-        }
-
-        user = {
-          id: Date.now().toString(),
+      // Call Prisma API untuk login
+      const response = await fetch('/api/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
           email: data.email,
-          name: generateNameFromEmail(data.email, role),
-          role: role,
-        }
+          password: data.password,
+        }),
+      })
+
+      if (!response.ok) {
+        const error = await response.json()
+        setIsLoading(false)
+        showError(error.error || 'Login gagal')
+        return
       }
+
+      const { user } = await response.json()
 
       // Show success animation
       setShowSuccess(true)
@@ -167,11 +78,13 @@ export function LoginCard() {
           email: user.email,
           name: user.name,
           role: user.role,
+          image: user.image,
         })
         router.push("/dashboard")
         setIsLoading(false)
       }, 1000)
     } catch (error) {
+      console.error('Login error:', error)
       showError("Terjadi kesalahan saat login")
       setIsLoading(false)
     }

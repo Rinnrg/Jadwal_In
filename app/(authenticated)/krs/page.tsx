@@ -109,23 +109,6 @@ export default function KrsPage() {
         </div>
       </div>
 
-      {/* Profile Warning */}
-      {(!profile?.angkatan || !profile?.kelas) && (
-        <Card className="border-yellow-200 bg-yellow-50 dark:border-yellow-800 dark:bg-yellow-900/20">
-          <CardHeader>
-            <CardTitle className="text-yellow-800 dark:text-yellow-200">Lengkapi Profil</CardTitle>
-            <CardDescription className="text-yellow-700 dark:text-yellow-300">
-              Anda perlu mengisi angkatan dan kelas di profil untuk melihat penawaran mata kuliah yang sesuai.
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <Button asChild>
-              <a href="/profile">Lengkapi Profil</a>
-            </Button>
-          </CardContent>
-        </Card>
-      )}
-
       <div className="grid gap-6 lg:grid-cols-3">
         <div className="lg:col-span-2 space-y-6">
           <KrsPicker userId={session.id} term={currentTerm} />

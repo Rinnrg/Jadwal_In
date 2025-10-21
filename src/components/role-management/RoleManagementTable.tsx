@@ -9,7 +9,7 @@ import { Input } from "@/components/ui/input"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Card, CardContent } from "@/components/ui/card"
 import { Edit, Trash2, Search, Shield, User as UserIcon, GraduationCap, Users } from "lucide-react"
-import { confirmAction, showSuccess } from "@/lib/alerts"
+import { confirmAction, showSuccess, showError } from "@/lib/alerts"
 
 interface RoleManagementTableProps {
   onEdit?: (user: User) => void
@@ -93,8 +93,12 @@ export function RoleManagementTable({ onEdit }: RoleManagementTableProps) {
     )
 
     if (confirmed) {
-      deleteUser(user.id)
-      showSuccess("User berhasil dihapus")
+      try {
+        await deleteUser(user.id)
+        showSuccess("User berhasil dihapus")
+      } catch (error: any) {
+        showError(error.message || "Gagal menghapus user")
+      }
     }
   }
 
@@ -151,6 +155,7 @@ export function RoleManagementTable({ onEdit }: RoleManagementTableProps) {
                   <TableRow>
                     <TableHead>Nama</TableHead>
                     <TableHead>Email</TableHead>
+                    <TableHead>NIM/Info</TableHead>
                     <TableHead>Role</TableHead>
                     <TableHead className="w-[100px]"></TableHead>
                   </TableRow>
@@ -164,6 +169,18 @@ export function RoleManagementTable({ onEdit }: RoleManagementTableProps) {
                     >
                       <TableCell className="font-medium">{user.name}</TableCell>
                       <TableCell>{user.email}</TableCell>
+                      <TableCell>
+                        {user.role === "mahasiswa" && user.profile?.nim ? (
+                          <div className="flex flex-col gap-0.5">
+                            <span className="font-mono text-sm font-medium">{user.profile.nim}</span>
+                            <span className="text-xs text-muted-foreground">
+                              Angkatan {user.profile.angkatan}
+                            </span>
+                          </div>
+                        ) : (
+                          <span className="text-muted-foreground text-sm">-</span>
+                        )}
+                      </TableCell>
                       <TableCell>
                         <Badge variant="outline" className={getRoleBadgeColor(user.role)}>
                           <span className="flex items-center gap-1">

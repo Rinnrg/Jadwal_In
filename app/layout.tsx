@@ -1,17 +1,108 @@
 import type React from "react"
 import type { Metadata } from "next"
-import { Inter } from "next/font/google"
+import localFont from "next/font/local"
 import { Analytics } from "@vercel/analytics/next"
 import { Suspense } from "react"
 import { Providers } from "./providers"
 import { GlobalLoading } from "@/components/ui/global-loading"
 import "./globals.css"
 
-const inter = Inter({
-  subsets: ["latin"],
+const montserrat = localFont({
+  src: [
+    {
+      path: "../public/font/Montserrat-Thin.ttf",
+      weight: "100",
+      style: "normal",
+    },
+    {
+      path: "../public/font/Montserrat-ThinItalic.ttf",
+      weight: "100",
+      style: "italic",
+    },
+    {
+      path: "../public/font/Montserrat-ExtraLight.ttf",
+      weight: "200",
+      style: "normal",
+    },
+    {
+      path: "../public/font/Montserrat-ExtraLightItalic.ttf",
+      weight: "200",
+      style: "italic",
+    },
+    {
+      path: "../public/font/Montserrat-Light.ttf",
+      weight: "300",
+      style: "normal",
+    },
+    {
+      path: "../public/font/Montserrat-LightItalic.ttf",
+      weight: "300",
+      style: "italic",
+    },
+    {
+      path: "../public/font/Montserrat-Regular.ttf",
+      weight: "400",
+      style: "normal",
+    },
+    {
+      path: "../public/font/Montserrat-Italic.ttf",
+      weight: "400",
+      style: "italic",
+    },
+    {
+      path: "../public/font/Montserrat-Medium.ttf",
+      weight: "500",
+      style: "normal",
+    },
+    {
+      path: "../public/font/Montserrat-MediumItalic.ttf",
+      weight: "500",
+      style: "italic",
+    },
+    {
+      path: "../public/font/Montserrat-SemiBold.ttf",
+      weight: "600",
+      style: "normal",
+    },
+    {
+      path: "../public/font/Montserrat-SemiBoldItalic.ttf",
+      weight: "600",
+      style: "italic",
+    },
+    {
+      path: "../public/font/Montserrat-Bold.ttf",
+      weight: "700",
+      style: "normal",
+    },
+    {
+      path: "../public/font/Montserrat-BoldItalic.ttf",
+      weight: "700",
+      style: "italic",
+    },
+    {
+      path: "../public/font/Montserrat-ExtraBold.ttf",
+      weight: "800",
+      style: "normal",
+    },
+    {
+      path: "../public/font/Montserrat-ExtraBoldItalic.ttf",
+      weight: "800",
+      style: "italic",
+    },
+    {
+      path: "../public/font/Montserrat-Black.ttf",
+      weight: "900",
+      style: "normal",
+    },
+    {
+      path: "../public/font/Montserrat-BlackItalic.ttf",
+      weight: "900",
+      style: "italic",
+    },
+  ],
+  variable: "--font-montserrat",
   display: "swap",
   fallback: ["system-ui", "arial"],
-  adjustFontFallback: false,
 })
 
 export const metadata: Metadata = {
@@ -36,7 +127,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="id" suppressHydrationWarning>
-      <body className={`${inter.className} antialiased`}>
+      <body className={`${montserrat.className} antialiased`}>
         <Providers>
           <Suspense fallback={<GlobalLoading />}>
             {children}

@@ -5,38 +5,121 @@ import { arr, generateId } from "@/lib/utils"
 
 interface UsersState {
   users: User[]
-  addUser: (user: Omit<User, "id">) => void
-  updateUser: (id: string, updates: Partial<User>) => void
-  deleteUser: (id: string) => void
+  isLoading: boolean
+  error: string | null
+  lastCreatedCredentials: { email: string; password: string; nim?: string } | null
+  fetchUsers: () => Promise<void>
+  addUser: (user: any) => Promise<{ email: string; password: string; nim?: string } | null>
+  updateUser: (id: string, updates: Partial<User>) => Promise<void>
+  deleteUser: (id: string) => Promise<void>
   getUserById: (id: string) => User | undefined
   getUsersByRole: (role: User["role"]) => User[]
   getDosenUsers: () => User[]
   getMahasiswaUsers: () => User[]
+  clearCredentials: () => void
 }
 
 export const useUsersStore = create<UsersState>()(
   persist(
     (set, get) => ({
       users: [],
-      addUser: (user) => {
-        const newUser: User = {
-          ...user,
-          id: generateId(),
+      isLoading: false,
+      error: null,
+      lastCreatedCredentials: null,
+      
+      fetchUsers: async () => {
+        set({ isLoading: true, error: null })
+        try {
+          const response = await fetch("/api/users")
+          if (!response.ok) {
+            throw new Error("Failed to fetch users")
+          }
+          const data = await response.json()
+          set({ users: data.users || [], isLoading: false })
+        } catch (error) {
+          console.error("Fetch users error:", error)
+          set({ error: "Gagal mengambil data users", isLoading: false })
         }
-        set((state) => ({
-          users: [...state.users, newUser],
-        }))
       },
-      updateUser: (id, updates) => {
-        set((state) => ({
-          users: state.users.map((user) => (user.id === id ? { ...user, ...updates } : user)),
-        }))
+      
+      addUser: async (user) => {
+        set({ isLoading: true, error: null, lastCreatedCredentials: null })
+        try {
+          const response = await fetch("/api/users", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(user),
+          })
+          
+          if (!response.ok) {
+            const errorData = await response.json()
+            throw new Error(errorData.error || "Failed to add user")
+          }
+          
+          const data = await response.json()
+          set((state) => ({
+            users: [...state.users, data.user],
+            isLoading: false,
+            lastCreatedCredentials: data.credentials || null,
+          }))
+          
+          return data.credentials || null
+        } catch (error: any) {
+          console.error("Add user error:", error)
+          set({ error: error.message || "Gagal menambah user", isLoading: false })
+          throw error
+        }
       },
-      deleteUser: (id) => {
-        set((state) => ({
-          users: state.users.filter((user) => user.id !== id),
-        }))
+      
+      updateUser: async (id, updates) => {
+        set({ isLoading: true, error: null })
+        try {
+          const response = await fetch(`/api/users?id=${id}`, {
+            method: "PATCH",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(updates),
+          })
+          
+          if (!response.ok) {
+            const errorData = await response.json()
+            throw new Error(errorData.error || "Failed to update user")
+          }
+          
+          const data = await response.json()
+          set((state) => ({
+            users: state.users.map((user) => (user.id === id ? data.user : user)),
+            isLoading: false,
+          }))
+        } catch (error: any) {
+          console.error("Update user error:", error)
+          set({ error: error.message || "Gagal mengupdate user", isLoading: false })
+          throw error
+        }
       },
+      
+      deleteUser: async (id) => {
+        set({ isLoading: true, error: null })
+        try {
+          const response = await fetch(`/api/users?id=${id}`, {
+            method: "DELETE",
+          })
+          
+          if (!response.ok) {
+            const errorData = await response.json()
+            throw new Error(errorData.error || "Failed to delete user")
+          }
+          
+          set((state) => ({
+            users: state.users.filter((user) => user.id !== id),
+            isLoading: false,
+          }))
+        } catch (error: any) {
+          console.error("Delete user error:", error)
+          set({ error: error.message || "Gagal menghapus user", isLoading: false })
+          throw error
+        }
+      },
+      
       getUserById: (id) => {
         return get().users.find((user) => user.id === id)
       },
@@ -48,6 +131,9 @@ export const useUsersStore = create<UsersState>()(
       },
       getMahasiswaUsers: () => {
         return get().users.filter((user) => user.role === "mahasiswa")
+      },
+      clearCredentials: () => {
+        set({ lastCreatedCredentials: null })
       },
     }),
     {
@@ -63,52 +149,7 @@ export const useUsersStore = create<UsersState>()(
   ),
 )
 
-// Seed some initial users if store is empty
-export const seedInitialUsers = () => {
-  const store = useUsersStore.getState()
-  const dosenUsers = store.users.filter(u => u.role === "dosen")
-  const superAdminUsers = store.users.filter(u => u.role === "super_admin")
-  
-  // Seed super admin if not exists
-  if (superAdminUsers.length === 0) {
-    console.log("Seeding super admin user...")
-    store.addUser({
-      name: "Super Administrator",
-      email: "gacor@unesa.ac.id",
-      role: "super_admin",
-      password: "gacorkang", // Stored for management purposes
-    })
-    console.log("Super admin user seeded successfully")
-  }
-  
-  // Only seed dosen if there are no dosen users
-  if (dosenUsers.length === 0) {
-    console.log("Seeding initial dosen users...")
-    store.addUser({
-      name: "Dr. Ahmad Wijaya",
-      email: "ahmad.wijaya@university.ac.id",
-      role: "dosen",
-    })
-    store.addUser({
-      name: "Prof. Siti Nurhaliza",
-      email: "siti.nurhaliza@university.ac.id",
-      role: "dosen",
-    })
-    store.addUser({
-      name: "Dr. Budi Santoso",
-      email: "budi.santoso@university.ac.id",
-      role: "dosen",
-    })
-    store.addUser({
-      name: "Dr. Rina Kusuma",
-      email: "rina.kusuma@university.ac.id",
-      role: "dosen",
-    })
-    store.addUser({
-      name: "Prof. Muhammad Hasan",
-      email: "muhammad.hasan@university.ac.id",
-      role: "dosen",
-    })
-    console.log("Initial dosen users seeded successfully")
-  }
+// Auto-fetch users on first load
+if (typeof window !== 'undefined') {
+  useUsersStore.getState().fetchUsers()
 }

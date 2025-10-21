@@ -18,6 +18,16 @@ export const UserSchema = z.object({
   email: z.string().email(),
   role: z.enum(["mahasiswa", "dosen", "kaprodi", "super_admin"]),
   password: z.string().optional(), // For super admin to manage user passwords
+  profile: z.object({
+    userId: z.string(),
+    nim: z.string().optional(),
+    angkatan: z.number(),
+    kelas: z.string(),
+    prodi: z.string().optional(),
+    bio: z.string().optional(),
+    website: z.string().optional(),
+    avatarUrl: z.string().optional(),
+  }).optional(),
 })
 
 export type User = z.infer<typeof UserSchema>
