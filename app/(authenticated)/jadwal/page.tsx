@@ -431,14 +431,14 @@ export default function JadwalPage() {
   )
 
   return (
-    <div className="space-y-6 md:space-y-8 animate-fade-in max-w-7xl mx-auto px-2 md:px-4">
+    <div className="space-y-4 md:space-y-6 animate-fade-in px-2 md:px-4">
       {/* Header */}
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 animate-slide-up">
         <div>
-          <h1 className="text-2xl md:text-3xl lg:text-4xl xl:text-5xl font-bold tracking-tight text-gray-900 dark:text-gray-100 animate-float">
+          <h1 className="text-xl md:text-2xl lg:text-3xl font-bold tracking-tight animate-float">
             Jadwal Kuliah
           </h1>
-          <p className="text-gray-900 dark:text-gray-100 text-sm md:text-base lg:text-xl mt-1 md:mt-2 animate-slide-in-left font-bold">
+          <p className="text-gray-900 dark:text-gray-100 font-bold text-sm md:text-base animate-slide-in-left">
             Kelola jadwal mingguan Anda dengan mudah
           </p>
         </div>
@@ -523,62 +523,62 @@ export default function JadwalPage() {
       </div>
 
       {/* Stats Cards */}
-      <div className="hidden md:flex gap-3 md:gap-4 overflow-x-auto pb-2 snap-x snap-mandatory animate-slide-up">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4 animate-slide-up">
         <Card className="card-interactive border-2 border-blue-200 dark:border-blue-800 hover:border-blue-400 dark:hover:border-blue-600 group">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 md:pb-3 px-3 md:px-6 pt-3 md:pt-6">
-            <CardTitle className="text-xs md:text-sm font-bold">Total Jadwal</CardTitle>
-            <Calendar className="h-5 w-5 md:h-6 md:w-6 text-blue-500 group-hover:scale-125 transition-transform duration-300" />
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 px-4 md:px-6 pt-4 md:pt-6">
+            <CardTitle className="text-xs md:text-sm font-medium">Total Jadwal</CardTitle>
+            <Calendar className="h-4 w-4 md:h-5 md:w-5 text-blue-500 group-hover:scale-110 transition-transform" />
           </CardHeader>
-          <CardContent className="px-3 md:px-6 pb-3 md:pb-6">
-            <div className="text-3xl md:text-4xl font-bold text-blue-600 dark:text-blue-400 mb-1 md:mb-2">{weeklyStats.totalEvents}</div>
-            <p className="text-xs md:text-sm text-gray-700 dark:text-gray-300 font-semibold">Jadwal mingguan</p>
-            <div className="mt-2 md:mt-3 flex items-center text-[10px] md:text-xs text-blue-600 dark:text-blue-400 font-medium">
-              <TrendingUp className="h-2.5 w-2.5 md:h-3 md:w-3 mr-1" />
+          <CardContent className="px-4 md:px-6 pb-4 md:pb-6">
+            <div className="text-2xl md:text-3xl font-bold text-blue-600 dark:text-blue-400">{weeklyStats.totalEvents}</div>
+            <p className="text-[10px] md:text-xs text-muted-foreground mt-1">Jadwal mingguan</p>
+            <div className="mt-2 flex items-center text-[10px] md:text-xs text-blue-600 dark:text-blue-400">
+              <TrendingUp className="h-3 w-3 mr-1" />
               {weeklyStats.uniqueSubjects} mata kuliah
             </div>
           </CardContent>
         </Card>
 
         <Card className="card-interactive border-2 border-green-200 dark:border-green-800 hover:border-green-400 dark:hover:border-green-600 group">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 md:pb-3 px-3 md:px-6 pt-3 md:pt-6">
-            <CardTitle className="text-xs md:text-sm font-bold">Hari Ini</CardTitle>
-            <Clock className="h-5 w-5 md:h-6 md:w-6 text-green-500 group-hover:scale-125 transition-transform duration-300" />
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 px-4 md:px-6 pt-4 md:pt-6">
+            <CardTitle className="text-xs md:text-sm font-medium">Hari Ini</CardTitle>
+            <Clock className="h-4 w-4 md:h-5 md:w-5 text-green-500 group-hover:scale-110 transition-transform" />
           </CardHeader>
-          <CardContent className="px-3 md:px-6 pb-3 md:pb-6">
-            <div className="text-3xl md:text-4xl font-bold text-green-600 dark:text-green-400 mb-1 md:mb-2">{weeklyStats.todayEvents}</div>
-            <p className="text-xs md:text-sm text-gray-700 dark:text-gray-300 font-semibold">Kelas hari ini</p>
-            <div className="mt-2 md:mt-3 flex items-center text-[10px] md:text-xs text-green-600 dark:text-green-400 font-medium">
-              <Activity className="h-2.5 w-2.5 md:h-3 md:w-3 mr-1" />
+          <CardContent className="px-4 md:px-6 pb-4 md:pb-6">
+            <div className="text-2xl md:text-3xl font-bold text-green-600 dark:text-green-400">{weeklyStats.todayEvents}</div>
+            <p className="text-[10px] md:text-xs text-muted-foreground mt-1">Kelas hari ini</p>
+            <div className="mt-2 flex items-center text-[10px] md:text-xs text-green-600 dark:text-green-400">
+              <Activity className="h-3 w-3 mr-1" />
               {weeklyStats.todayEvents > 0 ? "Ada kelas" : "Tidak ada kelas"}
             </div>
           </CardContent>
         </Card>
 
         <Card className="card-interactive border-2 border-purple-200 dark:border-purple-800 hover:border-purple-400 dark:hover:border-purple-600 group">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 md:pb-3 px-3 md:px-6 pt-3 md:pt-6">
-            <CardTitle className="text-xs md:text-sm font-bold">Mata Kuliah</CardTitle>
-            <Users className="h-5 w-5 md:h-6 md:w-6 text-purple-500 group-hover:scale-125 transition-transform duration-300" />
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 px-4 md:px-6 pt-4 md:pt-6">
+            <CardTitle className="text-xs md:text-sm font-medium">Mata Kuliah</CardTitle>
+            <Users className="h-4 w-4 md:h-5 md:w-5 text-purple-500 group-hover:scale-110 transition-transform" />
           </CardHeader>
-          <CardContent className="px-3 md:px-6 pb-3 md:pb-6">
-            <div className="text-3xl md:text-4xl font-bold text-purple-600 dark:text-purple-400 mb-1 md:mb-2">{weeklyStats.uniqueSubjects}</div>
-            <p className="text-xs md:text-sm text-gray-700 dark:text-gray-300 font-semibold">Mata kuliah aktif</p>
-            <div className="mt-2 md:mt-3 flex items-center text-[10px] md:text-xs text-purple-600 dark:text-purple-400 font-medium">
-              <Sparkles className="h-2.5 w-2.5 md:h-3 md:w-3 mr-1" />
+          <CardContent className="px-4 md:px-6 pb-4 md:pb-6">
+            <div className="text-2xl md:text-3xl font-bold text-purple-600 dark:text-purple-400">{weeklyStats.uniqueSubjects}</div>
+            <p className="text-[10px] md:text-xs text-muted-foreground mt-1">Mata kuliah aktif</p>
+            <div className="mt-2 flex items-center text-[10px] md:text-xs text-purple-600 dark:text-purple-400">
+              <Sparkles className="h-3 w-3 mr-1" />
               Semester ini
             </div>
           </CardContent>
         </Card>
 
         <Card className="card-interactive border-2 border-orange-200 dark:border-orange-800 hover:border-orange-400 dark:hover:border-orange-600 group">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 md:pb-3 px-3 md:px-6 pt-3 md:pt-6">
-            <CardTitle className="text-xs md:text-sm font-bold">Total Jam</CardTitle>
-            <Clock className="h-5 w-5 md:h-6 md:w-6 text-orange-500 group-hover:scale-125 transition-transform duration-300" />
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 px-4 md:px-6 pt-4 md:pt-6">
+            <CardTitle className="text-xs md:text-sm font-medium">Total Jam</CardTitle>
+            <Clock className="h-4 w-4 md:h-5 md:w-5 text-orange-500 group-hover:scale-110 transition-transform" />
           </CardHeader>
-          <CardContent className="px-3 md:px-6 pb-3 md:pb-6">
-            <div className="text-3xl md:text-4xl font-bold text-orange-600 dark:text-orange-400 mb-1 md:mb-2">{Math.round(weeklyStats.totalHours)}</div>
-            <p className="text-xs md:text-sm text-gray-700 dark:text-gray-300 font-semibold">Jam per minggu</p>
-            <div className="mt-2 md:mt-3 flex items-center text-[10px] md:text-xs text-orange-600 dark:text-orange-400 font-medium">
-              <TrendingUp className="h-2.5 w-2.5 md:h-3 md:w-3 mr-1" />
+          <CardContent className="px-4 md:px-6 pb-4 md:pb-6">
+            <div className="text-2xl md:text-3xl font-bold text-orange-600 dark:text-orange-400">{Math.round(weeklyStats.totalHours)}</div>
+            <p className="text-[10px] md:text-xs text-muted-foreground mt-1">Jam per minggu</p>
+            <div className="mt-2 flex items-center text-[10px] md:text-xs text-orange-600 dark:text-orange-400">
+              <TrendingUp className="h-3 w-3 mr-1" />
               {Math.round(weeklyStats.totalHours / 7)} jam/hari
             </div>
           </CardContent>
