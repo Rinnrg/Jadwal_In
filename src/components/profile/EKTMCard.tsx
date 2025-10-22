@@ -40,37 +40,8 @@ export function EKTMCard({ name, nim, fakultas, programStudi, avatarUrl }: EKTMC
     })
   }
 
-  // Function to draw text with proper wrapping
-  const wrapText = (
-    ctx: CanvasRenderingContext2D,
-    text: string,
-    x: number,
-    y: number,
-    maxWidth: number,
-    lineHeight: number
-  ) => {
-    const words = text.split(' ')
-    let line = ''
-    let currentY = y
-
-    for (let i = 0; i < words.length; i++) {
-      const testLine = line + words[i] + ' '
-      const metrics = ctx.measureText(testLine)
-      const testWidth = metrics.width
-
-      if (testWidth > maxWidth && i > 0) {
-        ctx.fillText(line.trim(), x, currentY)
-        line = words[i] + ' '
-        currentY += lineHeight
-      } else {
-        line = testLine
-      }
-    }
-    ctx.fillText(line.trim(), x, currentY)
-  }
-
   const handleDownload = async () => {
-    if (!canvasRef.current) return
+    if (!cardRef.current) return
 
     try {
       setIsDownloading(true)
@@ -91,7 +62,7 @@ export function EKTMCard({ name, nim, fakultas, programStudi, avatarUrl }: EKTMC
       // Scale the context for high resolution
       ctx.scale(scale, scale)
 
-      // Fill white background
+      // Fill white background first
       ctx.fillStyle = '#ffffff'
       ctx.fillRect(0, 0, cardWidth, cardHeight)
 
@@ -101,24 +72,53 @@ export function EKTMCard({ name, nim, fakultas, programStudi, avatarUrl }: EKTMC
         ctx.drawImage(bgImage, 0, 0, cardWidth, cardHeight)
       } catch (e) {
         console.warn('Could not load background image, using solid color')
-        ctx.fillStyle = '#3b82f6' // fallback blue background
+        // Fallback gradient background
+        const gradient = ctx.createLinearGradient(0, 0, cardWidth, cardHeight)
+        gradient.addColorStop(0, '#3b82f6')
+        gradient.addColorStop(1, '#1e40af')
+        ctx.fillStyle = gradient
         ctx.fillRect(0, 0, cardWidth, cardHeight)
       }
 
-      // Draw logo (top right)
+      // Draw logo (top right) - exact position from CSS
       try {
         const logoImage = await loadImage('/Logo unesa.svg')
+        // Add shadow effect
+        ctx.shadowColor = 'rgba(0, 0, 0, 0.1)'
+        ctx.shadowBlur = 6
+        ctx.shadowOffsetY = 4
         ctx.drawImage(logoImage, cardWidth - 56, 6, 48, 48)
+        ctx.shadowColor = 'transparent'
+        ctx.shadowBlur = 0
+        ctx.shadowOffsetY = 0
       } catch (e) {
         console.warn('Could not load logo image')
       }
 
-      // Draw photo (center top)
+      // Draw photo (center top) - exact position from CSS: top: 34px
       const photoSize = 80
       const photoX = (cardWidth - photoSize) / 2
       const photoY = 34
 
+      // Draw photo background circle with border
       ctx.save()
+      
+      // Draw shadow for photo
+      ctx.shadowColor = 'rgba(0, 0, 0, 0.3)'
+      ctx.shadowBlur = 25
+      ctx.shadowOffsetY = 8
+      
+      // Draw white border circle
+      ctx.fillStyle = '#ffffff'
+      ctx.beginPath()
+      ctx.arc(photoX + photoSize / 2, photoY + photoSize / 2, (photoSize / 2) + 3, 0, Math.PI * 2)
+      ctx.fill()
+      
+      ctx.shadowColor = 'transparent'
+      ctx.shadowBlur = 0
+      ctx.shadowOffsetY = 0
+
+      // Clip to circle for photo
       ctx.beginPath()
       ctx.arc(photoX + photoSize / 2, photoY + photoSize / 2, photoSize / 2, 0, Math.PI * 2)
       ctx.closePath()
@@ -133,7 +133,7 @@ export function EKTMCard({ name, nim, fakultas, programStudi, avatarUrl }: EKTMC
           ctx.fillStyle = '#111827'
           ctx.fillRect(photoX, photoY, photoSize, photoSize)
           ctx.fillStyle = '#ffffff'
-          ctx.font = 'bold 24px sans-serif'
+          ctx.font = 'bold 20px sans-serif'
           ctx.textAlign = 'center'
           ctx.textBaseline = 'middle'
           const initials = name.split(" ").map(n => n[0]).join("").slice(0, 2).toUpperCase()
@@ -144,7 +144,7 @@ export function EKTMCard({ name, nim, fakultas, programStudi, avatarUrl }: EKTMC
         ctx.fillStyle = '#111827'
         ctx.fillRect(photoX, photoY, photoSize, photoSize)
         ctx.fillStyle = '#ffffff'
-        ctx.font = 'bold 24px sans-serif'
+        ctx.font = 'bold 20px sans-serif'
         ctx.textAlign = 'center'
         ctx.textBaseline = 'middle'
         const initials = name.split(" ").map(n => n[0]).join("").slice(0, 2).toUpperCase()
@@ -153,36 +153,45 @@ export function EKTMCard({ name, nim, fakultas, programStudi, avatarUrl }: EKTMC
 
       ctx.restore()
 
-      // Draw white border around photo
-      ctx.strokeStyle = '#ffffff'
-      ctx.lineWidth = 3
-      ctx.beginPath()
-      ctx.arc(photoX + photoSize / 2, photoY + photoSize / 2, photoSize / 2 + 1.5, 0, Math.PI * 2)
-      ctx.stroke()
-
-      // Draw info section (bottom center)
+      // Draw info section (bottom center) - exact position from CSS: bottom: 48px
       const infoY = cardHeight - 48
       ctx.textAlign = 'center'
+      ctx.textBaseline = 'top'
 
-      // Name
+      // Name - exact styling from CSS: font-size: 12px, font-weight: 700, color: #111827
       ctx.fillStyle = '#111827'
-      ctx.font = 'bold 14px sans-serif'
+      ctx.font = 'bold 12px Arial, sans-serif'
+      ctx.letterSpacing = '0.025em'
       ctx.fillText(name.toUpperCase(), cardWidth / 2, infoY)
 
-      // NIM
-      ctx.font = '600 11px sans-serif'
+      // NIM - exact styling from CSS: font-size: 10px, font-weight: 600, color: #1f2937
+      ctx.font = '600 10px Arial, sans-serif'
       ctx.fillStyle = '#1f2937'
-      ctx.fillText(nim, cardWidth / 2, infoY + 16)
+      ctx.fillText(nim, cardWidth / 2, infoY + 14)
 
-      // Fakultas
-      ctx.font = '600 10px sans-serif'
+      // Fakultas - exact styling from CSS: font-size: 9px, font-weight: 600, color: #1f2937
+      ctx.font = '600 9px Arial, sans-serif'
       ctx.fillStyle = '#1f2937'
-      wrapText(ctx, fakultas, cardWidth / 2, infoY + 30, cardWidth - 48, 12)
+      
+      // Calculate proper line height for text wrapping
+      const lineHeight = 11
+      let currentY = infoY + 28
 
-      // Program Studi
-      wrapText(ctx, programStudi, cardWidth / 2, infoY + 42, cardWidth - 48, 12)
+      // Draw Fakultas with proper wrapping
+      const fakultasLines = wrapTextToLines(ctx, fakultas, cardWidth - 48)
+      fakultasLines.forEach(line => {
+        ctx.fillText(line, cardWidth / 2, currentY)
+        currentY += lineHeight
+      })
 
-      // Generate QR code and draw it
+      // Draw Program Studi with proper wrapping
+      const prodiLines = wrapTextToLines(ctx, programStudi, cardWidth - 48)
+      prodiLines.forEach(line => {
+        ctx.fillText(line, cardWidth / 2, currentY)
+        currentY += lineHeight
+      })
+
+      // Generate QR code and draw it - exact position from CSS: bottom: 8px, left: 8px, size: 42px
       const QRCode = (await import('qrcode')).default
       const qrDataUrl = await QRCode.toDataURL(qrData, {
         width: 126, // 42 * 3 for high resolution
@@ -195,12 +204,40 @@ export function EKTMCard({ name, nim, fakultas, programStudi, avatarUrl }: EKTMC
       const qrX = 8
       const qrY = cardHeight - qrSize - 8
 
-      // White background for QR
+      // White background for QR with rounded corners and shadow
+      ctx.save()
+      ctx.shadowColor = 'rgba(0, 0, 0, 0.1)'
+      ctx.shadowBlur = 4
+      ctx.shadowOffsetY = 2
+      
       ctx.fillStyle = '#ffffff'
-      ctx.fillRect(qrX - 3, qrY - 3, qrSize + 6, qrSize + 6)
+      const qrBorderRadius = 4
+      const qrPadding = 3
+      const qrBgX = qrX - qrPadding
+      const qrBgY = qrY - qrPadding
+      const qrBgSize = qrSize + (qrPadding * 2)
+      
+      // Draw rounded rectangle for QR background
+      ctx.beginPath()
+      ctx.moveTo(qrBgX + qrBorderRadius, qrBgY)
+      ctx.lineTo(qrBgX + qrBgSize - qrBorderRadius, qrBgY)
+      ctx.quadraticCurveTo(qrBgX + qrBgSize, qrBgY, qrBgX + qrBgSize, qrBgY + qrBorderRadius)
+      ctx.lineTo(qrBgX + qrBgSize, qrBgY + qrBgSize - qrBorderRadius)
+      ctx.quadraticCurveTo(qrBgX + qrBgSize, qrBgY + qrBgSize, qrBgX + qrBgSize - qrBorderRadius, qrBgY + qrBgSize)
+      ctx.lineTo(qrBgX + qrBorderRadius, qrBgY + qrBgSize)
+      ctx.quadraticCurveTo(qrBgX, qrBgY + qrBgSize, qrBgX, qrBgY + qrBgSize - qrBorderRadius)
+      ctx.lineTo(qrBgX, qrBgY + qrBorderRadius)
+      ctx.quadraticCurveTo(qrBgX, qrBgY, qrBgX + qrBorderRadius, qrBgY)
+      ctx.closePath()
+      ctx.fill()
+      
+      ctx.shadowColor = 'transparent'
+      ctx.shadowBlur = 0
+      ctx.shadowOffsetY = 0
       
       // Draw QR code
       ctx.drawImage(qrImage, qrX, qrY, qrSize, qrSize)
+      ctx.restore()
 
       // Convert canvas to PDF
       const { default: jsPDF } = await import('jspdf')
@@ -226,10 +263,35 @@ export function EKTMCard({ name, nim, fakultas, programStudi, avatarUrl }: EKTMC
     }
   }
 
+  // Helper function to wrap text into lines
+  const wrapTextToLines = (ctx: CanvasRenderingContext2D, text: string, maxWidth: number): string[] => {
+    const words = text.split(' ')
+    const lines: string[] = []
+    let currentLine = ''
+
+    for (let i = 0; i < words.length; i++) {
+      const testLine = currentLine + (currentLine ? ' ' : '') + words[i]
+      const metrics = ctx.measureText(testLine)
+      
+      if (metrics.width > maxWidth && currentLine) {
+        lines.push(currentLine)
+        currentLine = words[i]
+      } else {
+        currentLine = testLine
+      }
+    }
+    
+    if (currentLine) {
+      lines.push(currentLine)
+    }
+    
+    return lines
+  }
+
   return (
     <div className={styles.wrapper}>
       {/* Hidden canvas for rendering */}
-      <canvas ref={canvasRef} style={{ display: 'none' }} />
+      <canvas ref={canvasRef} className={styles.hiddenCanvas} />
       
       {/* Card Preview - Fixed positioning for consistency */}
       <div ref={cardRef} className={styles.ektmCard}>

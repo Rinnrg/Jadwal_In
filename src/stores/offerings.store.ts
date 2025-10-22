@@ -9,7 +9,9 @@ interface OfferingsState {
   removeOffering: (id: string) => void
   getOffering: (id: string) => CourseOffering | undefined
   getOfferingsBySubject: (subjectId: string) => CourseOffering[]
-  getOfferingsForStudent: (angkatan: number, kelas: string) => CourseOffering[]
+  getOfferingsForStudent: (angkatan: number, kelas?: string) => CourseOffering[]
+  getOfferingsByAngkatan: (angkatan: number) => CourseOffering[]
+  getOfferingsGroupedByKelas: (angkatan: number) => Record<string, CourseOffering[]>
   getOfferingsByPengampu: (dosenId: string) => CourseOffering[]
 }
 
@@ -39,12 +41,35 @@ export const useOfferingsStore = create<OfferingsState>()(
         return get().offerings.filter((offering) => offering.subjectId === subjectId)
       },
       getOfferingsForStudent: (angkatan, kelas) => {
+        // Filter by angkatan only - mahasiswa bebas pilih kelas mana saja
+        // Parameter kelas tetap ada untuk backward compatibility tapi tidak digunakan
         return get().offerings.filter(
           (offering) =>
             offering.angkatan === angkatan &&
-            offering.kelas.toLowerCase() === kelas.toLowerCase() &&
-            offering.status === "buka",
+            offering.status === "buka"
         )
+      },
+      getOfferingsByAngkatan: (angkatan) => {
+        return get().offerings.filter(
+          (offering) => offering.angkatan === angkatan && offering.status === "buka"
+        )
+      },
+      getOfferingsGroupedByKelas: (angkatan) => {
+        const offerings = get().offerings.filter(
+          (offering) => offering.angkatan === angkatan && offering.status === "buka"
+        )
+        
+        // Group by kelas
+        const grouped: Record<string, CourseOffering[]> = {}
+        offerings.forEach((offering) => {
+          const kelas = offering.kelas.trim()
+          if (!grouped[kelas]) {
+            grouped[kelas] = []
+          }
+          grouped[kelas].push(offering)
+        })
+        
+        return grouped
       },
       getOfferingsByPengampu: (dosenId) => {
         return get().offerings.filter((offering) => offering.pengampuIds?.includes(dosenId))
