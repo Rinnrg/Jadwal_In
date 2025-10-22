@@ -165,7 +165,7 @@ export function AssignmentTab({ subjectId, canManage, userRole }: AssignmentTabP
   }
 
   const handleSubmissionSubmit = (files: any[], note?: string) => {
-    if (!selectedSubmission) return
+    if (!selectedSubmission || !selectedAssignment) return
 
     // Update submission with files and note
     files.forEach((file) => {
@@ -176,7 +176,7 @@ export function AssignmentTab({ subjectId, canManage, userRole }: AssignmentTabP
       updateSubmission(selectedSubmission.id, { note })
     }
 
-    submitAssignment(selectedSubmission.id)
+    submitAssignment(selectedSubmission.id, selectedAssignment.title, undefined)
     showSuccess("Tugas berhasil dikumpulkan")
     setIsSubmissionDialogOpen(false)
   }

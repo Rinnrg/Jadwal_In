@@ -2,6 +2,7 @@ import { create } from "zustand"
 import { persist, createJSONStorage } from "zustand/middleware"
 import type { Submission, FileAttachment } from "@/data/schema"
 import { arr, generateId } from "@/lib/utils"
+import { ActivityLogger } from "@/lib/activity-logger"
 
 interface SubmissionsState {
   submissions: Submission[]
@@ -12,7 +13,7 @@ interface SubmissionsState {
   removeSubmission: (id: string) => void
   getSubmissionsByAssignment: (assignmentId: string) => Submission[]
   getSubmissionByStudent: (assignmentId: string, studentId: string) => Submission | undefined
-  submitAssignment: (submissionId: string) => void
+  submitAssignment: (submissionId: string, assignmentTitle?: string, subjectName?: string) => void
   gradeSubmission: (submissionId: string, grade: number, feedback?: string, gradedBy?: string) => void
 
   // File methods
@@ -61,7 +62,9 @@ export const useSubmissionsStore = create<SubmissionsState>()(
         )
       },
 
-      submitAssignment: (submissionId) => {
+      submitAssignment: (submissionId, assignmentTitle, subjectName) => {
+        const submission = get().submissions.find((s) => s.id === submissionId)
+        
         set((state) => ({
           submissions: state.submissions.map((submission) =>
             submission.id === submissionId
@@ -69,6 +72,11 @@ export const useSubmissionsStore = create<SubmissionsState>()(
               : submission,
           ),
         }))
+        
+        // Log activity
+        if (submission && assignmentTitle) {
+          ActivityLogger.assignmentSubmitted(submission.studentId, assignmentTitle, subjectName)
+        }
       },
 
       gradeSubmission: (submissionId, grade, feedback, gradedBy) => {

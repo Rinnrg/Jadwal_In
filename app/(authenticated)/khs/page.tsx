@@ -109,56 +109,56 @@ export default function KhsPage() {
   }
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
+    <div className="space-y-4 md:space-y-6 px-2 md:px-4">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">KHS (Kartu Hasil Studi)</h1>
-          <p className="text-muted-foreground">Lihat hasil studi dan prestasi akademik Anda</p>
+          <h1 className="text-xl md:text-2xl lg:text-3xl font-bold tracking-tight">KHS (Kartu Hasil Studi)</h1>
+          <p className="text-muted-foreground text-sm md:text-base">Lihat hasil studi dan prestasi akademik Anda</p>
         </div>
-        <Button onClick={handleExportTranscript} disabled={grades.length === 0}>
-          <Download className="h-4 w-4 mr-2" />
+        <Button onClick={handleExportTranscript} disabled={grades.length === 0} className="text-xs md:text-sm w-full sm:w-auto">
+          <Download className="h-3.5 w-3.5 md:h-4 md:w-4 mr-1.5 md:mr-2" />
           Export Transkrip
         </Button>
       </div>
 
       {/* Student Info & GPA Overview */}
-      <div className="grid gap-6 md:grid-cols-3">
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">IPK Kumulatif</CardTitle>
-            <GraduationCap className="h-4 w-4 text-muted-foreground" />
+      <div className="hidden md:flex gap-3 md:gap-4 overflow-x-auto pb-2 snap-x snap-mandatory">
+        <Card className="min-w-[240px] md:min-w-[280px] snap-start">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 px-4 md:px-6 pt-4 md:pt-6">
+            <CardTitle className="text-xs md:text-sm font-medium">IPK Kumulatif</CardTitle>
+            <GraduationCap className="h-3.5 w-3.5 md:h-4 md:w-4 text-muted-foreground" />
           </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-primary">{cumulativeGPA.toFixed(2)}</div>
-            <p className="text-xs text-muted-foreground">Dari {grades.length} mata kuliah</p>
+          <CardContent className="px-4 md:px-6 pb-4 md:pb-6">
+            <div className="text-xl md:text-2xl font-bold text-primary">{cumulativeGPA.toFixed(2)}</div>
+            <p className="text-[10px] md:text-xs text-muted-foreground">Dari {grades.length} mata kuliah</p>
           </CardContent>
         </Card>
 
         {selectedTerm !== "Semua Semester" && (
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">IPS Semester</CardTitle>
-              <TrendingUp className="h-4 w-4 text-muted-foreground" />
+          <Card className="min-w-[240px] md:min-w-[280px] snap-start">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 px-4 md:px-6 pt-4 md:pt-6">
+              <CardTitle className="text-xs md:text-sm font-medium">IPS Semester</CardTitle>
+              <TrendingUp className="h-3.5 w-3.5 md:h-4 md:w-4 text-muted-foreground" />
             </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold text-secondary">{semesterGPA.toFixed(2)}</div>
-              <p className="text-xs text-muted-foreground">Semester {selectedTerm}</p>
+            <CardContent className="px-4 md:px-6 pb-4 md:pb-6">
+              <div className="text-xl md:text-2xl font-bold text-secondary">{semesterGPA.toFixed(2)}</div>
+              <p className="text-[10px] md:text-xs text-muted-foreground">Semester {selectedTerm}</p>
             </CardContent>
           </Card>
         )}
 
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total SKS</CardTitle>
+        <Card className="min-w-[240px] md:min-w-[280px] snap-start">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 px-4 md:px-6 pt-4 md:pt-6">
+            <CardTitle className="text-xs md:text-sm font-medium">Total SKS</CardTitle>
           </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">
+          <CardContent className="px-4 md:px-6 pb-4 md:pb-6">
+            <div className="text-xl md:text-2xl font-bold">
               {grades.reduce((total, grade) => {
                 const subject = subjects.find((s) => s.id === grade.subjectId)
                 return total + (subject?.sks || 0)
               }, 0)}
             </div>
-            <p className="text-xs text-muted-foreground">SKS yang telah diambil</p>
+            <p className="text-[10px] md:text-xs text-muted-foreground">SKS yang telah diambil</p>
           </CardContent>
         </Card>
       </div>
@@ -166,14 +166,14 @@ export default function KhsPage() {
       {/* Profile Warning */}
       {!profile?.angkatan && (
         <Card className="border-yellow-200 bg-yellow-50 dark:border-yellow-800 dark:bg-yellow-900/20">
-          <CardHeader>
-            <CardTitle className="text-yellow-800 dark:text-yellow-200">Lengkapi Profil</CardTitle>
-            <CardDescription className="text-yellow-700 dark:text-yellow-300">
+          <CardHeader className="px-3 md:px-6 pt-3 md:pt-6 pb-2 md:pb-4">
+            <CardTitle className="text-yellow-800 dark:text-yellow-200 text-sm md:text-base">Lengkapi Profil</CardTitle>
+            <CardDescription className="text-yellow-700 dark:text-yellow-300 text-[10px] md:text-xs">
               Anda perlu mengisi angkatan di profil untuk melihat data yang lebih akurat.
             </CardDescription>
           </CardHeader>
-          <CardContent>
-            <Button asChild>
+          <CardContent className="px-3 md:px-6 pb-3 md:pb-6">
+            <Button asChild className="text-xs md:text-sm h-8 md:h-9">
               <a href="/profile">Lengkapi Profil</a>
             </Button>
           </CardContent>
@@ -182,18 +182,18 @@ export default function KhsPage() {
 
       {/* Term Selection */}
       <Card>
-        <CardHeader>
-          <CardTitle>Filter Semester</CardTitle>
-          <CardDescription>Pilih semester untuk melihat hasil studi spesifik</CardDescription>
+        <CardHeader className="px-3 md:px-6 pt-3 md:pt-6 pb-2 md:pb-4">
+          <CardTitle className="text-sm md:text-base">Filter Semester</CardTitle>
+          <CardDescription className="text-[10px] md:text-xs">Pilih semester untuk melihat hasil studi spesifik</CardDescription>
         </CardHeader>
-        <CardContent>
+        <CardContent className="px-3 md:px-6 pb-3 md:pb-6">
           <Select value={selectedTerm} onValueChange={setSelectedTerm}>
-            <SelectTrigger className="w-full max-w-xs">
+            <SelectTrigger className="w-full max-w-xs text-xs md:text-sm h-8 md:h-10">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
               {termOptions.map((term) => (
-                <SelectItem key={term} value={term}>
+                <SelectItem key={term} value={term} className="text-xs md:text-sm">
                   {term}
                 </SelectItem>
               ))}
@@ -205,14 +205,14 @@ export default function KhsPage() {
       {/* Grades Table */}
       {grades.length === 0 ? (
         <Card>
-          <CardHeader>
-            <CardTitle>Hasil Studi</CardTitle>
-            <CardDescription>Nilai mata kuliah yang telah Anda ambil</CardDescription>
+          <CardHeader className="px-3 md:px-6 pt-3 md:pt-6 pb-2 md:pb-4">
+            <CardTitle className="text-sm md:text-base">Hasil Studi</CardTitle>
+            <CardDescription className="text-[10px] md:text-xs">Nilai mata kuliah yang telah Anda ambil</CardDescription>
           </CardHeader>
-          <CardContent>
-            <div className="text-center py-8">
-              <p className="text-muted-foreground">Belum ada nilai yang tersedia.</p>
-              <p className="text-sm text-muted-foreground mt-1">
+          <CardContent className="px-3 md:px-6 pb-3 md:pb-6">
+            <div className="text-center py-6 md:py-8">
+              <p className="text-muted-foreground text-xs md:text-sm">Belum ada nilai yang tersedia.</p>
+              <p className="text-[10px] md:text-xs text-muted-foreground mt-1">
                 Nilai akan muncul setelah dosen memasukkan hasil evaluasi.
               </p>
             </div>
@@ -220,28 +220,28 @@ export default function KhsPage() {
         </Card>
       ) : selectedTerm === "Semua Semester" ? (
         // Group by semester view
-        <div className="space-y-6">
+        <div className="space-y-4 md:space-y-6">
           {Object.entries(gradesBySemester)
             .sort(([a], [b]) => b.localeCompare(a))
             .map(([term, termGrades]) => (
               <Card key={term}>
-                <CardHeader>
-                  <CardTitle className="flex items-center justify-between">
+                <CardHeader className="px-3 md:px-6 pt-3 md:pt-6 pb-2 md:pb-4">
+                  <CardTitle className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 text-sm md:text-base">
                     <span>Semester {term}</span>
-                    <Badge variant="outline">IPS: {calculateSemesterGPA(session.id, term, subjects).toFixed(2)}</Badge>
+                    <Badge variant="outline" className="text-xs w-fit">IPS: {calculateSemesterGPA(session.id, term, subjects).toFixed(2)}</Badge>
                   </CardTitle>
-                  <CardDescription>{termGrades.length} mata kuliah</CardDescription>
+                  <CardDescription className="text-[10px] md:text-xs">{termGrades.length} mata kuliah</CardDescription>
                 </CardHeader>
-                <CardContent>
-                  <div className="rounded-md border">
+                <CardContent className="px-3 md:px-6 pb-3 md:pb-6">
+                  <div className="rounded-md border max-h-[300px] md:max-h-[400px] overflow-auto">
                     <Table>
-                      <TableHeader>
+                      <TableHeader className="sticky top-0 bg-background z-10">
                         <TableRow>
-                          <TableHead>Kode</TableHead>
-                          <TableHead>Nama Mata Kuliah</TableHead>
-                          <TableHead>SKS</TableHead>
-                          <TableHead>Nilai Angka</TableHead>
-                          <TableHead>Nilai Huruf</TableHead>
+                          <TableHead className="text-xs md:text-sm">Kode</TableHead>
+                          <TableHead className="text-xs md:text-sm">Nama Mata Kuliah</TableHead>
+                          <TableHead className="text-xs md:text-sm">SKS</TableHead>
+                          <TableHead className="text-xs md:text-sm">Nilai Angka</TableHead>
+                          <TableHead className="text-xs md:text-sm">Nilai Huruf</TableHead>
                         </TableRow>
                       </TableHeader>
                       <TableBody>
@@ -249,15 +249,15 @@ export default function KhsPage() {
                           const subject = subjects.find((s) => s.id === grade.subjectId)
                           return (
                             <TableRow key={grade.id}>
-                              <TableCell className="font-medium">{subject?.kode}</TableCell>
-                              <TableCell>
+                              <TableCell className="font-medium text-xs md:text-sm">{subject?.kode}</TableCell>
+                              <TableCell className="text-xs md:text-sm">
                                 <div>
                                   <p className="font-medium">{subject?.nama}</p>
-                                  {subject?.prodi && <p className="text-sm text-muted-foreground">{subject.prodi}</p>}
+                                  {subject?.prodi && <p className="text-[10px] md:text-xs text-muted-foreground">{subject.prodi}</p>}
                                 </div>
                               </TableCell>
-                              <TableCell>{subject?.sks}</TableCell>
-                              <TableCell>
+                              <TableCell className="text-xs md:text-sm">{subject?.sks}</TableCell>
+                              <TableCell className="text-xs md:text-sm">
                                 {grade.nilaiAngka ? (
                                   <span className="font-medium">{grade.nilaiAngka}</span>
                                 ) : (
@@ -266,9 +266,9 @@ export default function KhsPage() {
                               </TableCell>
                               <TableCell>
                                 {grade.nilaiHuruf ? (
-                                  <Badge className={getGradeColor(grade.nilaiHuruf)}>{grade.nilaiHuruf}</Badge>
+                                  <Badge className={`${getGradeColor(grade.nilaiHuruf)} text-xs`}>{grade.nilaiHuruf}</Badge>
                                 ) : (
-                                  <span className="text-muted-foreground">-</span>
+                                  <span className="text-muted-foreground text-xs md:text-sm">-</span>
                                 )}
                               </TableCell>
                             </TableRow>
@@ -284,22 +284,22 @@ export default function KhsPage() {
       ) : (
         // Single semester view
         <Card>
-          <CardHeader>
-            <CardTitle>Hasil Studi - {selectedTerm}</CardTitle>
-            <CardDescription>
+          <CardHeader className="px-3 md:px-6 pt-3 md:pt-6 pb-2 md:pb-4">
+            <CardTitle className="text-sm md:text-base">Hasil Studi - {selectedTerm}</CardTitle>
+            <CardDescription className="text-[10px] md:text-xs">
               {grades.length} mata kuliah dengan IPS {semesterGPA.toFixed(2)}
             </CardDescription>
           </CardHeader>
-          <CardContent>
-            <div className="rounded-md border">
+          <CardContent className="px-3 md:px-6 pb-3 md:pb-6">
+            <div className="rounded-md border max-h-[300px] md:max-h-[500px] overflow-auto">
               <Table>
-                <TableHeader>
+                <TableHeader className="sticky top-0 bg-background z-10">
                   <TableRow>
-                    <TableHead>Kode</TableHead>
-                    <TableHead>Nama Mata Kuliah</TableHead>
-                    <TableHead>SKS</TableHead>
-                    <TableHead>Nilai Angka</TableHead>
-                    <TableHead>Nilai Huruf</TableHead>
+                    <TableHead className="text-xs md:text-sm">Kode</TableHead>
+                    <TableHead className="text-xs md:text-sm">Nama Mata Kuliah</TableHead>
+                    <TableHead className="text-xs md:text-sm">SKS</TableHead>
+                    <TableHead className="text-xs md:text-sm">Nilai Angka</TableHead>
+                    <TableHead className="text-xs md:text-sm">Nilai Huruf</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -307,15 +307,15 @@ export default function KhsPage() {
                     const subject = subjects.find((s) => s.id === grade.subjectId)
                     return (
                       <TableRow key={grade.id}>
-                        <TableCell className="font-medium">{subject?.kode}</TableCell>
-                        <TableCell>
+                        <TableCell className="font-medium text-xs md:text-sm">{subject?.kode}</TableCell>
+                        <TableCell className="text-xs md:text-sm">
                           <div>
                             <p className="font-medium">{subject?.nama}</p>
-                            {subject?.prodi && <p className="text-sm text-muted-foreground">{subject.prodi}</p>}
+                            {subject?.prodi && <p className="text-[10px] md:text-xs text-muted-foreground">{subject.prodi}</p>}
                           </div>
                         </TableCell>
-                        <TableCell>{subject?.sks}</TableCell>
-                        <TableCell>
+                        <TableCell className="text-xs md:text-sm">{subject?.sks}</TableCell>
+                        <TableCell className="text-xs md:text-sm">
                           {grade.nilaiAngka ? (
                             <span className="font-medium">{grade.nilaiAngka}</span>
                           ) : (
@@ -324,9 +324,9 @@ export default function KhsPage() {
                         </TableCell>
                         <TableCell>
                           {grade.nilaiHuruf ? (
-                            <Badge className={getGradeColor(grade.nilaiHuruf)}>{grade.nilaiHuruf}</Badge>
+                            <Badge className={`${getGradeColor(grade.nilaiHuruf)} text-xs`}>{grade.nilaiHuruf}</Badge>
                           ) : (
-                            <span className="text-muted-foreground">-</span>
+                            <span className="text-muted-foreground text-xs md:text-sm">-</span>
                           )}
                         </TableCell>
                       </TableRow>

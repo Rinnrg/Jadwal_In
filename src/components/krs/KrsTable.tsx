@@ -47,11 +47,8 @@ export function KrsTable({ userId, term, onScheduleSuggestion }: KrsTableProps) 
     )
 
     if (confirmed) {
-      removeKrsItem(krsItem.id)
+      removeKrsItem(krsItem.id, userId, displayName)
       showSuccess(`${displayName} berhasil dihapus dari KRS`)
-      
-      // Log activity
-      ActivityLogger.krsRemoved(userId, displayName)
     }
   }
 

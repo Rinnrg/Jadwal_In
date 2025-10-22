@@ -11,6 +11,7 @@ import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog"
 import { showSuccess, showError } from "@/lib/alerts"
+import { ActivityLogger } from "@/lib/activity-logger"
 import { Lock, Eye, EyeOff, Loader2 } from "lucide-react"
 
 const changePasswordSchema = z.object({
@@ -63,6 +64,9 @@ export function ChangePasswordCard({ onSuccess }: ChangePasswordCardProps) {
         const errorData = await response.json()
         throw new Error(errorData.error || "Gagal mengubah password")
       }
+
+      // Log activity
+      ActivityLogger.passwordChanged(session.id)
 
       showSuccess("Password berhasil diubah")
       form.reset()

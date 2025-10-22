@@ -123,22 +123,22 @@ export function ReminderList({ userId, onEdit }: ReminderListProps) {
       <CardContent>
         <div className="space-y-4">
           {/* Filters */}
-          <div className="flex flex-col sm:flex-row gap-4">
+          <div className="flex flex-col gap-3 md:gap-4">
             <div className="relative flex-1">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
               <Input
                 placeholder="Cari pengingat..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-10"
+                className="pl-10 text-xs md:text-sm h-9 md:h-10"
               />
             </div>
-            <div className="flex gap-2">
+            <div className="flex gap-2 overflow-x-auto pb-1 snap-x snap-mandatory">
               <Button
                 variant={filterStatus === "all" ? "default" : "outline"}
                 size="sm"
                 onClick={() => setFilterStatus("all")}
-                className="hover:scale-105 transition-transform duration-200"
+                className="hover:scale-105 transition-transform duration-200 text-xs h-8 px-3 whitespace-nowrap snap-start flex-shrink-0"
               >
                 Semua
               </Button>
@@ -146,7 +146,7 @@ export function ReminderList({ userId, onEdit }: ReminderListProps) {
                 variant={filterStatus === "active" ? "default" : "outline"}
                 size="sm"
                 onClick={() => setFilterStatus("active")}
-                className="hover:scale-105 transition-transform duration-200"
+                className="hover:scale-105 transition-transform duration-200 text-xs h-8 px-3 whitespace-nowrap snap-start flex-shrink-0"
               >
                 Aktif
               </Button>
@@ -154,7 +154,7 @@ export function ReminderList({ userId, onEdit }: ReminderListProps) {
                 variant={filterStatus === "overdue" ? "default" : "outline"}
                 size="sm"
                 onClick={() => setFilterStatus("overdue")}
-                className="hover:scale-105 transition-transform duration-200"
+                className="hover:scale-105 transition-transform duration-200 text-xs h-8 px-3 whitespace-nowrap snap-start flex-shrink-0"
               >
                 Terlambat
               </Button>
@@ -162,7 +162,7 @@ export function ReminderList({ userId, onEdit }: ReminderListProps) {
                 variant={filterStatus === "upcoming" ? "default" : "outline"}
                 size="sm"
                 onClick={() => setFilterStatus("upcoming")}
-                className="hover:scale-105 transition-transform duration-200"
+                className="hover:scale-105 transition-transform duration-200 text-xs h-8 px-3 whitespace-nowrap snap-start flex-shrink-0"
               >
                 Mendatang
               </Button>

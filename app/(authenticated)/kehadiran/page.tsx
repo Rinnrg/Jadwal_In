@@ -241,58 +241,58 @@ export default function KehadiranPage() {
   }
 
   return (
-    <div className="space-y-6">
-      <div className="space-y-2">
-        <h1 className="text-3xl font-bold tracking-tight text-balance">Data Kehadiran Mahasiswa</h1>
-        <p className="text-muted-foreground text-pretty">
+    <div className="space-y-4 md:space-y-6 px-2 md:px-4">
+      <div className="space-y-1 md:space-y-2">
+        <h1 className="text-xl md:text-2xl lg:text-3xl font-bold tracking-tight text-balance">Data Kehadiran Mahasiswa</h1>
+        <p className="text-muted-foreground text-pretty text-xs md:text-sm">
           Kelola dan input kehadiran mahasiswa untuk mata kuliah yang diampu. Pilih mata kuliah dan masukkan kehadiran
           untuk setiap mahasiswa.
         </p>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <Card>
-          <CardContent className="p-6">
+      <div className="hidden md:flex gap-3 md:gap-4 overflow-x-auto pb-2 snap-x snap-mandatory">
+        <Card className="min-w-[180px] md:min-w-[220px] snap-start">
+          <CardContent className="p-3 md:p-4 lg:p-6">
             <div className="flex items-center space-x-2">
-              <BookOpen className="h-5 w-5 text-primary" />
-              <div>
-                <p className="text-sm font-medium text-muted-foreground">
+              <BookOpen className="h-4 w-4 md:h-5 md:w-5 text-primary shrink-0" />
+              <div className="min-w-0">
+                <p className="text-[10px] md:text-xs lg:text-sm font-medium text-muted-foreground truncate">
                   {session.role === "dosen" ? "Mata Kuliah Diampu" : "Total Mata Kuliah"}
                 </p>
-                <p className="text-2xl font-bold">{availableSubjects.length}</p>
+                <p className="text-lg md:text-xl lg:text-2xl font-bold">{availableSubjects.length}</p>
               </div>
             </div>
           </CardContent>
         </Card>
-        <Card>
-          <CardContent className="p-6">
+        <Card className="min-w-[180px] md:min-w-[220px] snap-start">
+          <CardContent className="p-3 md:p-4 lg:p-6">
             <div className="flex items-center space-x-2">
-              <Users className="h-5 w-5 text-primary" />
-              <div>
-                <p className="text-sm font-medium text-muted-foreground">Mahasiswa Terdaftar</p>
-                <p className="text-2xl font-bold">{totalStudents}</p>
+              <Users className="h-4 w-4 md:h-5 md:w-5 text-primary shrink-0" />
+              <div className="min-w-0">
+                <p className="text-[10px] md:text-xs lg:text-sm font-medium text-muted-foreground truncate">Mahasiswa Terdaftar</p>
+                <p className="text-lg md:text-xl lg:text-2xl font-bold">{totalStudents}</p>
               </div>
             </div>
           </CardContent>
         </Card>
-        <Card>
-          <CardContent className="p-6">
+        <Card className="min-w-[180px] md:min-w-[220px] snap-start">
+          <CardContent className="p-3 md:p-4 lg:p-6">
             <div className="flex items-center space-x-2">
-              <CheckCircle className="h-5 w-5 text-green-500" />
-              <div>
-                <p className="text-sm font-medium text-muted-foreground">Hadir Hari Ini</p>
-                <p className="text-2xl font-bold text-green-600">{hadirCount}</p>
+              <CheckCircle className="h-4 w-4 md:h-5 md:w-5 text-green-500 shrink-0" />
+              <div className="min-w-0">
+                <p className="text-[10px] md:text-xs lg:text-sm font-medium text-muted-foreground truncate">Hadir Hari Ini</p>
+                <p className="text-lg md:text-xl lg:text-2xl font-bold text-green-600">{hadirCount}</p>
               </div>
             </div>
           </CardContent>
         </Card>
-        <Card>
-          <CardContent className="p-6">
+        <Card className="min-w-[180px] md:min-w-[220px] snap-start">
+          <CardContent className="p-3 md:p-4 lg:p-6">
             <div className="flex items-center space-x-2">
-              <TrendingUp className="h-5 w-5 text-primary" />
-              <div>
-                <p className="text-sm font-medium text-muted-foreground">Tingkat Kehadiran</p>
-                <p className="text-2xl font-bold">{attendanceRate.toFixed(1)}%</p>
+              <TrendingUp className="h-4 w-4 md:h-5 md:w-5 text-primary shrink-0" />
+              <div className="min-w-0">
+                <p className="text-[10px] md:text-xs lg:text-sm font-medium text-muted-foreground truncate">Tingkat Kehadiran</p>
+                <p className="text-lg md:text-xl lg:text-2xl font-bold">{attendanceRate.toFixed(1)}%</p>
               </div>
             </div>
           </CardContent>
@@ -301,30 +301,30 @@ export default function KehadiranPage() {
 
       {/* Subject Selection */}
       <Card>
-        <CardHeader>
-          <CardTitle>Pilih Mata Kuliah</CardTitle>
-          <CardDescription>
+        <CardHeader className="px-3 md:px-6 pt-3 md:pt-6 pb-2 md:pb-4">
+          <CardTitle className="text-sm md:text-base">Pilih Mata Kuliah</CardTitle>
+          <CardDescription className="text-[10px] md:text-xs">
             {session.role === "dosen"
               ? "Pilih mata kuliah yang Anda ampu untuk melakukan input kehadiran"
               : "Pilih mata kuliah untuk melakukan input kehadiran mahasiswa"}
           </CardDescription>
         </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="subject">Mata Kuliah</Label>
+        <CardContent className="px-3 md:px-6 pb-3 md:pb-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3 md:gap-4">
+            <div className="space-y-1.5 md:space-y-2">
+              <Label htmlFor="subject" className="text-xs md:text-sm">Mata Kuliah</Label>
               <Select value={selectedSubject} onValueChange={setSelectedSubject}>
-                <SelectTrigger>
+                <SelectTrigger className="text-xs md:text-sm h-9 md:h-10">
                   <SelectValue placeholder="Pilih mata kuliah" />
                 </SelectTrigger>
                 <SelectContent>
                   {availableSubjects.map((subject) => (
-                    <SelectItem key={subject.id} value={subject.id}>
+                    <SelectItem key={subject.id} value={subject.id} className="text-xs md:text-sm">
                       <div className="flex flex-col">
                         <span className="font-medium">
                           {subject.kode} - {subject.nama}
                         </span>
-                        <span className="text-sm text-muted-foreground">
+                        <span className="text-[10px] md:text-xs text-muted-foreground">
                           Semester {subject.semester} • {subject.sks} SKS
                           {subject.kelas && ` • Kelas ${subject.kelas}`}
                           {subject.angkatan && ` • Angkatan ${subject.angkatan}`}
@@ -335,16 +335,16 @@ export default function KehadiranPage() {
                 </SelectContent>
               </Select>
             </div>
-            <div className="space-y-2">
-              <Label htmlFor="search">Cari Mahasiswa</Label>
+            <div className="space-y-1.5 md:space-y-2">
+              <Label htmlFor="search" className="text-xs md:text-sm">Cari Mahasiswa</Label>
               <div className="relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-3.5 w-3.5 md:h-4 md:w-4 text-muted-foreground" />
                 <Input
                   id="search"
                   placeholder="Cari berdasarkan nama atau NIM"
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pl-10"
+                  className="pl-9 md:pl-10 text-xs md:text-sm h-9 md:h-10"
                 />
               </div>
             </div>
@@ -355,27 +355,27 @@ export default function KehadiranPage() {
       {/* Attendance Entry Table */}
       {selectedSubject && selectedSubjectData && (
         <Card>
-          <CardHeader>
-            <div className="flex items-center justify-between">
-              <div>
-                <CardTitle>
+          <CardHeader className="px-3 md:px-6 pt-3 md:pt-6 pb-2 md:pb-4">
+            <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3 md:gap-4">
+              <div className="flex-1 min-w-0">
+                <CardTitle className="text-sm md:text-base truncate">
                   Daftar Kehadiran - {selectedSubjectData.nama}
                   {selectedSubjectData.kelas && ` (Kelas ${selectedSubjectData.kelas})`}
                 </CardTitle>
-                <CardDescription>Input kehadiran untuk {filteredStudents.length} mahasiswa yang terdaftar</CardDescription>
+                <CardDescription className="text-[10px] md:text-xs">Input kehadiran untuk {filteredStudents.length} mahasiswa yang terdaftar</CardDescription>
                 
                 {/* Meeting Selection */}
-                <div className="flex items-center gap-2 mt-4">
-                  <Label htmlFor="meeting" className="text-sm font-medium">
+                <div className="flex items-center gap-2 mt-2 md:mt-4">
+                  <Label htmlFor="meeting" className="text-xs md:text-sm font-medium">
                     Pertemuan:
                   </Label>
                   <Select value={selectedMeeting} onValueChange={setSelectedMeeting}>
-                    <SelectTrigger className="w-32">
+                    <SelectTrigger className="w-28 md:w-32 text-xs md:text-sm h-8 md:h-10">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
                       {Array.from({ length: 15 }, (_, i) => i + 1).map((meeting) => (
-                        <SelectItem key={meeting} value={meeting.toString()}>
+                        <SelectItem key={meeting} value={meeting.toString()} className="text-xs md:text-sm">
                           Pertemuan {meeting}
                         </SelectItem>
                       ))}
@@ -383,48 +383,49 @@ export default function KehadiranPage() {
                   </Select>
                 </div>
               </div>
-              <div className="flex gap-2">
-                <Button onClick={handleSaveAttendance} className="gap-2">
-                  <Save className="h-4 w-4" />
-                  Simpan Kehadiran
+              <div className="flex gap-2 w-full sm:w-auto">
+                <Button onClick={handleSaveAttendance} className="gap-1.5 md:gap-2 flex-1 sm:flex-none text-xs md:text-sm h-8 md:h-10">
+                  <Save className="h-3.5 w-3.5 md:h-4 md:w-4" />
+                  <span className="hidden sm:inline">Simpan Kehadiran</span>
+                  <span className="sm:hidden">Simpan</span>
                 </Button>
-                <Button variant="outline" onClick={handleExportAttendance} className="gap-2 bg-transparent">
-                  <FileDown className="h-4 w-4" />
-                  Export
+                <Button variant="outline" onClick={handleExportAttendance} className="gap-1.5 md:gap-2 bg-transparent px-2 md:px-4 text-xs md:text-sm h-8 md:h-10">
+                  <FileDown className="h-3.5 w-3.5 md:h-4 md:w-4" />
+                  <span className="hidden md:inline">Export</span>
                 </Button>
               </div>
             </div>
           </CardHeader>
-          <CardContent>
+          <CardContent className="px-3 md:px-6 pb-3 md:pb-6">
             {filteredStudents.length === 0 ? (
-              <div className="text-center py-8">
-                <Users className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-                <h3 className="text-lg font-semibold mb-2">Tidak Ada Mahasiswa</h3>
-                <p className="text-muted-foreground">
+              <div className="text-center py-6 md:py-8">
+                <Users className="h-10 w-10 md:h-12 md:w-12 text-muted-foreground mx-auto mb-3 md:mb-4" />
+                <h3 className="text-base md:text-lg font-semibold mb-1 md:mb-2">Tidak Ada Mahasiswa</h3>
+                <p className="text-muted-foreground text-xs md:text-sm">
                   {searchTerm
                     ? "Tidak ada mahasiswa yang sesuai dengan pencarian"
                     : "Belum ada mahasiswa yang mengambil mata kuliah ini"}
                 </p>
               </div>
             ) : (
-              <div className="rounded-md border">
+              <div className="rounded-md border max-h-[400px] md:max-h-[600px] overflow-auto">
                 <Table>
-                  <TableHeader>
-                    <TableRow className="bg-muted/50">
-                      <TableHead className="font-semibold">NIM</TableHead>
-                      <TableHead className="font-semibold">Nama Mahasiswa</TableHead>
-                      <TableHead className="font-semibold">Status Saat Ini</TableHead>
-                      <TableHead className="font-semibold">Kehadiran Hari Ini</TableHead>
-                      <TableHead className="font-semibold">Persentase Kehadiran</TableHead>
+                  <TableHeader className="sticky top-0 bg-muted/50 z-10">
+                    <TableRow>
+                      <TableHead className="font-semibold text-xs md:text-sm">NIM</TableHead>
+                      <TableHead className="font-semibold text-xs md:text-sm">Nama Mahasiswa</TableHead>
+                      <TableHead className="font-semibold text-xs md:text-sm">Status Saat Ini</TableHead>
+                      <TableHead className="font-semibold text-xs md:text-sm">Kehadiran Hari Ini</TableHead>
+                      <TableHead className="font-semibold text-xs md:text-sm">Persentase Kehadiran</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
                     {filteredStudents.map((student, index) => (
                       <TableRow key={student.id} className={index % 2 === 0 ? "bg-card" : "bg-background"}>
-                        <TableCell className="font-mono font-medium">{student.nim}</TableCell>
-                        <TableCell className="font-medium">{student.name}</TableCell>
+                        <TableCell className="font-mono font-medium text-xs md:text-sm">{student.nim}</TableCell>
+                        <TableCell className="font-medium text-xs md:text-sm">{student.name}</TableCell>
                         <TableCell>
-                          <Badge variant="secondary" className={getAttendanceBadgeColor(student.currentAttendance!)}>
+                          <Badge variant="secondary" className={`${getAttendanceBadgeColor(student.currentAttendance!)} text-xs`}>
                             {attendanceOptions.find(opt => opt.value === student.currentAttendance)?.label}
                           </Badge>
                         </TableCell>
@@ -433,14 +434,14 @@ export default function KehadiranPage() {
                             value={attendanceData[student.id] || student.currentAttendance || ""}
                             onValueChange={(value) => handleAttendanceChange(student.id, value)}
                           >
-                            <SelectTrigger className="w-32">
+                            <SelectTrigger className="w-28 md:w-32 text-xs md:text-sm h-8 md:h-10">
                               <SelectValue placeholder="Pilih status" />
                             </SelectTrigger>
                             <SelectContent>
                               {attendanceOptions.map((option) => (
-                                <SelectItem key={option.value} value={option.value}>
-                                  <div className="flex items-center gap-2">
-                                    <option.icon className="h-4 w-4" />
+                                <SelectItem key={option.value} value={option.value} className="text-xs md:text-sm">
+                                  <div className="flex items-center gap-1.5 md:gap-2">
+                                    <option.icon className="h-3.5 w-3.5 md:h-4 md:w-4" />
                                     {option.label}
                                   </div>
                                 </SelectItem>
@@ -449,9 +450,9 @@ export default function KehadiranPage() {
                           </Select>
                         </TableCell>
                         <TableCell>
-                          <div className="flex items-center gap-2">
-                            <div className="text-sm font-medium">{student.attendancePercentage}%</div>
-                            <Progress value={student.attendancePercentage} className="w-16 h-2" />
+                          <div className="flex items-center gap-1.5 md:gap-2">
+                            <div className="text-xs md:text-sm font-medium">{student.attendancePercentage}%</div>
+                            <Progress value={student.attendancePercentage} className="w-12 md:w-16 h-1.5 md:h-2" />
                           </div>
                         </TableCell>
                       </TableRow>

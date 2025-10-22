@@ -68,14 +68,9 @@ export function KrsPicker({ userId, term }: KrsPickerProps) {
 
   const handleAddOffering = (offering: CourseOffering) => {
     try {
-      addKrsItem(userId, offering.subjectId, term, offering.id)
       const subject = getSubjectById(offering.subjectId)
+      addKrsItem(userId, offering.subjectId, term, offering.id, subject?.nama, subject?.sks)
       showSuccess(`${subject?.nama} (Kelas ${offering.kelas}) berhasil ditambahkan ke KRS`)
-      
-      // Log activity
-      if (subject) {
-        ActivityLogger.krsAdded(userId, `${subject.kode} - ${subject.nama}`, subject.sks)
-      }
     } catch (error) {
       showError("Gagal menambahkan mata kuliah ke KRS")
     }

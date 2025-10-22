@@ -91,26 +91,26 @@ export default function KrsPage() {
   }
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
+    <div className="space-y-4 md:space-y-6 px-2 md:px-4">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">KRS (Kartu Rencana Studi)</h1>
-          <p className="text-muted-foreground">Kelola mata kuliah yang akan Anda ambil</p>
+          <h1 className="text-xl md:text-2xl lg:text-3xl font-bold tracking-tight">KRS (Kartu Rencana Studi)</h1>
+          <p className="text-muted-foreground text-sm md:text-base">Kelola mata kuliah yang akan Anda ambil</p>
         </div>
         <div className="flex items-center space-x-2">
-          <Button variant="outline" onClick={handleExportKrs} disabled={totalSks === 0}>
-            <Download className="h-4 w-4 mr-2" />
+          <Button variant="outline" onClick={handleExportKrs} disabled={totalSks === 0} className="text-xs md:text-sm">
+            <Download className="h-3.5 w-3.5 md:h-4 md:w-4 mr-1.5 md:mr-2" />
             Export CSV
           </Button>
-          <Button variant="outline" onClick={handleClearKrs} disabled={totalSks === 0}>
-            <Trash2 className="h-4 w-4 mr-2" />
+          <Button variant="outline" onClick={handleClearKrs} disabled={totalSks === 0} className="text-xs md:text-sm">
+            <Trash2 className="h-3.5 w-3.5 md:h-4 md:w-4 mr-1.5 md:mr-2" />
             Hapus Semua
           </Button>
         </div>
       </div>
 
-      <div className="grid gap-6 lg:grid-cols-3">
-        <div className="lg:col-span-2 space-y-6">
+      <div className="grid gap-4 md:gap-6 lg:grid-cols-3">
+        <div className="lg:col-span-2 space-y-4 md:space-y-6">
           <KrsPicker userId={session.id} term={currentTerm} />
           <KrsTable userId={session.id} term={currentTerm} onScheduleSuggestion={handleScheduleSuggestion} />
         </div>
