@@ -306,25 +306,25 @@ export default function JadwalPage() {
 
   // Simple View Component
   const renderSimpleView = () => (
-    <div className="space-y-6 animate-fade-in">
-      <div className="flex flex-col sm:flex-row gap-4">
+    <div className="space-y-4 md:space-y-6 animate-fade-in">
+      <div className="flex flex-col sm:flex-row gap-3 md:gap-4">
         <div className="relative flex-1">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-3.5 w-3.5 md:h-4 md:w-4 text-muted-foreground" />
           <Input
             placeholder="Cari mata kuliah atau dosen..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="pl-10"
+            className="pl-9 md:pl-10 text-xs md:text-sm h-9 md:h-10"
           />
         </div>
-        <div className="flex gap-2 flex-wrap">
+        <div className="flex gap-1.5 md:gap-2 flex-wrap">
           {days.map((day) => (
             <Button
               key={day}
               variant={selectedDay === day ? "default" : "outline"}
               size="sm"
               onClick={() => setSelectedDay(day)}
-              className="capitalize"
+              className="capitalize text-xs md:text-sm h-8 md:h-9 px-2 md:px-3"
             >
               {day === "all" ? "Semua" : day}
             </Button>
@@ -332,13 +332,13 @@ export default function JadwalPage() {
         </div>
       </div>
 
-      <div className="grid gap-4">
+      <div className="grid gap-3 md:gap-4 max-h-[calc(100vh-400px)] md:max-h-none overflow-y-auto">
         {filteredSchedule.length === 0 ? (
           <Card>
-            <CardContent className="flex flex-col items-center justify-center py-12">
-              <Calendar className="h-12 w-12 text-muted-foreground mb-4" />
-              <h3 className="text-lg font-semibold mb-2">Tidak ada jadwal ditemukan</h3>
-              <p className="text-muted-foreground text-center">
+            <CardContent className="flex flex-col items-center justify-center py-8 md:py-12 px-4">
+              <Calendar className="h-10 w-10 md:h-12 md:w-12 text-muted-foreground mb-3 md:mb-4" />
+              <h3 className="text-base md:text-lg font-semibold mb-1 md:mb-2">Tidak ada jadwal ditemukan</h3>
+              <p className="text-muted-foreground text-center text-xs md:text-sm">
                 {searchTerm || selectedDay !== "all"
                   ? "Coba ubah filter pencarian Anda"
                   : "Belum ada jadwal yang ditambahkan"}
@@ -348,46 +348,46 @@ export default function JadwalPage() {
         ) : (
           filteredSchedule.map((item) => (
             <Card key={item.id} className="hover:shadow-md transition-shadow card-interactive">
-              <CardContent className="p-6">
-                <div className="flex flex-col sm:flex-row justify-between items-start gap-4">
-                  <div className="flex-1 space-y-3">
-                    <div className="flex items-start justify-between">
-                      <div>
-                        <h3 className="text-lg font-semibold text-foreground">{item.subject}</h3>
-                        <p className="text-sm text-muted-foreground font-medium">{item.code}</p>
+              <CardContent className="p-3 md:p-4 lg:p-6">
+                <div className="flex flex-col sm:flex-row justify-between items-start gap-3 md:gap-4">
+                  <div className="flex-1 space-y-2 md:space-y-3 w-full min-w-0">
+                    <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-2">
+                      <div className="min-w-0 flex-1">
+                        <h3 className="text-sm md:text-base lg:text-lg font-semibold text-foreground truncate">{item.subject}</h3>
+                        <p className="text-xs md:text-sm text-muted-foreground font-medium">{item.code}</p>
                       </div>
-                      <Badge className={getTypeColor(item.type)}>{getTypeLabel(item.type)}</Badge>
+                      <Badge className={`${getTypeColor(item.type)} text-xs w-fit shrink-0`}>{getTypeLabel(item.type)}</Badge>
                     </div>
 
-                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-sm">
-                      <div className="flex items-center gap-2 text-foreground">
-                        <User className="h-4 w-4 text-muted-foreground" />
-                        <span className="font-medium">{item.lecturer}</span>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2 md:gap-3 text-xs md:text-sm">
+                      <div className="flex items-center gap-1.5 md:gap-2 text-foreground min-w-0">
+                        <User className="h-3.5 w-3.5 md:h-4 md:w-4 text-muted-foreground shrink-0" />
+                        <span className="font-medium truncate">{item.lecturer}</span>
                       </div>
-                      <div className="flex items-center gap-2 text-foreground">
-                        <Clock className="h-4 w-4 text-muted-foreground" />
-                        <span className="font-medium">
+                      <div className="flex items-center gap-1.5 md:gap-2 text-foreground min-w-0">
+                        <Clock className="h-3.5 w-3.5 md:h-4 md:w-4 text-muted-foreground shrink-0" />
+                        <span className="font-medium truncate">
                           {item.day}, {item.time}
                         </span>
                       </div>
-                      <div className="flex items-center gap-2 text-foreground">
-                        <MapPin className="h-4 w-4 text-muted-foreground" />
-                        <span className="font-medium">{item.room}</span>
+                      <div className="flex items-center gap-1.5 md:gap-2 text-foreground min-w-0">
+                        <MapPin className="h-3.5 w-3.5 md:h-4 md:w-4 text-muted-foreground shrink-0" />
+                        <span className="font-medium truncate">{item.room}</span>
                       </div>
                     </div>
                   </div>
 
-                  <div className="flex gap-2">
-                    <Button variant="outline" size="sm" onClick={() => handleEditEvent(item)}>
+                  <div className="flex gap-2 w-full sm:w-auto">
+                    <Button variant="outline" size="sm" onClick={() => handleEditEvent(item)} className="flex-1 sm:flex-none text-xs md:text-sm h-8 md:h-9">
                       Edit
                     </Button>
                     <Button 
                       variant="outline" 
                       size="sm"
                       onClick={() => handleDeleteEvent(item)}
-                      className="text-destructive hover:bg-destructive/10 hover:text-destructive"
+                      className="text-destructive hover:bg-destructive/10 hover:text-destructive h-8 md:h-9 px-2 md:px-3"
                     >
-                      <Trash2 className="h-4 w-4" />
+                      <Trash2 className="h-3.5 w-3.5 md:h-4 md:w-4" />
                     </Button>
                   </div>
                 </div>
@@ -431,50 +431,50 @@ export default function JadwalPage() {
   )
 
   return (
-    <div className="space-y-8 animate-fade-in max-w-7xl mx-auto">
+    <div className="space-y-6 md:space-y-8 animate-fade-in max-w-7xl mx-auto px-2 md:px-4">
       {/* Header */}
-      <div className="flex items-center justify-between animate-slide-up">
+      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 animate-slide-up">
         <div>
-          <h1 className="text-5xl font-bold tracking-tight text-gray-900 dark:text-gray-100 animate-float">
+          <h1 className="text-2xl md:text-3xl lg:text-4xl xl:text-5xl font-bold tracking-tight text-gray-900 dark:text-gray-100 animate-float">
             Jadwal Kuliah
           </h1>
-          <p className="text-gray-900 dark:text-gray-100 text-xl mt-2 animate-slide-in-left font-bold">
+          <p className="text-gray-900 dark:text-gray-100 text-sm md:text-base lg:text-xl mt-1 md:mt-2 animate-slide-in-left font-bold">
             Kelola jadwal mingguan Anda dengan mudah
           </p>
         </div>
 
-        <div className="flex items-center space-x-3 animate-slide-in-right">
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center space-y-2 sm:space-y-0 sm:space-x-3 animate-slide-in-right">
           {/* View Mode Toggle */}
           <div className="flex items-center rounded-lg border-2 border-primary/20 bg-background p-1">
             <Button
               variant={viewMode === "simple" ? "default" : "ghost"}
               size="sm"
               onClick={() => setViewMode("simple")}
-              className="flex items-center gap-2"
+              className="flex items-center gap-1.5 md:gap-2 text-xs md:text-sm flex-1 sm:flex-none"
             >
-              <List className="h-4 w-4" />
-              Simpel
+              <List className="h-3.5 w-3.5 md:h-4 md:w-4" />
+              <span className="hidden xs:inline">Simpel</span>
             </Button>
             <Button
               variant={viewMode === "weekly" ? "default" : "ghost"}
               size="sm"
               onClick={() => setViewMode("weekly")}
-              className="flex items-center gap-2"
+              className="flex items-center gap-1.5 md:gap-2 text-xs md:text-sm flex-1 sm:flex-none"
             >
-              <Grid3x3 className="h-4 w-4" />
-              Mingguan
+              <Grid3x3 className="h-3.5 w-3.5 md:h-4 md:w-4" />
+              <span className="hidden xs:inline">Mingguan</span>
             </Button>
           </div>
 
           <Button
             variant="outline"
             onClick={() => handleAddEvent()}
-            className="button-modern border-2 border-primary/20 hover:border-primary/50"
+            className="button-modern border-2 border-primary/20 hover:border-primary/50 text-xs md:text-sm"
           >
-            <Plus className="h-5 w-5 mr-2" />
-            Tambah Jadwal
-            <kbd className="ml-3 pointer-events-none hidden sm:inline-flex h-6 select-none items-center gap-1 rounded border bg-muted px-2 font-mono text-xs font-medium text-muted-foreground">
-              <Command className="h-3 w-3" />K
+            <Plus className="h-4 w-4 md:h-5 md:w-5 mr-1.5 md:mr-2" />
+            <span className="hidden xs:inline">Tambah </span>Jadwal
+            <kbd className="ml-2 md:ml-3 pointer-events-none hidden lg:inline-flex h-5 md:h-6 select-none items-center gap-1 rounded border bg-muted px-1.5 md:px-2 font-mono text-[10px] md:text-xs font-medium text-muted-foreground">
+              <Command className="h-2.5 w-2.5 md:h-3 md:w-3" />K
             </kbd>
           </Button>
 
@@ -482,39 +482,39 @@ export default function JadwalPage() {
             <DropdownMenuTrigger asChild>
               <Button
                 variant="outline"
-                className="button-modern border-2 border-primary/20 hover:border-primary/50 bg-transparent"
+                className="button-modern border-2 border-primary/20 hover:border-primary/50 bg-transparent px-2 md:px-3"
               >
-                <Settings className="h-5 w-5" />
+                <Settings className="h-4 w-4 md:h-5 md:w-5" />
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="glass-effect border-2 border-primary/20">
-              <DropdownMenuItem onClick={handleExportICS} className="hover:bg-primary/10">
-                <Download className="mr-2 h-4 w-4" />
+              <DropdownMenuItem onClick={handleExportICS} className="hover:bg-primary/10 text-xs md:text-sm">
+                <Download className="mr-2 h-3.5 w-3.5 md:h-4 md:w-4" />
                 Export ICS
               </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => setShowImportDialog(true)} className="hover:bg-primary/10">
-                <Upload className="mr-2 h-4 w-4" />
+              <DropdownMenuItem onClick={() => setShowImportDialog(true)} className="hover:bg-primary/10 text-xs md:text-sm">
+                <Upload className="mr-2 h-3.5 w-3.5 md:h-4 md:w-4" />
                 Import ICS
               </DropdownMenuItem>
               <DropdownMenuSeparator />
-              <DropdownMenuItem onClick={handlePrint} className="hover:bg-primary/10">
-                <Printer className="mr-2 h-4 w-4" />
+              <DropdownMenuItem onClick={handlePrint} className="hover:bg-primary/10 text-xs md:text-sm">
+                <Printer className="mr-2 h-3.5 w-3.5 md:h-4 md:w-4" />
                 Print
               </DropdownMenuItem>
               {viewMode === "weekly" && (
                 <>
                   <DropdownMenuSeparator />
-                  <DropdownMenuItem onClick={() => setShowNowLine(!showNowLine)} className="hover:bg-primary/10">
+                  <DropdownMenuItem onClick={() => setShowNowLine(!showNowLine)} className="hover:bg-primary/10 text-xs md:text-sm">
                     {showNowLine ? "Sembunyikan" : "Tampilkan"} Garis Waktu
                   </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => setShowLegend(!showLegend)} className="hover:bg-primary/10">
+                  <DropdownMenuItem onClick={() => setShowLegend(!showLegend)} className="hover:bg-primary/10 text-xs md:text-sm">
                     {showLegend ? "Sembunyikan" : "Tampilkan"} Legenda
                   </DropdownMenuItem>
                 </>
               )}
               <DropdownMenuSeparator />
-              <DropdownMenuItem onClick={handleClearSchedule} className="text-destructive hover:bg-destructive/10">
-                <Trash2 className="mr-2 h-4 w-4" />
+              <DropdownMenuItem onClick={handleClearSchedule} className="text-destructive hover:bg-destructive/10 text-xs md:text-sm">
+                <Trash2 className="mr-2 h-3.5 w-3.5 md:h-4 md:w-4" />
                 Hapus Semua
               </DropdownMenuItem>
             </DropdownMenuContent>
@@ -523,62 +523,62 @@ export default function JadwalPage() {
       </div>
 
       {/* Stats Cards */}
-      <div className="grid gap-6 md:grid-cols-4 animate-slide-up">
+      <div className="hidden md:flex gap-3 md:gap-4 overflow-x-auto pb-2 snap-x snap-mandatory animate-slide-up">
         <Card className="card-interactive border-2 border-blue-200 dark:border-blue-800 hover:border-blue-400 dark:hover:border-blue-600 group">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
-            <CardTitle className="text-sm font-bold">Total Jadwal</CardTitle>
-            <Calendar className="h-6 w-6 text-blue-500 group-hover:scale-125 transition-transform duration-300" />
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 md:pb-3 px-3 md:px-6 pt-3 md:pt-6">
+            <CardTitle className="text-xs md:text-sm font-bold">Total Jadwal</CardTitle>
+            <Calendar className="h-5 w-5 md:h-6 md:w-6 text-blue-500 group-hover:scale-125 transition-transform duration-300" />
           </CardHeader>
-          <CardContent>
-            <div className="text-4xl font-bold text-blue-600 dark:text-blue-400 mb-2">{weeklyStats.totalEvents}</div>
-            <p className="text-sm text-gray-700 dark:text-gray-300 font-semibold">Jadwal mingguan</p>
-            <div className="mt-3 flex items-center text-xs text-blue-600 dark:text-blue-400 font-medium">
-              <TrendingUp className="h-3 w-3 mr-1" />
+          <CardContent className="px-3 md:px-6 pb-3 md:pb-6">
+            <div className="text-3xl md:text-4xl font-bold text-blue-600 dark:text-blue-400 mb-1 md:mb-2">{weeklyStats.totalEvents}</div>
+            <p className="text-xs md:text-sm text-gray-700 dark:text-gray-300 font-semibold">Jadwal mingguan</p>
+            <div className="mt-2 md:mt-3 flex items-center text-[10px] md:text-xs text-blue-600 dark:text-blue-400 font-medium">
+              <TrendingUp className="h-2.5 w-2.5 md:h-3 md:w-3 mr-1" />
               {weeklyStats.uniqueSubjects} mata kuliah
             </div>
           </CardContent>
         </Card>
 
         <Card className="card-interactive border-2 border-green-200 dark:border-green-800 hover:border-green-400 dark:hover:border-green-600 group">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
-            <CardTitle className="text-sm font-bold">Hari Ini</CardTitle>
-            <Clock className="h-6 w-6 text-green-500 group-hover:scale-125 transition-transform duration-300" />
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 md:pb-3 px-3 md:px-6 pt-3 md:pt-6">
+            <CardTitle className="text-xs md:text-sm font-bold">Hari Ini</CardTitle>
+            <Clock className="h-5 w-5 md:h-6 md:w-6 text-green-500 group-hover:scale-125 transition-transform duration-300" />
           </CardHeader>
-          <CardContent>
-            <div className="text-4xl font-bold text-green-600 dark:text-green-400 mb-2">{weeklyStats.todayEvents}</div>
-            <p className="text-sm text-gray-700 dark:text-gray-300 font-semibold">Kelas hari ini</p>
-            <div className="mt-3 flex items-center text-xs text-green-600 dark:text-green-400 font-medium">
-              <Activity className="h-3 w-3 mr-1" />
+          <CardContent className="px-3 md:px-6 pb-3 md:pb-6">
+            <div className="text-3xl md:text-4xl font-bold text-green-600 dark:text-green-400 mb-1 md:mb-2">{weeklyStats.todayEvents}</div>
+            <p className="text-xs md:text-sm text-gray-700 dark:text-gray-300 font-semibold">Kelas hari ini</p>
+            <div className="mt-2 md:mt-3 flex items-center text-[10px] md:text-xs text-green-600 dark:text-green-400 font-medium">
+              <Activity className="h-2.5 w-2.5 md:h-3 md:w-3 mr-1" />
               {weeklyStats.todayEvents > 0 ? "Ada kelas" : "Tidak ada kelas"}
             </div>
           </CardContent>
         </Card>
 
         <Card className="card-interactive border-2 border-purple-200 dark:border-purple-800 hover:border-purple-400 dark:hover:border-purple-600 group">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
-            <CardTitle className="text-sm font-bold">Mata Kuliah</CardTitle>
-            <Users className="h-6 w-6 text-purple-500 group-hover:scale-125 transition-transform duration-300" />
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 md:pb-3 px-3 md:px-6 pt-3 md:pt-6">
+            <CardTitle className="text-xs md:text-sm font-bold">Mata Kuliah</CardTitle>
+            <Users className="h-5 w-5 md:h-6 md:w-6 text-purple-500 group-hover:scale-125 transition-transform duration-300" />
           </CardHeader>
-          <CardContent>
-            <div className="text-4xl font-bold text-purple-600 dark:text-purple-400 mb-2">{weeklyStats.uniqueSubjects}</div>
-            <p className="text-sm text-gray-700 dark:text-gray-300 font-semibold">Mata kuliah aktif</p>
-            <div className="mt-3 flex items-center text-xs text-purple-600 dark:text-purple-400 font-medium">
-              <Sparkles className="h-3 w-3 mr-1" />
+          <CardContent className="px-3 md:px-6 pb-3 md:pb-6">
+            <div className="text-3xl md:text-4xl font-bold text-purple-600 dark:text-purple-400 mb-1 md:mb-2">{weeklyStats.uniqueSubjects}</div>
+            <p className="text-xs md:text-sm text-gray-700 dark:text-gray-300 font-semibold">Mata kuliah aktif</p>
+            <div className="mt-2 md:mt-3 flex items-center text-[10px] md:text-xs text-purple-600 dark:text-purple-400 font-medium">
+              <Sparkles className="h-2.5 w-2.5 md:h-3 md:w-3 mr-1" />
               Semester ini
             </div>
           </CardContent>
         </Card>
 
         <Card className="card-interactive border-2 border-orange-200 dark:border-orange-800 hover:border-orange-400 dark:hover:border-orange-600 group">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
-            <CardTitle className="text-sm font-bold">Total Jam</CardTitle>
-            <Clock className="h-6 w-6 text-orange-500 group-hover:scale-125 transition-transform duration-300" />
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 md:pb-3 px-3 md:px-6 pt-3 md:pt-6">
+            <CardTitle className="text-xs md:text-sm font-bold">Total Jam</CardTitle>
+            <Clock className="h-5 w-5 md:h-6 md:w-6 text-orange-500 group-hover:scale-125 transition-transform duration-300" />
           </CardHeader>
-          <CardContent>
-            <div className="text-4xl font-bold text-orange-600 dark:text-orange-400 mb-2">{Math.round(weeklyStats.totalHours)}</div>
-            <p className="text-sm text-gray-700 dark:text-gray-300 font-semibold">Jam per minggu</p>
-            <div className="mt-3 flex items-center text-xs text-orange-600 dark:text-orange-400 font-medium">
-              <TrendingUp className="h-3 w-3 mr-1" />
+          <CardContent className="px-3 md:px-6 pb-3 md:pb-6">
+            <div className="text-3xl md:text-4xl font-bold text-orange-600 dark:text-orange-400 mb-1 md:mb-2">{Math.round(weeklyStats.totalHours)}</div>
+            <p className="text-xs md:text-sm text-gray-700 dark:text-gray-300 font-semibold">Jam per minggu</p>
+            <div className="mt-2 md:mt-3 flex items-center text-[10px] md:text-xs text-orange-600 dark:text-orange-400 font-medium">
+              <TrendingUp className="h-2.5 w-2.5 md:h-3 md:w-3 mr-1" />
               {Math.round(weeklyStats.totalHours / 7)} jam/hari
             </div>
           </CardContent>

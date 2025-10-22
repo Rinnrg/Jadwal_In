@@ -1,8 +1,52 @@
 import { useSubjectsStore } from "@/stores/subjects.store"
 import { useProfileStore } from "@/stores/profile.store"
 import { useUsersStore } from "@/stores/users.store"
+import { useSessionStore } from "@/stores/session.store"
 import { generateId } from "@/lib/utils"
 import type { Subject } from "@/data/schema"
+
+// Fetch user profile from database
+export async function fetchUserProfile() {
+  const session = useSessionStore.getState().session
+  if (!session) return
+
+  try {
+    const response = await fetch(`/api/profile/${session.id}`)
+    if (response.ok) {
+      const { profile } = await response.json()
+      const profileStore = useProfileStore.getState()
+      
+      // Update local store with database profile
+      if (profile) {
+        const existingProfile = profileStore.getProfile(session.id)
+        if (existingProfile) {
+          profileStore.updateProfile(session.id, {
+            nim: profile.nim,
+            angkatan: profile.angkatan,
+            kelas: profile.kelas,
+            prodi: profile.prodi,
+            bio: profile.bio,
+            website: profile.website,
+            avatarUrl: profile.avatarUrl,
+          })
+        } else {
+          profileStore.createProfile({
+            userId: profile.userId,
+            nim: profile.nim,
+            angkatan: profile.angkatan,
+            kelas: profile.kelas,
+            prodi: profile.prodi,
+            bio: profile.bio,
+            website: profile.website,
+            avatarUrl: profile.avatarUrl,
+          })
+        }
+      }
+    }
+  } catch (error) {
+    console.error('Failed to fetch user profile:', error)
+  }
+}
 
 // Bootstrap data for demo
 export function bootstrapData() {

@@ -11,6 +11,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { AvatarUploader } from "@/components/profile/AvatarUploader"
 import { EKTMDialog } from "@/components/profile/EKTMDialog"
 import { showSuccess, showError } from "@/lib/alerts"
+import { ActivityLogger } from "@/lib/activity-logger"
 import { Lock, IdCard } from "lucide-react"
 
 interface ProfileFormProps {
@@ -20,7 +21,7 @@ interface ProfileFormProps {
 }
 
 export function ProfileForm({ profile, onSuccess, onChangePassword }: ProfileFormProps) {
-  const { session } = useSessionStore()
+  const { session, updateSessionImage } = useSessionStore()
   const { updateProfile, createProfile } = useProfileStore()
   const [showEKTM, setShowEKTM] = useState(false)
 
@@ -106,28 +107,48 @@ export function ProfileForm({ profile, onSuccess, onChangePassword }: ProfileFor
 
   const angkatan = session ? getAngkatanFromEmail(session.email) : new Date().getFullYear()
 
-  const handleAvatarChange = (avatarUrl: string) => {
+  const handleAvatarChange = async (avatarUrl: string) => {
     if (!session) return
 
     try {
-      const profileData = { avatarUrl }
+      // Update profile via API
+      const response = await fetch(`/api/profile/${session.id}`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ avatarUrl }),
+      })
 
+      if (!response.ok) {
+        throw new Error('Failed to update profile')
+      }
+
+      const { profile: updatedProfile } = await response.json()
+
+      // Update local store with the server response
       if (profile) {
-        // Update existing profile
-        updateProfile(session.id, profileData)
+        updateProfile(session.id, { avatarUrl })
       } else {
-        // Create new profile with minimal required data
+        // Create new profile in local store
         const newProfile = {
           userId: session.id,
-          angkatan: angkatan, // Use calculated angkatan from email
-          kelas: session.role === "mahasiswa" ? "A" : "DOSEN", // Default based on role
+          angkatan: updatedProfile.angkatan || angkatan,
+          kelas: updatedProfile.kelas || (session.role === "mahasiswa" ? "A" : "DOSEN"),
           avatarUrl
         }
         createProfile(newProfile)
       }
       
+      // Update session image for immediate UI update
+      updateSessionImage(avatarUrl)
+      
+      // Log activity
+      ActivityLogger.profilePictureUpdated(session.id)
+      
       // Note: Success message is shown in AvatarUploader component
     } catch (error) {
+      console.error('Avatar update error:', error)
       showError("Gagal menyimpan avatar. Silakan coba lagi.")
     }
   }

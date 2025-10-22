@@ -76,6 +76,7 @@ model User {
   attendanceRecords  AttendanceRecord[]
   taughtSubjects     Subject[]          @relation("DosenSubjects")
   gradedSubmissions  Submission[]       @relation("GradedBy")
+  activityLogs       ActivityLog[]
   
   @@index([email])
   @@index([role])
@@ -393,5 +394,27 @@ model Reminder {
   @@index([dueUTC])
   @@index([isActive])
   @@map("reminders")
+}
+
+// ActivityLog Model - log aktivitas user
+model ActivityLog {
+  id          String   @id @default(cuid())
+  userId      String
+  title       String
+  description String?  @db.Text
+  category    String   // schedule, krs, reminder, subject, attendance, assignment, material, profile, password, other
+  action      String   // created, updated, deleted, submitted, uploaded, completed
+  icon        String   @default("Star")
+  color       String   @default("text-gray-500")
+  metadata    Json?    // Additional data in JSON format
+  
+  createdAt DateTime @default(now())
+  
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  @@index([userId])
+  @@index([category])
+  @@index([createdAt])
+  @@map("activity_logs")
 }
 

@@ -59,17 +59,17 @@ export default function SubjectsPage() {
 
   if (showForm) {
     return (
-      <div className="space-y-8 animate-fade-in">
-        <div className="flex items-center space-x-6 animate-slide-in-left">
-          <Button variant="ghost" onClick={handleCancel} className="button-modern cursor-pointer">
-            <ArrowLeft className="h-5 w-5 mr-2" />
+      <div className="space-y-6 md:space-y-8 animate-fade-in px-2 md:px-4">
+        <div className="flex items-center space-x-4 md:space-x-6 animate-slide-in-left">
+          <Button variant="ghost" onClick={handleCancel} className="button-modern cursor-pointer text-xs md:text-sm">
+            <ArrowLeft className="h-4 w-4 md:h-5 md:w-5 mr-1.5 md:mr-2" />
             Kembali
           </Button>
           <div>
-            <h1 className="text-4xl font-bold tracking-tight">
+            <h1 className="text-2xl md:text-3xl lg:text-4xl font-bold tracking-tight">
               {editingSubject ? "Edit Mata Kuliah" : "Tambah Mata Kuliah"}
             </h1>
-            <p className="text-muted-foreground text-lg mt-2">
+            <p className="text-muted-foreground text-sm md:text-base lg:text-lg mt-1 md:mt-2">
               {editingSubject ? "Perbarui informasi mata kuliah" : "Tambahkan mata kuliah baru ke katalog"}
             </p>
           </div>
@@ -93,83 +93,83 @@ export default function SubjectsPage() {
   }
 
   return (
-    <div className="space-y-8 animate-fade-in max-w-7xl mx-auto pb-16">
-      <div className="flex items-center justify-between animate-slide-up">
+    <div className="space-y-6 md:space-y-8 animate-fade-in max-w-7xl mx-auto pb-16 px-2 md:px-4">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 animate-slide-up">
         <div>
-          <h1 className="text-5xl font-bold tracking-tight animate-float">
+          <h1 className="text-2xl md:text-3xl lg:text-4xl xl:text-5xl font-bold tracking-tight animate-float">
             Mata Kuliah
           </h1>
-          <p className="text-muted-foreground text-xl mt-2 animate-slide-in-left" style={{ animationDelay: "0.1s" }}>
+          <p className="text-muted-foreground text-sm md:text-base lg:text-xl mt-1 md:mt-2 animate-slide-in-left" style={{ animationDelay: "0.1s" }}>
             Kelola mata kuliah program studi
           </p>
         </div>
         {canEditSubject(session.role) && (
           <Button
             onClick={() => setShowForm(true)}
-            className="px-6 py-3 rounded-xl shadow-lg animate-slide-in-right cursor-pointer"
+            className="px-4 md:px-6 py-2 md:py-3 rounded-xl shadow-lg animate-slide-in-right cursor-pointer text-xs md:text-sm w-full sm:w-auto"
           >
-            <Plus className="h-5 w-5 mr-2" />
+            <Plus className="h-4 w-4 md:h-5 md:w-5 mr-1.5 md:mr-2" />
             Tambah Mata Kuliah
           </Button>
         )}
       </div>
 
-      <div className="grid gap-6 md:grid-cols-4 animate-slide-up" style={{ animationDelay: "0.2s" }}>
-        <Card className="card-interactive border-2 border-blue-200 dark:border-blue-800 hover:border-blue-400 dark:hover:border-blue-600 group">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
-            <CardTitle className="text-sm font-bold">Total Mata Kuliah</CardTitle>
-            <BookOpen className="h-6 w-6 text-blue-500 group-hover:scale-125 transition-transform duration-300" />
+      <div className="hidden md:flex gap-3 md:gap-4 overflow-x-auto pb-2 snap-x snap-mandatory animate-slide-up" style={{ animationDelay: "0.2s" }}>
+        <Card className="card-interactive border-2 border-blue-200 dark:border-blue-800 hover:border-blue-400 dark:hover:border-blue-600 group min-w-[240px] md:min-w-[280px] snap-start">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 md:pb-3 px-3 md:px-6 pt-3 md:pt-6">
+            <CardTitle className="text-xs md:text-sm font-bold">Total Mata Kuliah</CardTitle>
+            <BookOpen className="h-5 w-5 md:h-6 md:w-6 text-blue-500 group-hover:scale-125 transition-transform duration-300" />
           </CardHeader>
-          <CardContent>
-            <div className="text-4xl font-bold text-blue-600 mb-2">{subjectStats.total}</div>
-            <p className="text-sm text-muted-foreground">Mata kuliah tersedia</p>
-            <div className="mt-3 flex items-center text-xs text-blue-600">
-              <TrendingUp className="h-3 w-3 mr-1" />
+          <CardContent className="px-3 md:px-6 pb-3 md:pb-6">
+            <div className="text-3xl md:text-4xl font-bold text-blue-600 mb-1 md:mb-2">{subjectStats.total}</div>
+            <p className="text-xs md:text-sm text-muted-foreground">Mata kuliah tersedia</p>
+            <div className="mt-2 md:mt-3 flex items-center text-[10px] md:text-xs text-blue-600">
+              <TrendingUp className="h-2.5 w-2.5 md:h-3 md:w-3 mr-1" />
               {subjectStats.active} aktif
             </div>
           </CardContent>
         </Card>
 
-        <Card className="card-interactive border-2 border-green-200 dark:border-green-800 hover:border-green-400 dark:hover:border-green-600 group">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
-            <CardTitle className="text-sm font-bold">Mata Kuliah Aktif</CardTitle>
-            <Activity className="h-6 w-6 text-green-500 group-hover:scale-125 transition-transform duration-300" />
+        <Card className="card-interactive border-2 border-green-200 dark:border-green-800 hover:border-green-400 dark:hover:border-green-600 group min-w-[240px] md:min-w-[280px] snap-start">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 md:pb-3 px-3 md:px-6 pt-3 md:pt-6">
+            <CardTitle className="text-xs md:text-sm font-bold">Mata Kuliah Aktif</CardTitle>
+            <Activity className="h-5 w-5 md:h-6 md:w-6 text-green-500 group-hover:scale-125 transition-transform duration-300" />
           </CardHeader>
-          <CardContent>
-            <div className="text-4xl font-bold text-green-600 mb-2">{subjectStats.active}</div>
-            <p className="text-sm text-muted-foreground">Semester ini</p>
-            <div className="mt-3 flex items-center text-xs text-green-600">
-              <Target className="h-3 w-3 mr-1" />
+          <CardContent className="px-3 md:px-6 pb-3 md:pb-6">
+            <div className="text-3xl md:text-4xl font-bold text-green-600 mb-1 md:mb-2">{subjectStats.active}</div>
+            <p className="text-xs md:text-sm text-muted-foreground">Semester ini</p>
+            <div className="mt-2 md:mt-3 flex items-center text-[10px] md:text-xs text-green-600">
+              <Target className="h-2.5 w-2.5 md:h-3 md:w-3 mr-1" />
               {Math.round((subjectStats.active / subjectStats.total) * 100)}% dari total
             </div>
           </CardContent>
         </Card>
 
-        <Card className="card-interactive border-2 border-purple-200 dark:border-purple-800 hover:border-purple-400 dark:hover:border-purple-600 group">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
-            <CardTitle className="text-sm font-bold">Total SKS</CardTitle>
-            <Award className="h-6 w-6 text-purple-500 group-hover:scale-125 transition-transform duration-300" />
+        <Card className="card-interactive border-2 border-purple-200 dark:border-purple-800 hover:border-purple-400 dark:hover:border-purple-600 group min-w-[240px] md:min-w-[280px] snap-start">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 md:pb-3 px-3 md:px-6 pt-3 md:pt-6">
+            <CardTitle className="text-xs md:text-sm font-bold">Total SKS</CardTitle>
+            <Award className="h-5 w-5 md:h-6 md:w-6 text-purple-500 group-hover:scale-125 transition-transform duration-300" />
           </CardHeader>
-          <CardContent>
-            <div className="text-4xl font-bold text-purple-600 mb-2">{subjectStats.totalCredits}</div>
-            <p className="text-sm text-muted-foreground">Satuan Kredit Semester</p>
-            <div className="mt-3 flex items-center text-xs text-purple-600">
-              <Sparkles className="h-3 w-3 mr-1" />
+          <CardContent className="px-3 md:px-6 pb-3 md:pb-6">
+            <div className="text-3xl md:text-4xl font-bold text-purple-600 mb-1 md:mb-2">{subjectStats.totalCredits}</div>
+            <p className="text-xs md:text-sm text-muted-foreground">Satuan Kredit Semester</p>
+            <div className="mt-2 md:mt-3 flex items-center text-[10px] md:text-xs text-purple-600">
+              <Sparkles className="h-2.5 w-2.5 md:h-3 md:w-3 mr-1" />
               Rata-rata {subjectStats.avgCredits} SKS
             </div>
           </CardContent>
         </Card>
 
-        <Card className="card-interactive border-2 border-orange-200 dark:border-orange-800 hover:border-orange-400 dark:hover:border-orange-600 group">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
-            <CardTitle className="text-sm font-bold">Rata-rata SKS</CardTitle>
-            <Clock className="h-6 w-6 text-orange-500 group-hover:scale-125 transition-transform duration-300" />
+        <Card className="card-interactive border-2 border-orange-200 dark:border-orange-800 hover:border-orange-400 dark:hover:border-orange-600 group min-w-[240px] md:min-w-[280px] snap-start">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 md:pb-3 px-3 md:px-6 pt-3 md:pt-6">
+            <CardTitle className="text-xs md:text-sm font-bold">Rata-rata SKS</CardTitle>
+            <Clock className="h-5 w-5 md:h-6 md:w-6 text-orange-500 group-hover:scale-125 transition-transform duration-300" />
           </CardHeader>
-          <CardContent>
-            <div className="text-4xl font-bold text-orange-600 mb-2">{subjectStats.avgCredits}</div>
-            <p className="text-sm text-muted-foreground">SKS per mata kuliah</p>
-            <div className="mt-3 flex items-center text-xs text-orange-600">
-              <TrendingUp className="h-3 w-3 mr-1" />
+          <CardContent className="px-3 md:px-6 pb-3 md:pb-6">
+            <div className="text-3xl md:text-4xl font-bold text-orange-600 mb-1 md:mb-2">{subjectStats.avgCredits}</div>
+            <p className="text-xs md:text-sm text-muted-foreground">SKS per mata kuliah</p>
+            <div className="mt-2 md:mt-3 flex items-center text-[10px] md:text-xs text-orange-600">
+              <TrendingUp className="h-2.5 w-2.5 md:h-3 md:w-3 mr-1" />
               Standard akademik
             </div>
           </CardContent>

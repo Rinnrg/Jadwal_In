@@ -21,11 +21,11 @@ export default function ProfilePage() {
   const profile = getProfile(session.id)
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 md:space-y-6 px-2 md:px-4">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Profil</h1>
-          <p className="text-muted-foreground mt-1">Kelola informasi pribadi dan preferensi Anda</p>
+          <h1 className="text-xl md:text-2xl lg:text-3xl font-bold tracking-tight">Profil</h1>
+          <p className="text-muted-foreground mt-1 text-sm md:text-base">Kelola informasi pribadi dan preferensi Anda</p>
         </div>
       </div>
 

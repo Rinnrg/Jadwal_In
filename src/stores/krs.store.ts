@@ -2,11 +2,12 @@ import { create } from "zustand"
 import { persist, createJSONStorage } from "zustand/middleware"
 import type { KrsItem } from "@/data/schema"
 import { arr, generateId } from "@/lib/utils"
+import { ActivityLogger } from "@/lib/activity-logger"
 
 interface KrsState {
   krsItems: KrsItem[]
-  addKrsItem: (userId: string, subjectId: string, term: string, offeringId?: string) => void
-  removeKrsItem: (id: string) => void
+  addKrsItem: (userId: string, subjectId: string, term: string, offeringId?: string, subjectName?: string, sks?: number) => void
+  removeKrsItem: (id: string, userId?: string, subjectName?: string) => void
   getKrsByUser: (userId: string, term?: string) => KrsItem[]
   getKrsBySubject: (subjectId: string) => KrsItem[]
   isSubjectInKrs: (userId: string, subjectId: string, term: string) => boolean
@@ -20,7 +21,7 @@ export const useKrsStore = create<KrsState>()(
   persist(
     (set, get) => ({
       krsItems: [],
-      addKrsItem: (userId, subjectId, term, offeringId) => {
+      addKrsItem: (userId, subjectId, term, offeringId, subjectName, sks) => {
         const newItem: KrsItem = {
           id: generateId(),
           userId,
@@ -32,11 +33,21 @@ export const useKrsStore = create<KrsState>()(
         set((state) => ({
           krsItems: [...state.krsItems, newItem],
         }))
+        
+        // Log activity
+        if (subjectName) {
+          ActivityLogger.krsAdded(userId, subjectName, sks || 0)
+        }
       },
-      removeKrsItem: (id) => {
+      removeKrsItem: (id, userId, subjectName) => {
         set((state) => ({
           krsItems: state.krsItems.filter((item) => item.id !== id),
         }))
+        
+        // Log activity
+        if (userId && subjectName) {
+          ActivityLogger.krsRemoved(userId, subjectName)
+        }
       },
       getKrsByUser: (userId, term) => {
         const items = get().krsItems.filter((item) => item.userId === userId)
@@ -64,6 +75,9 @@ export const useKrsStore = create<KrsState>()(
         set((state) => ({
           krsItems: state.krsItems.filter((item) => !(item.userId === userId && item.term === term)),
         }))
+        
+        // Log activity
+        ActivityLogger.krsCleared(userId)
       },
       getKrsByOffering: (offeringId) => {
         return get().krsItems.filter((item) => item.offeringId === offeringId)

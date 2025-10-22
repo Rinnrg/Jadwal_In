@@ -8,6 +8,7 @@ interface SessionState {
   hasHydrated: boolean
   setSession: (session: UserSession | null) => void
   setLoading: (loading: boolean) => void
+  updateSessionImage: (imageUrl: string) => void
   logout: () => void
 }
 
@@ -52,6 +53,12 @@ export const useSessionStore = create<SessionState>()(
       hasHydrated: false,
       setSession: (session) => set({ session, isLoading: false }),
       setLoading: (isLoading) => set({ isLoading }),
+      updateSessionImage: (imageUrl) => {
+        const { session } = get()
+        if (session) {
+          set({ session: { ...session, image: imageUrl } })
+        }
+      },
       logout: () => {
         // Remove auth cookie with proper attributes
         if (typeof document !== 'undefined') {

@@ -356,12 +356,12 @@ export default function DashboardPage() {
             </div>
           )}
           
-          <CardContent className="pt-6 relative z-10 px-4 md:px-6">
-            <div className="flex flex-col items-start space-y-3.5 w-full">
+          <CardContent className="pt-4 md:pt-6 relative z-10 px-3 md:px-6">
+            <div className="flex flex-col items-start space-y-2 md:space-y-3.5 w-full">
                 {/* Tanggal */}
-                <div className="flex items-center space-x-2 text-muted-foreground animate-slide-in-left transition-colors duration-500">
-                  <Calendar className="h-4 w-4 flex-shrink-0" />
-                  <p className="text-sm md:text-base break-words">
+                <div className="flex items-center space-x-1.5 md:space-x-2 text-muted-foreground animate-slide-in-left transition-colors duration-500">
+                  <Calendar className="h-3.5 w-3.5 md:h-4 md:w-4 flex-shrink-0" />
+                  <p className="text-xs md:text-sm break-words">
                     {currentTime.toLocaleDateString("id-ID", {
                       weekday: "long",
                       year: "numeric",
@@ -373,36 +373,36 @@ export default function DashboardPage() {
                 </div>
                 
                 {/* Ucapan Selamat */}
-                <p className="text-xl md:text-2xl text-muted-foreground transition-colors duration-500">
+                <p className="text-base md:text-xl lg:text-2xl text-muted-foreground transition-colors duration-500">
                   {getGreeting()}
                 </p>
                 
-                {/* Foto Profile - diperbesar, lebih visible di mobile */}
-                <Avatar className="h-24 w-24 md:h-28 md:w-28 border-4 border-primary/20 shadow-lg animate-scale-in transition-all duration-500">
+                {/* Foto Profile - optimal untuk mobile */}
+                <Avatar className="h-16 w-16 md:h-24 md:w-24 lg:h-28 lg:w-28 border-2 md:border-4 border-primary/20 shadow-lg animate-scale-in transition-all duration-500">
                   <AvatarImage src={avatarUrl} alt={session.name} />
-                  <AvatarFallback className={`text-2xl md:text-3xl font-bold bg-gradient-to-br ${timeColors.gradient} text-white transition-all duration-1000`}>
+                  <AvatarFallback className={`text-lg md:text-2xl lg:text-3xl font-bold bg-gradient-to-br ${timeColors.gradient} text-white transition-all duration-1000`}>
                     {getInitials(session.name)}
                   </AvatarFallback>
                 </Avatar>
                 
                 {/* Nama */}
-                <h2 className="text-xl md:text-2xl lg:text-3xl font-bold text-foreground animate-slide-in-left transition-colors duration-500 break-words max-w-full">
+                <h2 className="text-lg md:text-xl lg:text-2xl xl:text-3xl font-bold text-foreground animate-slide-in-left transition-colors duration-500 break-words max-w-full">
                   {session.name.split(" (")[0]}
                 </h2>
                 
                 {/* Role & Angkatan Badges */}
-                <div className="flex items-center gap-2 flex-wrap">
+                <div className="flex items-center gap-1.5 md:gap-2 flex-wrap">
                   {/* Role Badge */}
-                  <div className={`inline-flex items-center px-3 py-1.5 rounded-full ${timeColors.cardBg} border ${timeColors.cardBorder} animate-slide-in-left transition-all duration-1000`} style={{ animationDelay: "0.1s" }}>
-                    <span className={`text-xs font-semibold ${timeColors.text} uppercase tracking-wide transition-colors duration-1000`}>
+                  <div className={`inline-flex items-center px-2 py-1 md:px-3 md:py-1.5 rounded-full ${timeColors.cardBg} border ${timeColors.cardBorder} animate-slide-in-left transition-all duration-1000`} style={{ animationDelay: "0.1s" }}>
+                    <span className={`text-[10px] md:text-xs font-semibold ${timeColors.text} uppercase tracking-wide transition-colors duration-1000`}>
                       {session.role === "mahasiswa" ? "Mahasiswa" : session.role === "dosen" ? "Dosen" : "Kepala Program Studi"}
                     </span>
                   </div>
                   
                   {/* Angkatan Badge - Only for Mahasiswa */}
                   {session.role === "mahasiswa" && session.name.includes("(Angkatan") && (
-                    <div className={`inline-flex items-center px-3 py-1.5 rounded-full ${timeColors.cardBg} border ${timeColors.cardBorder} animate-slide-in-left transition-all duration-1000`} style={{ animationDelay: "0.15s" }}>
-                      <span className={`text-xs font-semibold ${timeColors.text} uppercase tracking-wide transition-colors duration-1000`}>
+                    <div className={`inline-flex items-center px-2 py-1 md:px-3 md:py-1.5 rounded-full ${timeColors.cardBg} border ${timeColors.cardBorder} animate-slide-in-left transition-all duration-1000`} style={{ animationDelay: "0.15s" }}>
+                      <span className={`text-[10px] md:text-xs font-semibold ${timeColors.text} uppercase tracking-wide transition-colors duration-1000`}>
                         {session.name.match(/Angkatan (\d{4})/)?.[0] || ""}
                       </span>
                     </div>
@@ -413,19 +413,19 @@ export default function DashboardPage() {
         </Card>
       </div>
 
-      <div className={`grid gap-6 grid-cols-1 sm:grid-cols-2 w-full ${session.role === "mahasiswa" ? "lg:grid-cols-4" : "lg:grid-cols-3"}`}>
+      <div className={`grid gap-4 md:gap-6 grid-cols-2 w-full ${session.role === "mahasiswa" ? "lg:grid-cols-4" : "lg:grid-cols-3"}`}>
         <Card
           className="card-interactive border-2 border-blue-200 dark:border-blue-800 hover:border-blue-400 dark:hover:border-blue-600 group w-full min-w-0"
           style={{ animationDelay: "0.1s" }}
         >
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
-            <CardTitle className="text-sm font-bold">Jadwal Hari Ini</CardTitle>
-            <Calendar className="h-6 w-6 text-blue-500 group-hover:scale-125 transition-transform duration-300" />
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 md:pb-3 px-4 md:px-6 pt-4 md:pt-6">
+            <CardTitle className="text-xs md:text-sm font-bold">Jadwal Hari Ini</CardTitle>
+            <Calendar className="h-5 w-5 md:h-6 md:w-6 text-blue-500 group-hover:scale-125 transition-transform duration-300" />
           </CardHeader>
-          <CardContent>
-            <div className="text-4xl font-bold text-blue-600 mb-2">{todayEvents.length}</div>
-            <p className="text-sm text-muted-foreground">{todayEvents.length === 1 ? 'Kelas tersedia' : 'Kelas tersedia'}</p>
-            <div className="mt-3 flex items-center text-xs text-blue-600">
+          <CardContent className="px-4 md:px-6 pb-4 md:pb-6">
+            <div className="text-3xl md:text-4xl font-bold text-blue-600 mb-1 md:mb-2">{todayEvents.length}</div>
+            <p className="text-xs md:text-sm text-muted-foreground">{todayEvents.length === 1 ? 'Kelas tersedia' : 'Kelas tersedia'}</p>
+            <div className="mt-2 md:mt-3 flex items-center text-[10px] md:text-xs text-blue-600">
               <Target className="h-3 w-3 mr-1" />
               {todayEvents.length === 0 ? 'Tidak ada kelas' : `${todayEvents.length} jadwal aktif`}
             </div>
@@ -436,14 +436,14 @@ export default function DashboardPage() {
           className="card-interactive border-2 border-green-200 dark:border-green-800 hover:border-green-400 dark:hover:border-green-600 group w-full min-w-0"
           style={{ animationDelay: "0.2s" }}
         >
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
-            <CardTitle className="text-sm font-bold">Mata Kuliah</CardTitle>
-            <BookOpen className="h-6 w-6 text-green-500 group-hover:scale-125 transition-transform duration-300" />
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 md:pb-3 px-4 md:px-6 pt-4 md:pt-6">
+            <CardTitle className="text-xs md:text-sm font-bold">Mata Kuliah</CardTitle>
+            <BookOpen className="h-5 w-5 md:h-6 md:w-6 text-green-500 group-hover:scale-125 transition-transform duration-300" />
           </CardHeader>
-          <CardContent>
-            <div className="text-4xl font-bold text-green-600 mb-2">12</div>
-            <p className="text-sm text-muted-foreground">Total mata kuliah</p>
-            <div className="mt-3 flex items-center text-xs text-green-600">
+          <CardContent className="px-4 md:px-6 pb-4 md:pb-6">
+            <div className="text-3xl md:text-4xl font-bold text-green-600 mb-1 md:mb-2">12</div>
+            <p className="text-xs md:text-sm text-muted-foreground">Total mata kuliah</p>
+            <div className="mt-2 md:mt-3 flex items-center text-[10px] md:text-xs text-green-600">
               <Target className="h-3 w-3 mr-1" />8 aktif semester ini
             </div>
           </CardContent>
@@ -453,14 +453,14 @@ export default function DashboardPage() {
           className="card-interactive border-2 border-orange-200 dark:border-orange-800 hover:border-orange-400 dark:hover:border-orange-600 group w-full min-w-0"
           style={{ animationDelay: "0.3s" }}
         >
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
-            <CardTitle className="text-sm font-bold">Pengingat Aktif</CardTitle>
-            <Clock className="h-6 w-6 text-orange-500 group-hover:scale-125 transition-transform duration-300" />
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 md:pb-3 px-4 md:px-6 pt-4 md:pt-6">
+            <CardTitle className="text-xs md:text-sm font-bold">Pengingat Aktif</CardTitle>
+            <Clock className="h-5 w-5 md:h-6 md:w-6 text-orange-500 group-hover:scale-125 transition-transform duration-300" />
           </CardHeader>
-          <CardContent>
-            <div className="text-4xl font-bold text-orange-600 mb-2">5</div>
-            <p className="text-sm text-muted-foreground">Pengingat mendatang</p>
-            <div className="mt-3 flex items-center text-xs text-orange-600">
+          <CardContent className="px-4 md:px-6 pb-4 md:pb-6">
+            <div className="text-3xl md:text-4xl font-bold text-orange-600 mb-1 md:mb-2">5</div>
+            <p className="text-xs md:text-sm text-muted-foreground">Pengingat mendatang</p>
+            <div className="mt-2 md:mt-3 flex items-center text-[10px] md:text-xs text-orange-600">
               <AlertCircle className="h-3 w-3 mr-1" />2 urgent
             </div>
           </CardContent>
@@ -472,14 +472,14 @@ export default function DashboardPage() {
             className="card-interactive border-2 border-purple-200 dark:border-purple-800 hover:border-purple-400 dark:hover:border-purple-600 group w-full min-w-0"
             style={{ animationDelay: "0.4s" }}
           >
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
-              <CardTitle className="text-sm font-bold">IPK</CardTitle>
-              <Award className="h-6 w-6 text-purple-500 group-hover:scale-125 transition-transform duration-300" />
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 md:pb-3 px-4 md:px-6 pt-4 md:pt-6">
+              <CardTitle className="text-xs md:text-sm font-bold">IPK</CardTitle>
+              <Award className="h-5 w-5 md:h-6 md:w-6 text-purple-500 group-hover:scale-125 transition-transform duration-300" />
             </CardHeader>
-            <CardContent>
-              <div className="text-4xl font-bold text-purple-600 mb-2">3.85</div>
-              <p className="text-sm text-muted-foreground">Indeks Prestasi Kumulatif</p>
-              <div className="mt-3 flex items-center text-xs text-purple-600">
+            <CardContent className="px-4 md:px-6 pb-4 md:pb-6">
+              <div className="text-3xl md:text-4xl font-bold text-purple-600 mb-1 md:mb-2">3.85</div>
+              <p className="text-xs md:text-sm text-muted-foreground">Indeks Prestasi Kumulatif</p>
+              <div className="mt-2 md:mt-3 flex items-center text-[10px] md:text-xs text-purple-600">
                 <Activity className="h-3 w-3 mr-1" />
                 Excellent performance
               </div>
@@ -488,29 +488,29 @@ export default function DashboardPage() {
         )}
       </div>
 
-      <div className="grid gap-6 grid-cols-1 lg:grid-cols-3 w-full">
+      <div className="grid gap-4 md:gap-6 grid-cols-1 lg:grid-cols-3 w-full">
         <Card className="glass-effect border-2 border-primary/20 card-interactive w-full min-w-0">
-          <CardHeader>
-            <CardTitle className="flex items-center space-x-2">
-              <Sparkles className="h-5 w-5 text-primary" />
+          <CardHeader className="px-3 md:px-6 pt-3 md:pt-6 pb-2 md:pb-4">
+            <CardTitle className="flex items-center space-x-2 text-sm md:text-base lg:text-lg">
+              <Sparkles className="h-4 w-4 md:h-5 md:w-5 text-primary" />
               <span>Quick Actions</span>
             </CardTitle>
-            <CardDescription>Akses cepat ke fitur utama</CardDescription>
+            <CardDescription className="text-[10px] md:text-xs lg:text-sm">Akses cepat ke fitur utama</CardDescription>
           </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="space-y-3">
+          <CardContent className="space-y-1.5 md:space-y-3 px-3 md:px-6 pb-3 md:pb-6 max-h-[280px] md:max-h-none overflow-y-auto">
+            <div className="space-y-1.5 md:space-y-2">
               {quickActions.map((action, index) => (
                 <Link key={action.href} href={action.href}>
                   <Button
                     variant="ghost"
-                    className="w-full justify-between p-4 h-auto button-modern border border-primary/10 hover:border-primary/30"
+                    className="w-full justify-between p-2 md:p-3 lg:p-4 h-auto button-modern border border-primary/10 hover:border-primary/30"
                     style={{ animationDelay: `${index * 0.1}s` }}
                   >
-                    <div className="flex items-center space-x-3">
-                      <action.icon className={`h-5 w-5 ${action.color}`} />
-                      <span className="font-medium">{action.title}</span>
+                    <div className="flex items-center space-x-2 md:space-x-3">
+                      <action.icon className={`h-3.5 w-3.5 md:h-4 md:w-4 lg:h-5 lg:w-5 ${action.color}`} />
+                      <span className="font-medium text-xs md:text-sm lg:text-base">{action.title}</span>
                     </div>
-                    <ArrowRight className="h-4 w-4" />
+                    <ArrowRight className="h-3 w-3 md:h-3.5 md:w-3.5 lg:h-4 lg:w-4" />
                   </Button>
                 </Link>
               ))}
@@ -519,32 +519,32 @@ export default function DashboardPage() {
         </Card>
 
         <Card className="glass-effect border-2 border-primary/20 card-interactive w-full min-w-0">
-          <CardHeader>
-            <CardTitle className="flex items-center space-x-2">
-              <Activity className="h-5 w-5 text-primary" />
+          <CardHeader className="px-3 md:px-6 pt-3 md:pt-6 pb-2 md:pb-4">
+            <CardTitle className="flex items-center space-x-2 text-sm md:text-base lg:text-lg">
+              <Activity className="h-4 w-4 md:h-5 md:w-5 text-primary" />
               <span>Recent Activities</span>
             </CardTitle>
-            <CardDescription>Aktivitas terbaru Anda</CardDescription>
+            <CardDescription className="text-[10px] md:text-xs lg:text-sm">Aktivitas terbaru Anda</CardDescription>
           </CardHeader>
-          <CardContent className="space-y-4">
+          <CardContent className="space-y-1.5 md:space-y-3 px-3 md:px-6 pb-3 md:pb-6 max-h-[280px] md:max-h-none overflow-y-auto">
             {recentActivities.length === 0 ? (
-              <div className="text-center py-8">
-                <p className="text-sm text-muted-foreground">Belum ada aktivitas.</p>
-                <p className="text-xs text-muted-foreground mt-1">
+              <div className="text-center py-4 md:py-6">
+                <p className="text-xs md:text-sm text-muted-foreground">Belum ada aktivitas.</p>
+                <p className="text-[10px] md:text-xs text-muted-foreground mt-1">
                   Mulai menambahkan jadwal, KRS, atau pengingat untuk melihat aktivitas Anda di sini.
                 </p>
               </div>
             ) : (
-              recentActivities.map((activity, index) => (
+              recentActivities.slice(0, 5).map((activity, index) => (
                 <div
                   key={index}
-                  className="flex items-start space-x-3 p-3 rounded-lg hover:bg-muted/50 transition-all duration-200 animate-slide-in-left"
+                  className="flex items-start space-x-2 md:space-x-3 p-1.5 md:p-2 lg:p-3 rounded-lg hover:bg-muted/50 transition-all duration-200 animate-slide-in-left"
                   style={{ animationDelay: `${index * 0.1}s` }}
                 >
-                  <activity.icon className={`h-5 w-5 mt-0.5 ${activity.color}`} />
+                  <activity.icon className={`h-3.5 w-3.5 md:h-4 md:w-4 lg:h-5 lg:w-5 mt-0.5 flex-shrink-0 ${activity.color}`} />
                   <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium">{activity.title}</p>
-                    <p className="text-xs text-muted-foreground">{activity.time}</p>
+                    <p className="text-xs md:text-sm font-medium truncate">{activity.title}</p>
+                    <p className="text-[10px] md:text-xs text-muted-foreground">{activity.time}</p>
                   </div>
                 </div>
               ))
@@ -553,24 +553,24 @@ export default function DashboardPage() {
         </Card>
 
         <Card className="glass-effect border-2 border-primary/20 card-interactive w-full min-w-0">
-          <CardHeader>
-            <CardTitle className="flex items-center space-x-2">
-              <Calendar className="h-5 w-5 text-primary" />
+          <CardHeader className="px-3 md:px-6 pt-3 md:pt-6 pb-2 md:pb-4">
+            <CardTitle className="flex items-center space-x-2 text-sm md:text-base lg:text-lg">
+              <Calendar className="h-4 w-4 md:h-5 md:w-5 text-primary" />
               <span>Today's Schedule</span>
             </CardTitle>
-            <CardDescription>Jadwal hari ini</CardDescription>
+            <CardDescription className="text-[10px] md:text-xs lg:text-sm">Jadwal hari ini</CardDescription>
           </CardHeader>
-          <CardContent className="space-y-4">
+          <CardContent className="space-y-1.5 md:space-y-3 px-3 md:px-6 pb-3 md:pb-6 max-h-[280px] md:max-h-none overflow-y-auto">
             {todayEvents.length === 0 ? (
-              <div className="text-center py-8">
-                <p className="text-sm text-muted-foreground">Tidak ada jadwal hari ini.</p>
-                <p className="text-xs text-muted-foreground mt-1">
+              <div className="text-center py-4 md:py-6">
+                <p className="text-xs md:text-sm text-muted-foreground">Tidak ada jadwal hari ini.</p>
+                <p className="text-[10px] md:text-xs text-muted-foreground mt-1">
                   Tambahkan jadwal kuliah Anda di halaman Jadwal.
                 </p>
               </div>
             ) : (
-              <div className="space-y-3">
-                {todayEvents.map((event) => {
+              <div className="space-y-1.5 md:space-y-2">
+                {todayEvents.slice(0, 5).map((event) => {
                   const subject = event.subjectId ? getSubjectById(event.subjectId) : null
                   const eventColors = getEventColorClasses(event.color || subject?.color)
                   const title = subject?.nama || "Event"
@@ -578,12 +578,12 @@ export default function DashboardPage() {
                   return (
                     <div 
                       key={event.id}
-                      className={`flex items-center space-x-3 p-3 rounded-lg ${eventColors.bg} border ${eventColors.border}`}
+                      className={`flex items-center space-x-2 md:space-x-3 p-1.5 md:p-2 lg:p-3 rounded-lg ${eventColors.bg} border ${eventColors.border}`}
                     >
-                      <div className={`w-3 h-3 rounded-full ${eventColors.dot} animate-pulse`} />
-                      <div className="flex-1">
-                        <p className="text-sm font-medium">{title}</p>
-                        <p className="text-xs text-muted-foreground">
+                      <div className={`w-2 h-2 md:w-2.5 md:h-2.5 lg:w-3 lg:h-3 rounded-full flex-shrink-0 ${eventColors.dot} animate-pulse`} />
+                      <div className="flex-1 min-w-0">
+                        <p className="text-xs md:text-sm font-medium truncate">{title}</p>
+                        <p className="text-[10px] md:text-xs text-muted-foreground truncate">
                           {formatTime(event.startUTC)} - {formatTime(event.endUTC)}
                           {event.location && ` • ${event.location}`}
                         </p>
@@ -594,9 +594,9 @@ export default function DashboardPage() {
               </div>
             )}
             <Link href="/jadwal">
-              <Button className="w-full button-modern">
+              <Button className="w-full button-modern text-xs md:text-sm mt-2">
                 View Full Schedule
-                <ArrowRight className="h-4 w-4 ml-2" />
+                <ArrowRight className="h-3 w-3 md:h-3.5 md:w-3.5 lg:h-4 lg:w-4 ml-2" />
               </Button>
             </Link>
           </CardContent>
