@@ -5,6 +5,8 @@ import { useSubjectsStore } from "@/stores/subjects.store"
 import { useOfferingsStore } from "@/stores/offerings.store"
 import { useKrsStore } from "@/stores/krs.store"
 import { useProfileStore } from "@/stores/profile.store"
+import { useSessionStore } from "@/stores/session.store"
+import { getStudentInfoFromData } from "@/lib/student-utils"
 import type { CourseOffering } from "@/data/schema"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -25,16 +27,19 @@ export function KrsPicker({ userId, term }: KrsPickerProps) {
   const { getOfferingsForStudent } = useOfferingsStore()
   const { addKrsItem, isOfferingInKrs, getKrsByOffering } = useKrsStore()
   const { getProfile } = useProfileStore()
+  const { session } = useSessionStore()
   const [searchTerm, setSearchTerm] = useState("")
 
   const profile = getProfile(userId)
-  const userAngkatan = profile?.angkatan || new Date().getFullYear()
-  const userKelas = profile?.kelas || "A"
+  
+  // Auto-extract angkatan dari email/NIM jika profil tidak ada
+  const studentInfo = getStudentInfoFromData(session?.email || '', profile?.nim || '')
+  const userAngkatan = profile?.angkatan || studentInfo.angkatan
+  const userKelas = profile?.kelas?.trim() || studentInfo.kelas
 
   const availableOfferings = useMemo(() => {
-    if (!profile?.angkatan || !profile?.kelas) return []
-
-    const offerings = getOfferingsForStudent(profile.angkatan, profile.kelas)
+    // Get ALL offerings for angkatan (tidak filter by kelas, mahasiswa bebas pilih kelas mana saja)
+    const offerings = getOfferingsForStudent(userAngkatan)
 
     return offerings.filter((offering) => {
       const subject = getSubjectById(offering.subjectId)
@@ -64,7 +69,17 @@ export function KrsPicker({ userId, term }: KrsPickerProps) {
 
       return true
     })
-  }, [profile, getOfferingsForStudent, getSubjectById, userId, isOfferingInKrs, getKrsByOffering, searchTerm])
+  }, [userAngkatan, getOfferingsForStudent, getSubjectById, userId, isOfferingInKrs, getKrsByOffering, searchTerm])
+
+  // Debug info - log to console to help troubleshoot
+  if (typeof window !== 'undefined' && process.env.NODE_ENV === 'development') {
+    console.log('[KRS Debug] User Email:', session?.email)
+    console.log('[KRS Debug] User Profile:', profile)
+    console.log('[KRS Debug] Auto-extracted Info:', studentInfo)
+    console.log('[KRS Debug] Final Angkatan:', userAngkatan, 'Kelas (Info):', userKelas)
+    console.log('[KRS Debug] Available Offerings (All Classes):', availableOfferings.length)
+    console.log('[KRS Debug] All Offerings for Angkatan:', getOfferingsForStudent(userAngkatan))
+  }
 
   const handleAddOffering = (offering: CourseOffering) => {
     try {
@@ -113,7 +128,7 @@ export function KrsPicker({ userId, term }: KrsPickerProps) {
       <CardHeader>
         <CardTitle>Pilih Mata Kuliah</CardTitle>
         <CardDescription>
-          Penawaran mata kuliah untuk angkatan {userAngkatan} kelas {userKelas} ({availableOfferings.length} penawaran)
+          Penawaran mata kuliah untuk angkatan {userAngkatan} - Semua kelas ({availableOfferings.length} penawaran)
         </CardDescription>
       </CardHeader>
       <CardContent>
@@ -133,9 +148,10 @@ export function KrsPicker({ userId, term }: KrsPickerProps) {
               <p className="text-muted-foreground">
                 {searchTerm
                   ? "Tidak ada penawaran mata kuliah yang sesuai dengan pencarian"
-                  : !profile?.angkatan || !profile?.kelas
-                    ? "Lengkapi profil Anda untuk melihat penawaran mata kuliah"
-                    : "Tidak ada penawaran mata kuliah yang tersedia untuk angkatan dan kelas Anda"}
+                  : "Tidak ada penawaran mata kuliah yang tersedia untuk angkatan Anda"}
+              </p>
+              <p className="text-sm text-muted-foreground mt-2">
+                Angkatan: {userAngkatan}
               </p>
             </div>
           ) : (
