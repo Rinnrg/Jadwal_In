@@ -89,26 +89,16 @@ export function EKTMCard({ name, nim, fakultas, programStudi, avatarUrl }: EKTMC
             const htmlEl = clonedEl as HTMLElement
             const originalEl = originalElementsArray[index]
             
-            // Remove all Tailwind classes that might use oklch
-            if (htmlEl.className) {
-              const classes = htmlEl.className.split(' ')
-              const safeClasses = classes.filter(cls => 
-                !cls.startsWith('text-') && 
-                !cls.startsWith('bg-') && 
-                !cls.startsWith('border-') &&
-                !cls.startsWith('from-') &&
-                !cls.startsWith('to-') &&
-                !cls.startsWith('via-')
-              )
-              htmlEl.className = safeClasses.join(' ')
-            }
-            
-            // Apply pre-computed hex colors
+            // Apply pre-computed hex colors to override any oklch colors
             if (originalEl) {
               const styles = styleMap.get(originalEl)
-              if (styles) {
+              if (styles && styles.size > 0) {
                 styles.forEach((value, prop) => {
-                  htmlEl.style.setProperty(prop, value, 'important')
+                  try {
+                    htmlEl.style.setProperty(prop, value, 'important')
+                  } catch (e) {
+                    // Skip if property can't be set
+                  }
                 })
               }
             }
