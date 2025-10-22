@@ -26,3 +26,37 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 /src/generated/prisma
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.history/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Prisma
+prisma/*.db
+prisma/*.db-journal
+
+# Testing
+/coverage
+*.lcov
+
+# Misc
+*.pem
+.cache/
+
+# Optional npm cache directory
+.npm
+
+# Optional eslint cache
+.eslintcache
+
+# Logs
+logs
+*.log
