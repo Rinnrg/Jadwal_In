@@ -31,57 +31,64 @@ export function EKTMCard({ name, nim, fakultas, programStudi, avatarUrl }: EKTMC
     if (!cardRef.current) return
 
     try {
-      // Dynamically import html2canvas
+      // Dynamically import libraries
       const html2canvas = (await import("html2canvas")).default
+      const jsPDF = (await import("jspdf")).default
       
+      // Capture the card as canvas with high quality
       const canvas = await html2canvas(cardRef.current, {
         scale: 3,
         backgroundColor: null,
         logging: false,
+        useCORS: true,
+        allowTaint: true,
       })
 
-      // Convert to blob and download
-      canvas.toBlob((blob: Blob | null) => {
-        if (blob) {
-          const url = URL.createObjectURL(blob)
-          const link = document.createElement("a")
-          link.href = url
-          link.download = `E-KTM-${nim}.png`
-          link.click()
-          URL.revokeObjectURL(url)
-        }
+      // Convert canvas to image data
+      const imgData = canvas.toDataURL('image/png', 1.0)
+      
+      // Calculate dimensions for PDF (maintaining aspect ratio)
+      const cardWidth = 396 // Original card width
+      const cardHeight = 228 // Original card height
+      const pdfWidth = 85.6 // Credit card size in mm (width)
+      const pdfHeight = (cardHeight / cardWidth) * pdfWidth
+      
+      // Create PDF with card dimensions
+      const pdf = new jsPDF({
+        orientation: 'landscape',
+        unit: 'mm',
+        format: [pdfWidth, pdfHeight]
       })
+      
+      // Add image to PDF (full page)
+      pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight, undefined, 'FAST')
+      
+      // Download PDF
+      pdf.save(`E-KTM-${nim}.pdf`)
     } catch (error) {
       console.error("Error downloading E-KTM:", error)
+      alert("Gagal mengunduh E-KTM. Silakan coba lagi.")
     }
   }
 
   return (
-    <div className="space-y-4">
-      {/* Card Preview */}
+    <div className="space-y-4 w-full">
+      {/* Card Preview - Fixed positioning for consistency */}
       <div ref={cardRef} className={styles.ektmCard}>
-        {/* Logo Unesa - Top Right */}
-        <div className="absolute top-3 right-3 w-12 h-12">
+        {/* Logo Unesa - Top Right (scaled proportionally) */}
+        <div className="absolute top-[1.5%] right-[1.5%] w-[12%] h-auto aspect-square">
           <Image
             src="/Logo unesa.svg"
             alt="Logo Unesa"
             width={48}
             height={48}
-            className="object-contain drop-shadow-md"
+            className="w-full h-full object-contain drop-shadow-md"
           />
         </div>
 
-        {/* Header - Top Left
-        <div className="absolute top-3 left-6">
-          <h2 className="text-gray-900 font-bold text-[10px] leading-tight tracking-wide">
-            <span className="font-extrabold">KARTU TANDA</span><br />
-            <span className="font-extrabold">MAHASISWA</span>
-          </h2>
-        </div> */}
-
-        {/* Photo Section - Center Top */}
-        <div className="absolute top-[35px] left-1/2 -translate-x-1/2">
-          <div className="w-20 h-20 rounded-full bg-gray-900 border-[3px] border-white shadow-xl overflow-hidden">
+        {/* Photo Section - Center Top (scaled proportionally) */}
+        <div className="absolute top-[15%] left-1/2 -translate-x-1/2 w-[20%] aspect-square">
+          <div className="w-full h-full rounded-full bg-gray-900 border-[0.75%] border-white shadow-xl overflow-hidden">
             {avatarUrl ? (
               <Image
                 src={avatarUrl}
@@ -92,7 +99,7 @@ export function EKTMCard({ name, nim, fakultas, programStudi, avatarUrl }: EKTMC
               />
             ) : (
               <div className="w-full h-full flex items-center justify-center bg-gray-900">
-                <span className="text-white text-xl font-bold">
+                <span className={`text-white font-bold ${styles.fallbackText}`}>
                   {name.split(" ").map(n => n[0]).join("").slice(0, 2).toUpperCase()}
                 </span>
               </div>
@@ -100,15 +107,15 @@ export function EKTMCard({ name, nim, fakultas, programStudi, avatarUrl }: EKTMC
           </div>
         </div>
 
-        {/* Info Section - Bottom Center */}
-        <div className="absolute bottom-[48px] left-0 right-0 px-8 text-center">
-          <h3 className="text-gray-900 font-bold text-[12px] mb-0.5 uppercase tracking-wide">
+        {/* Info Section - Bottom Center (using percentage positioning) */}
+        <div className="absolute bottom-[21%] left-0 right-0 px-[5%] text-center">
+          <h3 className={`text-gray-900 font-bold uppercase tracking-wide mb-[0.5%] ${styles.nameText}`}>
             {name}
           </h3>
-          <p className="text-gray-800 text-[10px] font-semibold mb-1.5">
+          <p className={`text-gray-800 font-semibold mb-[1.5%] ${styles.nimText}`}>
             {nim}
           </p>
-          <div className="text-gray-800 text-[9px] leading-tight space-y-[1px]">
+          <div className={`text-gray-800 leading-tight space-y-[0.25%] ${styles.infoText}`}>
             <div className="font-semibold">
               {fakultas}
             </div>
@@ -118,13 +125,14 @@ export function EKTMCard({ name, nim, fakultas, programStudi, avatarUrl }: EKTMC
           </div>
         </div>
 
-        {/* QR Code - Bottom Left */}
-        <div className="absolute bottom-2.5 left-3 bg-white p-1 rounded shadow-md">
+        {/* QR Code - Bottom Left (scaled proportionally) */}
+        <div className="absolute bottom-[1.5%] left-[1.5%] bg-white p-[0.5%] rounded shadow-md w-[13%] aspect-square">
           <QRCodeSVG
             value={qrData}
             size={45}
             level="H"
             includeMargin={false}
+            style={{ width: '100%', height: '100%' }}
           />
         </div>
       </div>
@@ -135,10 +143,10 @@ export function EKTMCard({ name, nim, fakultas, programStudi, avatarUrl }: EKTMC
           onClick={handleDownload}
           variant="outline"
           size="sm"
-          className="gap-2"
+          className="gap-2 text-xs sm:text-sm"
         >
           <Download className="h-4 w-4" />
-          Unduh E-KTM
+          Unduh E-KTM (PDF)
         </Button>
       </div>
     </div>

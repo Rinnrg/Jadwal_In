@@ -24,11 +24,11 @@ export function EKTMDialog({
 }: EKTMDialogProps) {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-md">
+      <DialogContent className="max-w-[480px] w-[95vw] sm:w-full">
         <DialogHeader>
-          <DialogTitle>E-KTM (Kartu Tanda Mahasiswa)</DialogTitle>
+          <DialogTitle className="text-center sm:text-left">E-KTM (Kartu Tanda Mahasiswa)</DialogTitle>
         </DialogHeader>
-        <div className="py-4">
+        <div className="py-4 px-2 sm:px-4">
           <EKTMCard
             name={name}
             nim={nim}
@@ -36,7 +36,7 @@ export function EKTMDialog({
             programStudi={programStudi}
             avatarUrl={avatarUrl}
           />
-          <p className="text-center text-sm text-muted-foreground mt-4">
+          <p className="text-center text-xs sm:text-sm text-muted-foreground mt-4">
             Scan QR code untuk melihat E-KTM
           </p>
         </div>
