@@ -1,30 +1,28 @@
 import { NextRequest, NextResponse } from "next/server"
-import { getServerSession } from "next-auth"
-import { authOptions } from "@/app/api/auth/[...nextauth]/route"
-import { PrismaClient } from "@/generated/prisma"
+import { prisma } from "@/lib/prisma"
 
-const prisma = new PrismaClient()
+// Mark as dynamic route
+export const dynamic = 'force-dynamic'
 
 // GET /api/activities - Get user activities
 export async function GET(request: NextRequest) {
   try {
-    const session = await getServerSession(authOptions)
-    
-    if (!session?.user?.email) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+    const { searchParams } = new URL(request.url)
+    const userId = searchParams.get("userId")
+    const limit = parseInt(searchParams.get("limit") || "10")
+    const category = searchParams.get("category")
+
+    if (!userId) {
+      return NextResponse.json({ error: "userId is required" }, { status: 400 })
     }
 
     const user = await prisma.user.findUnique({
-      where: { email: session.user.email },
+      where: { id: userId },
     })
 
     if (!user) {
       return NextResponse.json({ error: "User not found" }, { status: 404 })
     }
-
-    const { searchParams } = new URL(request.url)
-    const limit = parseInt(searchParams.get("limit") || "10")
-    const category = searchParams.get("category")
 
     const activities = await prisma.activityLog.findMany({
       where: {
@@ -50,33 +48,27 @@ export async function GET(request: NextRequest) {
 // POST /api/activities - Create activity log
 export async function POST(request: NextRequest) {
   try {
-    const session = await getServerSession(authOptions)
-    
-    if (!session?.user?.email) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+    const body = await request.json()
+    const { userId, title, description, category, action, icon, color, metadata } = body
+
+    if (!userId || !title || !category || !action) {
+      return NextResponse.json(
+        { error: "Missing required fields: userId, title, category, action" },
+        { status: 400 }
+      )
     }
 
     const user = await prisma.user.findUnique({
-      where: { email: session.user.email },
+      where: { id: userId },
     })
 
     if (!user) {
       return NextResponse.json({ error: "User not found" }, { status: 404 })
     }
 
-    const body = await request.json()
-    const { title, description, category, action, icon, color, metadata } = body
-
-    if (!title || !category || !action) {
-      return NextResponse.json(
-        { error: "Missing required fields: title, category, action" },
-        { status: 400 }
-      )
-    }
-
     const activity = await prisma.activityLog.create({
       data: {
-        userId: user.id,
+        userId: userId,
         title,
         description,
         category,
@@ -100,14 +92,15 @@ export async function POST(request: NextRequest) {
 // DELETE /api/activities - Delete old activities (cleanup)
 export async function DELETE(request: NextRequest) {
   try {
-    const session = await getServerSession(authOptions)
-    
-    if (!session?.user?.email) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+    const { searchParams } = new URL(request.url)
+    const userId = searchParams.get("userId")
+
+    if (!userId) {
+      return NextResponse.json({ error: "userId is required" }, { status: 400 })
     }
 
     const user = await prisma.user.findUnique({
-      where: { email: session.user.email },
+      where: { id: userId },
     })
 
     if (!user) {
