@@ -4,15 +4,15 @@ import { useState } from "react"
 import { AssigneePicker } from "@/components/subjects/AssigneePicker"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { useUsersStore, seedInitialUsers } from "@/stores/users.store"
+import { useUsersStore } from "@/stores/users.store"
 
 export default function TestAssigneePickerPage() {
   const [selectedDosen, setSelectedDosen] = useState<string[]>([])
-  const { users, getDosenUsers } = useUsersStore()
+  const { users, getDosenUsers, fetchUsers } = useUsersStore()
 
   const handleSeedUsers = () => {
-    seedInitialUsers()
-    window.location.reload()
+    // Fetch users from database
+    fetchUsers()
   }
 
   const handleClearLocalStorage = () => {
@@ -43,7 +43,7 @@ export default function TestAssigneePickerPage() {
           {/* Action Buttons */}
           <div className="flex gap-2">
             <Button onClick={handleSeedUsers} variant="outline">
-              🌱 Seed Dosen Data
+              🔄 Refresh Users from Database
             </Button>
             <Button onClick={handleClearLocalStorage} variant="destructive">
               🗑️ Clear LocalStorage
@@ -81,7 +81,7 @@ export default function TestAssigneePickerPage() {
             <h3 className="font-semibold">Semua Dosen di Database:</h3>
             {getDosenUsers().length === 0 ? (
               <p className="text-amber-600">
-                ⚠️ Tidak ada dosen. Klik tombol "Seed Dosen Data" untuk menambahkan.
+                ⚠️ Tidak ada dosen. Klik tombol "Refresh Users" atau tambahkan di halaman Role Management.
               </p>
             ) : (
               <ul className="list-disc list-inside">
