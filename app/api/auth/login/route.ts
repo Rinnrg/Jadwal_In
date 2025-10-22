@@ -2,6 +2,9 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { z } from 'zod'
 
+// Mark as dynamic route
+export const dynamic = 'force-dynamic'
+
 const loginSchema = z.object({
   email: z.string().email(),
   password: z.string().min(1),
