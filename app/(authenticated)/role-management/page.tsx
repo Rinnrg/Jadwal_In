@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { useSessionStore } from "@/stores/session.store"
 import { useUsersStore } from "@/stores/users.store"
 import { canAccessRoleManagement } from "@/lib/rbac"
@@ -15,13 +15,19 @@ import {
   Shield,
   Users,
   UserCog,
+  Loader2,
 } from "lucide-react"
 
 export default function RoleManagementPage() {
   const { session } = useSessionStore()
-  const { users } = useUsersStore()
+  const { users, isLoading, fetchUsers } = useUsersStore()
   const [showForm, setShowForm] = useState(false)
   const [editingUser, setEditingUser] = useState<User | null>(null)
+
+  useEffect(() => {
+    // Fetch users on component mount
+    fetchUsers()
+  }, [fetchUsers])
 
   if (!session || !canAccessRoleManagement(session.role)) {
     return (
@@ -85,12 +91,22 @@ export default function RoleManagementPage() {
     super_admin: users.filter((u) => u.role === "super_admin").length,
   }
 
+  if (isLoading && users.length === 0) {
+    return (
+      <div className="min-h-[60vh] flex items-center justify-center animate-fade-in">
+        <Card className="glass-effect border-2 border-primary/20 p-8 text-center">
+          <Loader2 className="h-12 w-12 animate-spin text-primary mx-auto mb-4" />
+          <p className="text-muted-foreground">Memuat data users...</p>
+        </Card>
+      </div>
+    )
+  }
+
   return (
     <div className="space-y-8 animate-fade-in max-w-7xl mx-auto pb-16">
       <div className="flex items-center justify-between animate-slide-up">
         <div>
           <h1 className="text-5xl font-bold tracking-tight animate-float flex items-center gap-3">
-            <Shield className="h-12 w-12 text-primary" />
             Role Management
           </h1>
           <p className="text-muted-foreground text-xl mt-2 animate-slide-in-left" style={{ animationDelay: "0.1s" }}>
