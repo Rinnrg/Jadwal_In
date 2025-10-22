@@ -2,6 +2,9 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { z } from 'zod'
 
+// Mark as dynamic route
+export const dynamic = 'force-dynamic'
+
 // Schema untuk mahasiswa
 const createMahasiswaSchema = z.object({
   name: z.string().min(3),
