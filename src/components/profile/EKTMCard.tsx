@@ -38,6 +38,35 @@ export function EKTMCard({ name, nim, fakultas, programStudi, avatarUrl }: EKTMC
         button.textContent = 'Mengunduh...'
       }
 
+      // First, collect all computed styles from original elements
+      const originalElements = cardRef.current.querySelectorAll('*')
+      const styleMap = new Map<Element, Map<string, string>>()
+      
+      originalElements.forEach((element) => {
+        const computedStyle = window.getComputedStyle(element)
+        const styles = new Map<string, string>()
+        
+        // Properties that might have color values
+        const colorProps = ['color', 'backgroundColor', 'borderColor', 'fill', 'stroke']
+        
+        colorProps.forEach(prop => {
+          const value = computedStyle.getPropertyValue(prop)
+          if (value && value.startsWith('rgb')) {
+            // Convert RGB to hex
+            const matches = value.match(/\d+/g)
+            if (matches && matches.length >= 3) {
+              const r = parseInt(matches[0])
+              const g = parseInt(matches[1])
+              const b = parseInt(matches[2])
+              const hex = '#' + [r, g, b].map(x => x.toString(16).padStart(2, '0')).join('')
+              styles.set(prop, hex)
+            }
+          }
+        })
+        
+        styleMap.set(element, styles)
+      })
+
       // Dynamically import libraries
       const [{ default: html2canvas }, { default: jsPDF }] = await Promise.all([
         import("html2canvas"),
@@ -50,7 +79,41 @@ export function EKTMCard({ name, nim, fakultas, programStudi, avatarUrl }: EKTMC
         backgroundColor: '#ffffff',
         logging: false,
         useCORS: true,
-        allowTaint: true
+        allowTaint: true,
+        onclone: (clonedDoc, clonedElement) => {
+          // Apply pre-computed hex colors to cloned elements
+          const clonedElements = clonedElement.querySelectorAll('*')
+          const originalElementsArray = Array.from(originalElements)
+          
+          clonedElements.forEach((clonedEl, index) => {
+            const htmlEl = clonedEl as HTMLElement
+            const originalEl = originalElementsArray[index]
+            
+            // Remove all Tailwind classes that might use oklch
+            if (htmlEl.className) {
+              const classes = htmlEl.className.split(' ')
+              const safeClasses = classes.filter(cls => 
+                !cls.startsWith('text-') && 
+                !cls.startsWith('bg-') && 
+                !cls.startsWith('border-') &&
+                !cls.startsWith('from-') &&
+                !cls.startsWith('to-') &&
+                !cls.startsWith('via-')
+              )
+              htmlEl.className = safeClasses.join(' ')
+            }
+            
+            // Apply pre-computed hex colors
+            if (originalEl) {
+              const styles = styleMap.get(originalEl)
+              if (styles) {
+                styles.forEach((value, prop) => {
+                  htmlEl.style.setProperty(prop, value, 'important')
+                })
+              }
+            }
+          })
+        }
       })
 
       // Convert canvas to image data
@@ -94,7 +157,7 @@ export function EKTMCard({ name, nim, fakultas, programStudi, avatarUrl }: EKTMC
   }
 
   return (
-    <div className="space-y-4 w-full">
+    <div className={styles.wrapper}>
       {/* Card Preview - Fixed positioning for consistency */}
       <div ref={cardRef} className={styles.ektmCard}>
         {/* Logo Unesa - Top Right */}
@@ -104,7 +167,7 @@ export function EKTMCard({ name, nim, fakultas, programStudi, avatarUrl }: EKTMC
             alt="Logo Unesa"
             width={48}
             height={48}
-            className="w-full h-full object-contain drop-shadow-md"
+            style={{ width: '100%', height: '100%', objectFit: 'contain', filter: 'drop-shadow(0 4px 6px rgba(0, 0, 0, 0.1))' }}
             priority
           />
         </div>
@@ -156,13 +219,13 @@ export function EKTMCard({ name, nim, fakultas, programStudi, avatarUrl }: EKTMC
             size={100}
             level="H"
             includeMargin={false}
-            className="w-full h-full"
+            style={{ width: '100%', height: '100%' }}
           />
         </div>
       </div>
 
       {/* Download Button */}
-      <div className="flex justify-center">
+      <div className={styles.buttonWrapper}>
         <Button
           onClick={handleDownload}
           variant="outline"
