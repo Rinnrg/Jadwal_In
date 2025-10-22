@@ -4,23 +4,50 @@ import { z } from 'zod'
 
 // Mark as dynamic route
 export const dynamic = 'force-dynamic'
+export const maxDuration = 10 // Allow up to 10 seconds for serverless function
 
 const loginSchema = z.object({
   email: z.string().email(),
   password: z.string().min(1),
 })
 
+// Helper function to retry database queries
+async function withRetry<T>(
+  operation: () => Promise<T>,
+  maxRetries = 3,
+  delay = 1000
+): Promise<T> {
+  let lastError: any
+  
+  for (let i = 0; i < maxRetries; i++) {
+    try {
+      return await operation()
+    } catch (error) {
+      lastError = error
+      if (i < maxRetries - 1) {
+        // Wait before retry
+        await new Promise(resolve => setTimeout(resolve, delay))
+        console.log(`Retry attempt ${i + 1}/${maxRetries}`)
+      }
+    }
+  }
+  
+  throw lastError
+}
+
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
     const { email, password } = loginSchema.parse(body)
 
-    // Find user by email
-    const user = await prisma.user.findUnique({
-      where: { email },
-      include: {
-        profile: true,
-      },
+    // Find user by email with retry logic
+    const user = await withRetry(async () => {
+      return await prisma.user.findUnique({
+        where: { email },
+        include: {
+          profile: true,
+        },
+      })
     })
 
     // User not found in database
