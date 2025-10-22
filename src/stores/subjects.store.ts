@@ -1,79 +1,124 @@
 import { create } from "zustand"
-import { persist, createJSONStorage } from "zustand/middleware"
 import type { Subject } from "@/data/schema"
-import { arr, generateId } from "@/lib/utils"
 
 interface SubjectsState {
   subjects: Subject[]
-  addSubject: (subject: Omit<Subject, "id">) => void
-  updateSubject: (id: string, updates: Partial<Subject>) => void
-  deleteSubject: (id: string) => void
+  isLoading: boolean
+  error: string | null
+  
+  // Actions
+  fetchSubjects: () => Promise<void>
+  addSubject: (subject: Omit<Subject, "id">) => Promise<void>
+  updateSubject: (id: string, updates: Partial<Subject>) => Promise<void>
+  deleteSubject: (id: string) => Promise<void>
+  
+  // Getters
   getSubjectById: (id: string) => Subject | undefined
   getActiveSubjects: () => Subject[]
   getSubjectsByAngkatan: (angkatan: number) => Subject[]
   getSubjectsByPengampu: (dosenId: string) => Subject[]
 }
 
-export const useSubjectsStore = create<SubjectsState>()(
-  persist(
-    (set, get) => ({
-      subjects: [],
-      addSubject: (subject) => {
-        const newSubject: Subject = {
-          ...subject,
-          id: generateId(),
-        }
-        set((state) => ({
-          subjects: [...state.subjects, newSubject],
-        }))
-      },
-      updateSubject: (id, updates) => {
-        set((state) => ({
-          subjects: state.subjects.map((subject) => (subject.id === id ? { ...subject, ...updates } : subject)),
-        }))
-      },
-      deleteSubject: (id) => {
-        set((state) => ({
-          subjects: state.subjects.filter((subject) => subject.id !== id),
-        }))
-      },
-      getSubjectById: (id) => {
-        return get().subjects.find((subject) => subject.id === id)
-      },
-      getActiveSubjects: () => {
-        return get().subjects.filter((subject) => subject.status === "aktif")
-      },
-      getSubjectsByAngkatan: (angkatan) => {
-        return get().subjects.filter(
-          (subject) => subject.status === "aktif" && subject.angkatan === angkatan,
-        )
-      },
-      getSubjectsByPengampu: (dosenId) => {
-        return get().subjects.filter((subject) => subject.status === "aktif" && subject.pengampuIds?.includes(dosenId))
-      },
-    }),
-    {
-      name: "jadwalin:subjects:v3",
-      storage: createJSONStorage(() => localStorage),
-      migrate: (persistedState: any, version) => {
-        if (version === 0 || version === 1 || version === 2) {
-          const subjects = arr(persistedState?.subjects).map((subject: any) => ({
-            ...subject,
-            pengampuIds: subject.pengampuIds || [],
-            // Handle schema migration from old format to new format
-            angkatan: subject.angkatan || subject.angkatanMin || 2022,
-            kelas: subject.kelas || "A",
-            color: subject.color || "#3b82f6",
-            // Remove old fields that don't exist in new schema
-            angkatanMin: undefined,
-            angkatanMax: undefined,
-            createdAt: undefined,
-            updatedAt: undefined,
-          }))
-          return { subjects }
-        }
-        return persistedState
-      },
-    },
-  ),
-)
+export const useSubjectsStore = create<SubjectsState>()((set, get) => ({
+  subjects: [],
+  isLoading: false,
+  error: null,
+
+  fetchSubjects: async () => {
+    set({ isLoading: true, error: null })
+    try {
+      const response = await fetch('/api/subjects')
+      if (!response.ok) throw new Error('Failed to fetch subjects')
+      const subjects = await response.json()
+      set({ subjects, isLoading: false })
+    } catch (error) {
+      set({ error: (error as Error).message, isLoading: false })
+    }
+  },
+
+  addSubject: async (subject) => {
+    set({ isLoading: true, error: null })
+    try {
+      const response = await fetch('/api/subjects', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(subject),
+      })
+      if (!response.ok) {
+        const errorData = await response.json()
+        throw new Error(errorData.error || 'Failed to create subject')
+      }
+      const newSubject = await response.json()
+      set((state) => ({
+        subjects: [...state.subjects, newSubject],
+        isLoading: false,
+      }))
+    } catch (error) {
+      set({ error: (error as Error).message, isLoading: false })
+      throw error
+    }
+  },
+
+  updateSubject: async (id, updates) => {
+    set({ isLoading: true, error: null })
+    try {
+      const response = await fetch('/api/subjects', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id, ...updates }),
+      })
+      if (!response.ok) {
+        const errorData = await response.json()
+        throw new Error(errorData.error || 'Failed to update subject')
+      }
+      const updatedSubject = await response.json()
+      set((state) => ({
+        subjects: state.subjects.map((subject) =>
+          subject.id === id ? updatedSubject : subject
+        ),
+        isLoading: false,
+      }))
+    } catch (error) {
+      set({ error: (error as Error).message, isLoading: false })
+      throw error
+    }
+  },
+
+  deleteSubject: async (id) => {
+    set({ isLoading: true, error: null })
+    try {
+      const response = await fetch(`/api/subjects?id=${id}`, {
+        method: 'DELETE',
+      })
+      if (!response.ok) {
+        const errorData = await response.json()
+        throw new Error(errorData.error || 'Failed to delete subject')
+      }
+      set((state) => ({
+        subjects: state.subjects.filter((subject) => subject.id !== id),
+        isLoading: false,
+      }))
+    } catch (error) {
+      set({ error: (error as Error).message, isLoading: false })
+      throw error
+    }
+  },
+
+  getSubjectById: (id) => {
+    return get().subjects.find((subject) => subject.id === id)
+  },
+
+  getActiveSubjects: () => {
+    return get().subjects.filter((subject) => subject.status === "aktif")
+  },
+
+  getSubjectsByAngkatan: (angkatan) => {
+    return get().subjects.filter(
+      (subject) => subject.status === "aktif" && subject.angkatan === angkatan,
+    )
+  },
+
+  getSubjectsByPengampu: (dosenId) => {
+    return get().subjects.filter((subject) => subject.status === "aktif" && subject.pengampuIds?.includes(dosenId))
+  },
+}))
