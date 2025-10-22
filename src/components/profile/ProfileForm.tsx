@@ -107,6 +107,14 @@ export function ProfileForm({ profile, onSuccess, onChangePassword }: ProfileFor
 
   const angkatan = session ? getAngkatanFromEmail(session.email) : new Date().getFullYear()
 
+  // Get current avatar from session or profile (session.image is synced from profile)
+  const currentAvatar = session?.image || profile?.avatarUrl
+  
+  // Debug: log avatar sources
+  console.log('ProfileForm - session.image:', session?.image?.substring(0, 50))
+  console.log('ProfileForm - profile.avatarUrl:', profile?.avatarUrl?.substring(0, 50))
+  console.log('ProfileForm - currentAvatar:', currentAvatar?.substring(0, 50))
+
   const handleAvatarChange = async (avatarUrl: string) => {
     if (!session) return
 
@@ -164,7 +172,7 @@ export function ProfileForm({ profile, onSuccess, onChangePassword }: ProfileFor
         nim={currentNIM || ""}
         fakultas={getFakultasFromNIM(currentNIM)}
         programStudi={getProdiFromNIM(currentNIM)}
-        avatarUrl={profile?.avatarUrl}
+        avatarUrl={currentAvatar}
       />
       
       <div className="grid gap-6 lg:grid-cols-3">
@@ -175,7 +183,7 @@ export function ProfileForm({ profile, onSuccess, onChangePassword }: ProfileFor
         </CardHeader>
         <CardContent className="space-y-4">
           <AvatarUploader
-            currentAvatar={profile?.avatarUrl}
+            currentAvatar={currentAvatar}
             userName={session.name}
             onAvatarChange={handleAvatarChange}
           />
@@ -188,12 +196,12 @@ export function ProfileForm({ profile, onSuccess, onChangePassword }: ProfileFor
                 variant="default"
                 className="w-full"
                 onClick={() => setShowEKTM(true)}
-                disabled={!profile?.avatarUrl}
+                disabled={!currentAvatar}
               >
                 <IdCard className="h-4 w-4 mr-2" />
                 Lihat E-KTM
               </Button>
-              {!profile?.avatarUrl && (
+              {!currentAvatar && (
                 <p className="text-xs text-center text-muted-foreground">
                   Unggah foto profil terlebih dahulu untuk melihat E-KTM
                 </p>

@@ -23,9 +23,13 @@ export function AvatarUploader({ currentAvatar, userName, onAvatarChange, disabl
   const [selectedImage, setSelectedImage] = useState<string | null>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
 
-  // Reset preview when currentAvatar changes
+  // Reset preview when currentAvatar changes and force image reload
   useEffect(() => {
     setPreviewUrl(null)
+    // Debug: log avatar URL
+    if (currentAvatar) {
+      console.log('AvatarUploader - currentAvatar:', currentAvatar?.substring(0, 50) + '...')
+    }
   }, [currentAvatar])
 
   const handleFileSelect = async (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -86,8 +90,14 @@ export function AvatarUploader({ currentAvatar, userName, onAvatarChange, disabl
       <div className="relative group">
         <Avatar className={`h-24 w-24 transition-all duration-300 shadow-lg ${
           isUploading ? "opacity-50" : "hover:scale-110 hover:shadow-xl"
-        }`}>
-          <AvatarImage src={displayAvatar || "/placeholder.svg"} alt={userName} />
+        }`} key={displayAvatar}>
+          <AvatarImage 
+            src={displayAvatar || "/placeholder.svg"} 
+            alt={userName}
+            onError={(e) => {
+              console.error('Avatar image failed to load:', displayAvatar?.substring(0, 50))
+            }}
+          />
           <AvatarFallback className="text-lg">
             {userName
               .split(" ")

@@ -15,6 +15,7 @@ export async function fetchUserProfile() {
     if (response.ok) {
       const { profile } = await response.json()
       const profileStore = useProfileStore.getState()
+      const sessionStore = useSessionStore.getState()
       
       // Update local store with database profile
       if (profile) {
@@ -40,6 +41,11 @@ export async function fetchUserProfile() {
             website: profile.website,
             avatarUrl: profile.avatarUrl,
           })
+        }
+        
+        // Sync avatarUrl to session.image for consistent display
+        if (profile.avatarUrl && profile.avatarUrl !== session.image) {
+          sessionStore.updateSessionImage(profile.avatarUrl)
         }
       }
     }
