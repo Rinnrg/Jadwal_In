@@ -48,8 +48,20 @@ export function Protected({ children }: { children: React.ReactNode }) {
       
       // If we have cookie but no session, user might need to re-login
       if (!session && hasAuthCookie) {
-        // Clear invalid cookie and redirect
-        document.cookie = "jadwalin-auth=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT"
+        // Clear invalid cookie and redirect with proper attributes
+        const isProduction = window.location.protocol === 'https:'
+        const cookieAttributes = [
+          "jadwalin-auth=",
+          "path=/",
+          "expires=Thu, 01 Jan 1970 00:00:00 GMT",
+          "SameSite=Lax"
+        ]
+        
+        if (isProduction) {
+          cookieAttributes.push("Secure")
+        }
+        
+        document.cookie = cookieAttributes.join("; ")
         router.replace("/login")
         return
       }
