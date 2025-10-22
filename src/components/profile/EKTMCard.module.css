@@ -13,3 +13,37 @@
   background-position: center;
   background-repeat: no-repeat;
 }
+
+/* Text styles with responsive sizing */
+.fallbackText {
+  font-size: clamp(12px, 5vw, 20px);
+}
+
+.nameText {
+  font-size: clamp(10px, 3vw, 12px);
+}
+
+.nimText {
+  font-size: clamp(8px, 2.5vw, 10px);
+}
+
+.infoText {
+  font-size: clamp(7px, 2.3vw, 9px);
+}
+
+/* Ensure consistent sizing across all devices */
+@media (max-width: 640px) {
+  .ektmCard {
+    /* Keep the same aspect ratio and max-width on mobile */
+    max-width: 396px;
+    width: 100%;
+  }
+}
+
+/* For very small screens, scale down slightly while maintaining aspect ratio */
+@media (max-width: 420px) {
+  .ektmCard {
+    max-width: 100%;
+    /* Container will scale proportionally */
+  }
+}
