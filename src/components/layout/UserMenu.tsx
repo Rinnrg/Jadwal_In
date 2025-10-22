@@ -25,7 +25,8 @@ export function UserMenu() {
   if (!session) return null
 
   const profile = getProfile(session.id)
-  const avatarUrl = profile?.avatarUrl || session.image
+  // Use session.image as primary source (synced from profile), fallback to profile
+  const avatarUrl = session.image || profile?.avatarUrl
 
   const handleLogout = async () => {
     const confirmed = await confirmAction("Keluar dari Sistem", "Apakah Anda yakin ingin keluar?", "Ya, Keluar")
@@ -66,7 +67,7 @@ export function UserMenu() {
   return (
     <DropdownMenu modal={false}>
       <DropdownMenuTrigger className="relative flex items-center space-x-2 h-9 px-2 rounded-lg hover:bg-accent transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2">
-        <Avatar className="h-7 w-7">
+        <Avatar className="h-7 w-7" key={avatarUrl}>
           <AvatarImage src={avatarUrl || "/placeholder.svg"} alt={session.name} />
           <AvatarFallback className="text-xs bg-gradient-to-br from-blue-500 to-blue-600 text-white">
             {session.name
@@ -81,7 +82,7 @@ export function UserMenu() {
       </DropdownMenuTrigger>
 
       <DropdownMenuContent 
-        className="w-64" 
+        className="w-64 z-[110]" 
         side="bottom"
         align="start"
         sideOffset={8}
@@ -90,7 +91,7 @@ export function UserMenu() {
         {/* Profile Header */}
         <DropdownMenuLabel className="p-4">
           <div className="flex items-center space-x-3">
-            <Avatar className="h-10 w-10">
+            <Avatar className="h-10 w-10" key={avatarUrl}>
               <AvatarImage src={avatarUrl || "/placeholder.svg"} alt={session.name} />
               <AvatarFallback className="text-sm bg-gradient-to-br from-blue-500 to-blue-600 text-white">
                 {session.name
