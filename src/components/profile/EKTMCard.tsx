@@ -1,6 +1,6 @@
 "use client"
 
-import { useRef } from "react"
+import { useRef, useEffect, useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Download } from "lucide-react"
 import Image from "next/image"
@@ -23,131 +23,214 @@ interface EKTMCardProps {
 
 export function EKTMCard({ name, nim, fakultas, programStudi, avatarUrl }: EKTMCardProps) {
   const cardRef = useRef<HTMLDivElement>(null)
+  const canvasRef = useRef<HTMLCanvasElement>(null)
+  const [isDownloading, setIsDownloading] = useState(false)
 
   // Generate QR Code data - URL yang akan menampilkan E-KTM
   const qrData = `${typeof window !== 'undefined' ? window.location.origin : ''}/e-ktm/${nim}`
 
+  // Function to load image from URL
+  const loadImage = (url: string): Promise<HTMLImageElement> => {
+    return new Promise((resolve, reject) => {
+      const img = new window.Image()
+      img.crossOrigin = "anonymous"
+      img.onload = () => resolve(img)
+      img.onerror = reject
+      img.src = url
+    })
+  }
+
+  // Function to draw text with proper wrapping
+  const wrapText = (
+    ctx: CanvasRenderingContext2D,
+    text: string,
+    x: number,
+    y: number,
+    maxWidth: number,
+    lineHeight: number
+  ) => {
+    const words = text.split(' ')
+    let line = ''
+    let currentY = y
+
+    for (let i = 0; i < words.length; i++) {
+      const testLine = line + words[i] + ' '
+      const metrics = ctx.measureText(testLine)
+      const testWidth = metrics.width
+
+      if (testWidth > maxWidth && i > 0) {
+        ctx.fillText(line.trim(), x, currentY)
+        line = words[i] + ' '
+        currentY += lineHeight
+      } else {
+        line = testLine
+      }
+    }
+    ctx.fillText(line.trim(), x, currentY)
+  }
+
   const handleDownload = async () => {
-    if (!cardRef.current) return
+    if (!canvasRef.current) return
 
     try {
-      // Show loading state
-      const button = document.activeElement as HTMLButtonElement
-      if (button) {
-        button.disabled = true
-        button.textContent = 'Mengunduh...'
+      setIsDownloading(true)
+
+      // Create a high-resolution canvas for PDF
+      const scale = 3
+      const canvas = document.createElement('canvas')
+      const cardWidth = 396
+      const cardHeight = 228
+      canvas.width = cardWidth * scale
+      canvas.height = cardHeight * scale
+      const ctx = canvas.getContext('2d')
+      
+      if (!ctx) {
+        throw new Error('Could not get canvas context')
       }
 
-      // First, collect all computed styles from original elements
-      const originalElements = cardRef.current.querySelectorAll('*')
-      const styleMap = new Map<Element, Map<string, string>>()
-      
-      originalElements.forEach((element) => {
-        const computedStyle = window.getComputedStyle(element)
-        const styles = new Map<string, string>()
-        
-        // Properties that might have color values
-        const colorProps = ['color', 'backgroundColor', 'borderColor', 'fill', 'stroke']
-        
-        colorProps.forEach(prop => {
-          const value = computedStyle.getPropertyValue(prop)
-          if (value && value.startsWith('rgb')) {
-            // Convert RGB to hex
-            const matches = value.match(/\d+/g)
-            if (matches && matches.length >= 3) {
-              const r = parseInt(matches[0])
-              const g = parseInt(matches[1])
-              const b = parseInt(matches[2])
-              const hex = '#' + [r, g, b].map(x => x.toString(16).padStart(2, '0')).join('')
-              styles.set(prop, hex)
-            }
-          }
-        })
-        
-        styleMap.set(element, styles)
-      })
+      // Scale the context for high resolution
+      ctx.scale(scale, scale)
 
-      // Dynamically import libraries
-      const [{ default: html2canvas }, { default: jsPDF }] = await Promise.all([
-        import("html2canvas"),
-        import("jspdf")
-      ])
-      
-      // Capture the card as canvas with high quality
-      const canvas = await html2canvas(cardRef.current, {
-        scale: 3,
-        backgroundColor: '#ffffff',
-        logging: false,
-        useCORS: true,
-        allowTaint: true,
-        onclone: (clonedDoc, clonedElement) => {
-          // Apply pre-computed hex colors to cloned elements
-          const clonedElements = clonedElement.querySelectorAll('*')
-          const originalElementsArray = Array.from(originalElements)
-          
-          clonedElements.forEach((clonedEl, index) => {
-            const htmlEl = clonedEl as HTMLElement
-            const originalEl = originalElementsArray[index]
-            
-            // Apply pre-computed hex colors to override any oklch colors
-            if (originalEl) {
-              const styles = styleMap.get(originalEl)
-              if (styles && styles.size > 0) {
-                styles.forEach((value, prop) => {
-                  try {
-                    htmlEl.style.setProperty(prop, value, 'important')
-                  } catch (e) {
-                    // Skip if property can't be set
-                  }
-                })
-              }
-            }
-          })
+      // Fill white background
+      ctx.fillStyle = '#ffffff'
+      ctx.fillRect(0, 0, cardWidth, cardHeight)
+
+      // Load and draw background image
+      try {
+        const bgImage = await loadImage('/bg E-KTM.svg')
+        ctx.drawImage(bgImage, 0, 0, cardWidth, cardHeight)
+      } catch (e) {
+        console.warn('Could not load background image, using solid color')
+        ctx.fillStyle = '#3b82f6' // fallback blue background
+        ctx.fillRect(0, 0, cardWidth, cardHeight)
+      }
+
+      // Draw logo (top right)
+      try {
+        const logoImage = await loadImage('/Logo unesa.svg')
+        ctx.drawImage(logoImage, cardWidth - 56, 6, 48, 48)
+      } catch (e) {
+        console.warn('Could not load logo image')
+      }
+
+      // Draw photo (center top)
+      const photoSize = 80
+      const photoX = (cardWidth - photoSize) / 2
+      const photoY = 34
+
+      ctx.save()
+      ctx.beginPath()
+      ctx.arc(photoX + photoSize / 2, photoY + photoSize / 2, photoSize / 2, 0, Math.PI * 2)
+      ctx.closePath()
+      ctx.clip()
+
+      if (avatarUrl) {
+        try {
+          const avatarImage = await loadImage(avatarUrl)
+          ctx.drawImage(avatarImage, photoX, photoY, photoSize, photoSize)
+        } catch (e) {
+          // Draw fallback initials
+          ctx.fillStyle = '#111827'
+          ctx.fillRect(photoX, photoY, photoSize, photoSize)
+          ctx.fillStyle = '#ffffff'
+          ctx.font = 'bold 24px sans-serif'
+          ctx.textAlign = 'center'
+          ctx.textBaseline = 'middle'
+          const initials = name.split(" ").map(n => n[0]).join("").slice(0, 2).toUpperCase()
+          ctx.fillText(initials, photoX + photoSize / 2, photoY + photoSize / 2)
         }
-      })
+      } else {
+        // Draw fallback initials
+        ctx.fillStyle = '#111827'
+        ctx.fillRect(photoX, photoY, photoSize, photoSize)
+        ctx.fillStyle = '#ffffff'
+        ctx.font = 'bold 24px sans-serif'
+        ctx.textAlign = 'center'
+        ctx.textBaseline = 'middle'
+        const initials = name.split(" ").map(n => n[0]).join("").slice(0, 2).toUpperCase()
+        ctx.fillText(initials, photoX + photoSize / 2, photoY + photoSize / 2)
+      }
 
-      // Convert canvas to image data
+      ctx.restore()
+
+      // Draw white border around photo
+      ctx.strokeStyle = '#ffffff'
+      ctx.lineWidth = 3
+      ctx.beginPath()
+      ctx.arc(photoX + photoSize / 2, photoY + photoSize / 2, photoSize / 2 + 1.5, 0, Math.PI * 2)
+      ctx.stroke()
+
+      // Draw info section (bottom center)
+      const infoY = cardHeight - 48
+      ctx.textAlign = 'center'
+
+      // Name
+      ctx.fillStyle = '#111827'
+      ctx.font = 'bold 14px sans-serif'
+      ctx.fillText(name.toUpperCase(), cardWidth / 2, infoY)
+
+      // NIM
+      ctx.font = '600 11px sans-serif'
+      ctx.fillStyle = '#1f2937'
+      ctx.fillText(nim, cardWidth / 2, infoY + 16)
+
+      // Fakultas
+      ctx.font = '600 10px sans-serif'
+      ctx.fillStyle = '#1f2937'
+      wrapText(ctx, fakultas, cardWidth / 2, infoY + 30, cardWidth - 48, 12)
+
+      // Program Studi
+      wrapText(ctx, programStudi, cardWidth / 2, infoY + 42, cardWidth - 48, 12)
+
+      // Generate QR code and draw it
+      const QRCode = (await import('qrcode')).default
+      const qrDataUrl = await QRCode.toDataURL(qrData, {
+        width: 126, // 42 * 3 for high resolution
+        margin: 0,
+        errorCorrectionLevel: 'H'
+      })
+      
+      const qrImage = await loadImage(qrDataUrl)
+      const qrSize = 42
+      const qrX = 8
+      const qrY = cardHeight - qrSize - 8
+
+      // White background for QR
+      ctx.fillStyle = '#ffffff'
+      ctx.fillRect(qrX - 3, qrY - 3, qrSize + 6, qrSize + 6)
+      
+      // Draw QR code
+      ctx.drawImage(qrImage, qrX, qrY, qrSize, qrSize)
+
+      // Convert canvas to PDF
+      const { default: jsPDF } = await import('jspdf')
       const imgData = canvas.toDataURL('image/png', 1.0)
       
-      // Calculate dimensions for PDF (maintaining aspect ratio)
-      const cardWidth = 396 // Original card width
-      const cardHeight = 228 // Original card height
-      const pdfWidth = 85.6 // Credit card size in mm (width)
+      const pdfWidth = 85.6 // Credit card size in mm
       const pdfHeight = (cardHeight / cardWidth) * pdfWidth
       
-      // Create PDF with card dimensions
       const pdf = new jsPDF({
         orientation: 'landscape',
         unit: 'mm',
         format: [pdfWidth, pdfHeight]
       })
       
-      // Add image to PDF (full page)
       pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight, undefined, 'FAST')
-      
-      // Download PDF
       pdf.save(`E-KTM-${nim}.pdf`)
-      
-      // Re-enable button
-      if (button) {
-        button.disabled = false
-        button.innerHTML = '<svg class="h-4 w-4" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" x2="12" y1="15" y2="3"/></svg> Unduh E-KTM (PDF)'
-      }
+
     } catch (error) {
       console.error("Error downloading E-KTM:", error)
       alert("Gagal mengunduh E-KTM. Error: " + (error as Error).message)
-      
-      // Re-enable button on error
-      const button = document.activeElement as HTMLButtonElement
-      if (button) {
-        button.disabled = false
-        button.innerHTML = '<svg class="h-4 w-4" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" x2="12" y1="15" y2="3"/></svg> Unduh E-KTM (PDF)'
-      }
+    } finally {
+      setIsDownloading(false)
     }
   }
 
   return (
     <div className={styles.wrapper}>
+      {/* Hidden canvas for rendering */}
+      <canvas ref={canvasRef} style={{ display: 'none' }} />
+      
       {/* Card Preview - Fixed positioning for consistency */}
       <div ref={cardRef} className={styles.ektmCard}>
         {/* Logo Unesa - Top Right */}
@@ -221,9 +304,10 @@ export function EKTMCard({ name, nim, fakultas, programStudi, avatarUrl }: EKTMC
           variant="outline"
           size="sm"
           className="gap-2 text-xs sm:text-sm"
+          disabled={isDownloading}
         >
           <Download className="h-4 w-4" />
-          Unduh E-KTM (PDF)
+          {isDownloading ? 'Mengunduh...' : 'Unduh E-KTM (PDF)'}
         </Button>
       </div>
     </div>

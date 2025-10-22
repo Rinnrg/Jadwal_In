@@ -4,17 +4,18 @@ import { useEffect, useState } from "react"
 import { useUsersStore } from "@/stores/users.store"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
-import { Checkbox } from "@/components/ui/checkbox"
 import { Label } from "@/components/ui/label"
 import { Card, CardContent } from "@/components/ui/card"
 import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover"
-import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command"
-import { Check, ChevronsUpDown, X, Users } from "lucide-react"
-import { cn } from "@/lib/utils"
+  Select,
+  SelectContent,
+  SelectGroup,
+  SelectItem,
+  SelectLabel,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
+import { X, Users } from "lucide-react"
 
 interface AssigneePickerProps {
   value: string[]
@@ -24,7 +25,7 @@ interface AssigneePickerProps {
 
 export function AssigneePicker({ value, onChange, placeholder = "Pilih dosen pengampu..." }: AssigneePickerProps) {
   const { users, getDosenUsers, fetchUsers } = useUsersStore()
-  const [open, setOpen] = useState(false)
+  const [selectedDosenId, setSelectedDosenId] = useState<string>("")
 
   useEffect(() => {
     // Fetch users from database if empty
@@ -37,11 +38,12 @@ export function AssigneePicker({ value, onChange, placeholder = "Pilih dosen pen
   const dosenUsers = getDosenUsers()
   const selectedDosen = dosenUsers.filter(user => value.includes(user.id))
 
-  const toggleDosen = (dosenId: string) => {
-    const newValue = value.includes(dosenId)
-      ? value.filter(id => id !== dosenId)
-      : [...value, dosenId]
-    onChange(newValue)
+  // Handle selecting dosen from dropdown
+  const handleSelectDosen = (dosenId: string) => {
+    if (dosenId && !value.includes(dosenId)) {
+      onChange([...value, dosenId])
+    }
+    setSelectedDosenId("") // Reset dropdown after selection
   }
 
   const removeDosen = (dosenId: string) => {
@@ -52,67 +54,38 @@ export function AssigneePicker({ value, onChange, placeholder = "Pilih dosen pen
     onChange([])
   }
 
+  // Filter out already selected dosen
+  const availableDosen = dosenUsers.filter(user => !value.includes(user.id))
+
   return (
     <div className="space-y-3">
-      <Popover open={open} onOpenChange={setOpen}>
-        <PopoverTrigger asChild>
-          <Button
-            variant="outline"
-            role="combobox"
-            aria-expanded={open}
-            className="w-full justify-between hover:bg-accent"
-          >
-            <div className="flex items-center gap-2">
-              <Users className="h-4 w-4 text-muted-foreground" />
-              <span className="text-muted-foreground">
-                {selectedDosen.length === 0
-                  ? placeholder
-                  : `${selectedDosen.length} dosen dipilih`}
-              </span>
-            </div>
-            <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-          </Button>
-        </PopoverTrigger>
-        <PopoverContent className="w-full p-0" align="start">
-          <Command>
-            <CommandInput placeholder="Cari dosen..." />
-            <CommandList>
-              <CommandEmpty>
+      {/* Dropdown Select */}
+      <Select value={selectedDosenId} onValueChange={handleSelectDosen}>
+        <SelectTrigger className="w-full">
+          <SelectValue placeholder={placeholder} />
+        </SelectTrigger>
+        <SelectContent>
+          <SelectGroup>
+            <SelectLabel>Daftar Dosen</SelectLabel>
+            {availableDosen.length === 0 ? (
+              <div className="py-6 text-center text-sm text-muted-foreground">
                 {dosenUsers.length === 0 
                   ? "Belum ada data dosen" 
-                  : "Dosen tidak ditemukan"}
-              </CommandEmpty>
-              <CommandGroup>
-                {dosenUsers.map((user) => {
-                  const isSelected = value.includes(user.id)
-                  return (
-                    <CommandItem
-                      key={user.id}
-                      onSelect={() => toggleDosen(user.id)}
-                      className="cursor-pointer"
-                    >
-                      <div className="flex items-center gap-3 flex-1">
-                        <Checkbox
-                          checked={isSelected}
-                          onCheckedChange={() => toggleDosen(user.id)}
-                          className="pointer-events-none"
-                        />
-                        <div className="flex flex-col flex-1">
-                          <span className="font-medium">{user.name}</span>
-                          <span className="text-xs text-muted-foreground">{user.email}</span>
-                        </div>
-                        {isSelected && (
-                          <Check className="h-4 w-4 text-primary" />
-                        )}
-                      </div>
-                    </CommandItem>
-                  )
-                })}
-              </CommandGroup>
-            </CommandList>
-          </Command>
-        </PopoverContent>
-      </Popover>
+                  : "Semua dosen sudah dipilih"}
+              </div>
+            ) : (
+              availableDosen.map((user) => (
+                <SelectItem key={user.id} value={user.id}>
+                  <div className="flex flex-col">
+                    <span className="font-medium">{user.name}</span>
+                    <span className="text-xs text-muted-foreground">{user.email}</span>
+                  </div>
+                </SelectItem>
+              ))
+            )}
+          </SelectGroup>
+        </SelectContent>
+      </Select>
 
       {/* Selected Dosen Tags */}
       {selectedDosen.length > 0 && (
