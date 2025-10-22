@@ -1,198 +1,73 @@
-# JadwalIn - Aplikasi Manajemen Jadwal Perkuliahan
+# JadwalIn — Sistem Manajemen Jadwal Akademik (Next.js + Prisma + Supabase)
 
-Aplikasi manajemen jadwal perkuliahan dengan Prisma ORM dan PostgreSQL.
+[![Status](https://img.shields.io/badge/Status-Active-brightgreen)](#)
+[![Version](https://img.shields.io/badge/Version-1.0.0-blue)](#)
+[![License](https://img.shields.io/badge/License-MIT-green)](LICENSE)
 
-## 📋 Prerequisites
+> **Jadwal Gak Pernah Telat, Reminder Selalu Ingat.**  
+> Jadwal, KRS, kehadiran, hingga nilai — semua aman dalam satu platform terintegrasi.
 
-- Node.js 18.x atau lebih tinggi
-- PostgreSQL database
-- pnpm (package manager)
+Aplikasi manajemen jadwal perkuliahan dengan **Next.js + Tailwind CSS**, **Prisma ORM**, dan **PostgreSQL (Supabase)**. Mendukung multi-role (Mahasiswa, Dosen, Kaprodi, Super Admin) dengan alur kerja yang sederhana dan aman.
 
-## 🚀 Setup Database dengan Prisma
+---
 
-### 1. Install Dependencies
+## ✨ Fitur Utama
+
+1. **Manajemen Jadwal & Mata Kuliah** — jadwal pribadi, penawaran mata kuliah, dan saran slot.
+2. **KRS / KHS** — ambil/lepaskan mata kuliah, lihat nilai & ekspor.
+3. **Kehadiran** — sesi presensi & rekap kehadiran real-time.
+4. **Tugas & Materi** — unggah materi, pengumpulan tugas, dan penilaian.
+5. **Pengingat (Reminders)** — notifikasi perkuliahan & tenggat.
+6. **Multi-Role Access** — dashboard dan perizinan sesuai peran.
+7. **Responsif & Siap Produksi** — arsitektur modern, cocok untuk Vercel.
+
+---
+
+## 🧱 Tech Stack
+
+| Kategori   | Teknologi                                                                 |
+|------------|----------------------------------------------------------------------------|
+| Frontend   | Next.js (App Router), React                                               |
+| Styling    | Tailwind CSS                                                              |
+| ORM        | Prisma                                                                    |
+| Database   | PostgreSQL (Supabase)                                                     |
+| Deploy     | Vercel                                                                    |
+
+---
+
+## 📋 Prasyarat
+
+- Node.js 18.x atau lebih baru
+- pnpm (disarankan) / npm / yarn
+- Akun **Supabase** & project aktif (Postgres)
+
+---
+
+## ⚙️ Konfigurasi & Jalankan (Quick Start)
 
 ```bash
+# 1) Clone & masuk ke folder
+git clone <repo-url>
+cd jadwalin
+
+# 2) Install
 pnpm install
-```
 
-### 2. Setup Environment Variables
+# 3) Buat .env dari template
+cp .env.example .env
+# lalu isi variabel di bawah
 
-Buat file `.env` di root project (sudah ada template `.env.example`):
-
-```env
-DATABASE_URL="postgresql://USER:PASSWORD@HOST:PORT/DATABASE?schema=public"
-NEXT_PUBLIC_APP_URL="http://localhost:3000"
-```
-
-Ganti dengan kredensial database PostgreSQL Anda:
-- `USER`: username PostgreSQL
-- `PASSWORD`: password PostgreSQL
-- `HOST`: host database (default: localhost)
-- `PORT`: port database (default: 5432)
-- `DATABASE`: nama database (contoh: jadwalim)
-
-### 3. Generate Prisma Client
-
-```bash
+# 4) Generate Prisma Client
 pnpm prisma:generate
-```
 
-### 4. Push Schema ke Database
-
-Untuk development (tanpa migration files):
-```bash
+# 5) Inisialisasi DB (dev)
 pnpm prisma:push
-```
+# atau buat migration (prod)
+# pnpm prisma:migrate
 
-Atau untuk production (dengan migration files):
-```bash
-pnpm prisma:migrate
-```
-
-### 5. Seed Database dengan Data Awal
-
-```bash
+# 6) (Opsional) Seed data awal
 pnpm prisma:seed
-```
 
-Data awal yang akan dibuat:
-- **Super Admin**: 
-  - Email: `gacor@unesa.ac.id`
-  - Password: `gacorkang`
-- Sample Kaprodi, Dosen, dan Mahasiswa
-- Sample mata kuliah dan jadwal
-
-### 6. Setup Row Level Security (RLS) di Supabase
-
-**⚠️ PENTING untuk Supabase Users:**
-
-Jika menggunakan Supabase, tabel akan muncul sebagai "Unrestricted" karena RLS belum aktif. Jalankan SQL berikut di Supabase SQL Editor:
-
-**Untuk Development (Simple - Allow All):**
-```sql
--- Copy isi file prisma/rls-simple.sql dan jalankan di Supabase SQL Editor
-```
-
-**Untuk Production (Keamanan Lengkap):**
-```sql
--- Copy isi file prisma/rls-policies.sql dan jalankan di Supabase SQL Editor
-```
-
-Cara menjalankan:
-1. Buka Supabase Dashboard
-2. Klik **SQL Editor** di sidebar
-3. Klik **New Query**
-4. Copy-paste isi file `prisma/rls-simple.sql` atau `prisma/rls-policies.sql`
-5. Klik **Run** atau tekan `Ctrl+Enter`
-6. Refresh Table Editor - tabel sekarang akan menunjukkan "RLS enabled"
-
-### 7. Jalankan Development Server
-
-```bash
+# 7) Jalanin dev server
 pnpm dev
-```
-
-Aplikasi akan berjalan di `http://localhost:3000`
-
-## 📊 Prisma Commands
-
-```bash
-# Generate Prisma Client
-pnpm prisma:generate
-
-# Push schema ke database (development)
-pnpm prisma:push
-
-# Create migration (production)
-pnpm prisma:migrate
-
-# Open Prisma Studio (GUI untuk database)
-pnpm prisma:studio
-
-# Seed database
-pnpm prisma:seed
-
-# Reset database (hapus semua data dan re-seed)
-pnpm db:reset
-```
-
-## 🗄️ Database Schema
-
-### Models Utama:
-
-- **User**: Data pengguna dengan role (mahasiswa, dosen, kaprodi, super_admin)
-- **Profile**: Profil detail pengguna (NIM, angkatan, kelas, dll)
-- **Subject**: Mata kuliah
-- **CourseOffering**: Penawaran mata kuliah per kelas
-- **Assignment**: Tugas/assignment
-- **Submission**: Pengumpulan tugas mahasiswa
-- **Material**: Materi kuliah
-- **AttendanceSession**: Sesi kehadiran
-- **AttendanceRecord**: Record kehadiran per mahasiswa
-- **KrsItem**: Kartu Rencana Studi
-- **Grade**: Nilai mahasiswa
-- **ScheduleEvent**: Event jadwal
-- **Reminder**: Pengingat
-
-## 🔐 Login & Role
-
-### Format Email:
-- **Super Admin**: `gacor@unesa.ac.id`
-- **Mahasiswa**: `namaDepan.NIM@mhs.institusi.ac.id`
-- **Dosen**: `namaDepan.ID@dsn.institusi.ac.id`
-- **Kaprodi**: `namaDepan.ID@kpd.institusi.ac.id`
-
-### Role Permissions:
-- **super_admin**: Akses penuh ke semua fitur termasuk role management
-- **kaprodi**: Manajemen mata kuliah, entry nilai, kehadiran
-- **dosen**: Entry nilai, kehadiran untuk mata kuliah yang diampu
-- **mahasiswa**: Akses KRS, KHS, jadwal pribadi
-
-## 🔧 API Routes
-
-### Authentication
-- `POST /api/auth/login` - Login user
-- `GET /api/auth/user?id={userId}` - Get user data
-
-### User Management (Super Admin only)
-- `GET /api/users` - Get all users
-- `GET /api/users?id={userId}` - Get specific user
-- `GET /api/users?role={role}` - Get users by role
-- `POST /api/users` - Create new user
-- `PATCH /api/users?id={userId}` - Update user
-- `DELETE /api/users?id={userId}` - Delete user
-
-## 🔄 Development Workflow
-
-1. **Ubah Schema**: Edit `prisma/schema.prisma`
-2. **Update Database**: Jalankan `pnpm prisma:push` atau `pnpm prisma:migrate`
-3. **Generate Client**: Jalankan `pnpm prisma:generate`
-4. **Restart Dev Server**: Restart `pnpm dev`
-
-## 📝 Notes
-
-- Prisma Client di-generate ke folder `src/generated/prisma`
-- Seed file ada di `prisma/seed.ts`
-- Prisma helper ada di `src/lib/prisma.ts`
-- Super admin password di-hardcode untuk demo (ganti di production)
-
-## 🐛 Troubleshooting
-
-### Error: "Can't reach database server"
-- Pastikan PostgreSQL berjalan
-- Cek kredensial di `.env` sudah benar
-- Cek database sudah dibuat
-
-### Error: "Environment variable not found: DATABASE_URL"
-- Pastikan file `.env` ada di root project
-- Copy dari `.env.example` jika belum ada
-
-### Error: "Prisma Client not found"
-- Jalankan `pnpm prisma:generate`
-
-## 📚 Resources
-
-- [Prisma Documentation](https://www.prisma.io/docs)
-- [Next.js Documentation](https://nextjs.org/docs)
-- [PostgreSQL Documentation](https://www.postgresql.org/docs/)
+# http://localhost:3000
