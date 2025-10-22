@@ -1,6 +1,6 @@
 import { useSubjectsStore } from "@/stores/subjects.store"
 import { useProfileStore } from "@/stores/profile.store"
-import { useUsersStore, seedInitialUsers } from "@/stores/users.store"
+import { useUsersStore } from "@/stores/users.store"
 import { generateId } from "@/lib/utils"
 import type { Subject } from "@/data/schema"
 
@@ -9,8 +9,9 @@ export function bootstrapData() {
   const isSeeded = localStorage.getItem("jadwalin:seeded")
   if (isSeeded) return
 
-  // Seed users first (including dosen)
-  seedInitialUsers()
+  // Fetch users from database (including dosen)
+  const usersStore = useUsersStore.getState()
+  usersStore.fetchUsers()
 
   // Seed subjects
   const subjectsStore = useSubjectsStore.getState()

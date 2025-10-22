@@ -1,7 +1,7 @@
 "use client"
 
 import { useEffect, useState } from "react"
-import { useUsersStore, seedInitialUsers } from "@/stores/users.store"
+import { useUsersStore } from "@/stores/users.store"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Checkbox } from "@/components/ui/checkbox"
@@ -23,16 +23,16 @@ interface AssigneePickerProps {
 }
 
 export function AssigneePicker({ value, onChange, placeholder = "Pilih dosen pengampu..." }: AssigneePickerProps) {
-  const { users, getDosenUsers } = useUsersStore()
+  const { users, getDosenUsers, fetchUsers } = useUsersStore()
   const [open, setOpen] = useState(false)
 
   useEffect(() => {
-    // Always ensure initial users are seeded
+    // Fetch users from database if empty
     const dosenCount = users.filter(u => u.role === "dosen").length
     if (dosenCount === 0) {
-      seedInitialUsers()
+      fetchUsers()
     }
-  }, [users])
+  }, [users, fetchUsers])
 
   const dosenUsers = getDosenUsers()
   const selectedDosen = dosenUsers.filter(user => value.includes(user.id))
