@@ -70,8 +70,21 @@ export function LoginCard() {
 
       // Set session after animation
       setTimeout(() => {
-        // Set auth cookie for middleware
-        document.cookie = "jadwalin-auth=true; path=/; max-age=86400" // 24 hours
+        // Set auth cookie for middleware with proper attributes
+        const isProduction = window.location.protocol === 'https:'
+        const cookieAttributes = [
+          "jadwalin-auth=true",
+          "path=/",
+          "max-age=86400", // 24 hours
+          "SameSite=Lax"
+        ]
+        
+        // Add Secure flag for HTTPS
+        if (isProduction) {
+          cookieAttributes.push("Secure")
+        }
+        
+        document.cookie = cookieAttributes.join("; ")
         
         setSession({
           id: user.id,

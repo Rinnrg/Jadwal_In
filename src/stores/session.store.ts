@@ -53,9 +53,21 @@ export const useSessionStore = create<SessionState>()(
       setSession: (session) => set({ session, isLoading: false }),
       setLoading: (isLoading) => set({ isLoading }),
       logout: () => {
-        // Remove auth cookie
+        // Remove auth cookie with proper attributes
         if (typeof document !== 'undefined') {
-          document.cookie = "jadwalin-auth=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT"
+          const isProduction = window.location.protocol === 'https:'
+          const cookieAttributes = [
+            "jadwalin-auth=",
+            "path=/",
+            "expires=Thu, 01 Jan 1970 00:00:00 GMT",
+            "SameSite=Lax"
+          ]
+          
+          if (isProduction) {
+            cookieAttributes.push("Secure")
+          }
+          
+          document.cookie = cookieAttributes.join("; ")
         }
         set({ session: null, isLoading: false })
       },

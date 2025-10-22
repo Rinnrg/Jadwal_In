@@ -19,7 +19,19 @@ export default function AuthPage() {
       } else {
         // Clear any stale cookie and go to login
         if (hasAuthCookie && !session) {
-          document.cookie = "jadwalin-auth=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT"
+          const isProduction = window.location.protocol === 'https:'
+          const cookieAttributes = [
+            "jadwalin-auth=",
+            "path=/",
+            "expires=Thu, 01 Jan 1970 00:00:00 GMT",
+            "SameSite=Lax"
+          ]
+          
+          if (isProduction) {
+            cookieAttributes.push("Secure")
+          }
+          
+          document.cookie = cookieAttributes.join("; ")
         }
         router.replace('/login')
       }
