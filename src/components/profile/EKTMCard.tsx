@@ -31,17 +31,26 @@ export function EKTMCard({ name, nim, fakultas, programStudi, avatarUrl }: EKTMC
     if (!cardRef.current) return
 
     try {
+      // Show loading state
+      const button = document.activeElement as HTMLButtonElement
+      if (button) {
+        button.disabled = true
+        button.textContent = 'Mengunduh...'
+      }
+
       // Dynamically import libraries
-      const html2canvas = (await import("html2canvas")).default
-      const jsPDF = (await import("jspdf")).default
+      const [{ default: html2canvas }, { default: jsPDF }] = await Promise.all([
+        import("html2canvas"),
+        import("jspdf")
+      ])
       
       // Capture the card as canvas with high quality
       const canvas = await html2canvas(cardRef.current, {
         scale: 3,
-        backgroundColor: null,
+        backgroundColor: '#ffffff',
         logging: false,
         useCORS: true,
-        allowTaint: true,
+        allowTaint: true
       })
 
       // Convert canvas to image data
@@ -65,9 +74,22 @@ export function EKTMCard({ name, nim, fakultas, programStudi, avatarUrl }: EKTMC
       
       // Download PDF
       pdf.save(`E-KTM-${nim}.pdf`)
+      
+      // Re-enable button
+      if (button) {
+        button.disabled = false
+        button.innerHTML = '<svg class="h-4 w-4" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" x2="12" y1="15" y2="3"/></svg> Unduh E-KTM (PDF)'
+      }
     } catch (error) {
       console.error("Error downloading E-KTM:", error)
-      alert("Gagal mengunduh E-KTM. Silakan coba lagi.")
+      alert("Gagal mengunduh E-KTM. Error: " + (error as Error).message)
+      
+      // Re-enable button on error
+      const button = document.activeElement as HTMLButtonElement
+      if (button) {
+        button.disabled = false
+        button.innerHTML = '<svg class="h-4 w-4" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" x2="12" y1="15" y2="3"/></svg> Unduh E-KTM (PDF)'
+      }
     }
   }
 
@@ -75,31 +97,33 @@ export function EKTMCard({ name, nim, fakultas, programStudi, avatarUrl }: EKTMC
     <div className="space-y-4 w-full">
       {/* Card Preview - Fixed positioning for consistency */}
       <div ref={cardRef} className={styles.ektmCard}>
-        {/* Logo Unesa - Top Right (scaled proportionally) */}
-        <div className="absolute top-[1.5%] right-[1.5%] w-[12%] h-auto aspect-square">
+        {/* Logo Unesa - Top Right */}
+        <div className={styles.logoContainer}>
           <Image
             src="/Logo unesa.svg"
             alt="Logo Unesa"
             width={48}
             height={48}
             className="w-full h-full object-contain drop-shadow-md"
+            priority
           />
         </div>
 
-        {/* Photo Section - Center Top (scaled proportionally) */}
-        <div className="absolute top-[15%] left-1/2 -translate-x-1/2 w-[20%] aspect-square">
-          <div className="w-full h-full rounded-full bg-gray-900 border-[0.75%] border-white shadow-xl overflow-hidden">
+        {/* Photo Section - Center Top */}
+        <div className={styles.photoContainer}>
+          <div className={styles.photoContainerInner}>
             {avatarUrl ? (
               <Image
                 src={avatarUrl}
                 alt={name}
                 width={80}
                 height={80}
-                className="w-full h-full object-cover"
+                className={styles.photoImage}
+                priority
               />
             ) : (
-              <div className="w-full h-full flex items-center justify-center bg-gray-900">
-                <span className={`text-white font-bold ${styles.fallbackText}`}>
+              <div className={styles.photoFallback}>
+                <span className={styles.fallbackText}>
                   {name.split(" ").map(n => n[0]).join("").slice(0, 2).toUpperCase()}
                 </span>
               </div>
@@ -107,32 +131,32 @@ export function EKTMCard({ name, nim, fakultas, programStudi, avatarUrl }: EKTMC
           </div>
         </div>
 
-        {/* Info Section - Bottom Center (using percentage positioning) */}
-        <div className="absolute bottom-[21%] left-0 right-0 px-[5%] text-center">
-          <h3 className={`text-gray-900 font-bold uppercase tracking-wide mb-[0.5%] ${styles.nameText}`}>
+        {/* Info Section - Bottom Center */}
+        <div className={styles.infoContainer}>
+          <h3 className={styles.nameText}>
             {name}
           </h3>
-          <p className={`text-gray-800 font-semibold mb-[1.5%] ${styles.nimText}`}>
+          <p className={styles.nimText}>
             {nim}
           </p>
-          <div className={`text-gray-800 leading-tight space-y-[0.25%] ${styles.infoText}`}>
-            <div className="font-semibold">
+          <div className={styles.infoText}>
+            <div>
               {fakultas}
             </div>
-            <div className="font-semibold">
+            <div>
               {programStudi}
             </div>
           </div>
         </div>
 
-        {/* QR Code - Bottom Left (scaled proportionally) */}
-        <div className="absolute bottom-[1.5%] left-[1.5%] bg-white p-[0.5%] rounded shadow-md w-[13%] aspect-square">
+        {/* QR Code - Bottom Left */}
+        <div className={styles.qrContainer}>
           <QRCodeSVG
             value={qrData}
-            size={45}
+            size={100}
             level="H"
             includeMargin={false}
-            style={{ width: '100%', height: '100%' }}
+            className="w-full h-full"
           />
         </div>
       </div>
