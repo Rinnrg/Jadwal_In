@@ -23,46 +23,23 @@ export default function AsynchronousPage() {
   const availableSubjects = useMemo(() => {
     if (!session) return []
 
-    const dummyManajemenProyek: Subject = {
-      id: "dummy-manajemen-proyek",
-      kode: "TI301",
-      nama: "Manajemen Proyek",
-      semester: 5,
-      sks: 3,
-      kelas: "A",
-      angkatan: 2022,
-      status: "aktif" as const,
-      color: "#8b5cf6",
-      pengampuIds: session.role === "dosen" ? [session.id] : [],
-      prodi: "Teknik Informatika",
-    }
-
     let subjects: Subject[] = []
 
     if (session.role === "dosen") {
       subjects = getSubjectsByPengampu(session.id).filter((subject) => subject.status === "aktif") as Subject[]
-      // Add dummy course for dosen
-      subjects.push(dummyManajemenProyek)
     } else if (session.role === "mahasiswa") {
       // Mahasiswa can see subjects they are enrolled in (KRS)
       const krsItems = getKrsByUser(session.id)
       const activeSubjects = getActiveSubjects()
       subjects = activeSubjects.filter((subject) => arr(krsItems).some((krs) => krs.subjectId === subject.id)) as Subject[]
-      // Add dummy course for mahasiswa
-      subjects.push(dummyManajemenProyek)
     } else if (session.role === "kaprodi") {
       subjects = getActiveSubjects() as Subject[]
-      // Add dummy course for kaprodi
-      subjects.push(dummyManajemenProyek)
     }
 
     return subjects
   }, [session, getSubjectsByPengampu, getActiveSubjects, getKrsByUser])
 
-  const selectedSubjectData =
-    selectedSubject === "dummy-manajemen-proyek"
-      ? availableSubjects.find((s) => s.id === "dummy-manajemen-proyek")
-      : getSubjectById(selectedSubject)
+  const selectedSubjectData = selectedSubject ? getSubjectById(selectedSubject) : undefined
 
   const canManage = session?.role === "dosen" || session?.role === "kaprodi"
 

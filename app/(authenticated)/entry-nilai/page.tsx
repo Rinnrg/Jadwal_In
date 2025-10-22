@@ -44,28 +44,13 @@ export default function EntryNilaiPage() {
   const availableOfferings = useMemo(() => {
     if (!session) return []
 
-    const dummyManajemenProyek = {
-      id: "dummy-manajemen-proyek",
-      kode: "TI301",
-      nama: "Manajemen Proyek",
-      semester: 5,
-      sks: 3,
-      kelas: "A",
-      angkatan: 2022,
-      status: "aktif" as const,
-      color: "#3b82f6",
-      pengampuIds: session.role === "dosen" ? [session.id] : [],
-    }
-
     let subjects: Subject[] = []
 
     if (session.role === "kaprodi") {
       subjects = [...useSubjectsStore.getState().subjects.filter((subject) => subject.status === "aktif")]
-      subjects.push(dummyManajemenProyek)
     } else if (session.role === "dosen") {
       // Use the same logic as asynchronous page - get subjects by pengampu
       subjects = [...getSubjectsByPengampu(session.id).filter((subject) => subject.status === "aktif")]
-      subjects.push(dummyManajemenProyek)
     }
 
     return subjects
@@ -74,38 +59,9 @@ export default function EntryNilaiPage() {
   const enrolledStudents = useMemo(() => {
     if (!selectedOffering) return []
 
-    const selectedSubject =
-      selectedOffering === "dummy-manajemen-proyek"
-        ? availableOfferings.find((s) => s.id === "dummy-manajemen-proyek")
-        : availableOfferings.find((s) => s.id === selectedOffering)
+    const selectedSubject = availableOfferings.find((s) => s.id === selectedOffering)
 
     if (!selectedSubject) return []
-
-    if (selectedOffering === "dummy-manajemen-proyek") {
-      return [
-        {
-          id: "dummy-student-1",
-          nim: "20220001",
-          name: "Ahmad Rizki",
-          currentGrade: "B+",
-          status: "active",
-        },
-        {
-          id: "dummy-student-2",
-          nim: "20220002",
-          name: "Sari Dewi",
-          currentGrade: "A-",
-          status: "active",
-        },
-        {
-          id: "dummy-student-3",
-          nim: "20220003",
-          name: "Budi Santoso",
-          currentGrade: "B",
-          status: "active",
-        },
-      ]
-    }
 
     const krsItems = getKrsByOffering(selectedOffering)
     const mahasiswaUsers = getMahasiswaUsers()
@@ -128,10 +84,7 @@ export default function EntryNilaiPage() {
       .filter(Boolean)
   }, [selectedOffering, availableOfferings, getKrsByOffering, getMahasiswaUsers])
 
-  const selectedOfferingData =
-    selectedOffering === "dummy-manajemen-proyek"
-      ? availableOfferings.find((s) => s.id === "dummy-manajemen-proyek")
-      : availableOfferings.find((s) => s.id === selectedOffering)
+  const selectedOfferingData = availableOfferings.find((s) => s.id === selectedOffering)
 
   const filteredStudents = enrolledStudents.filter(
     (student) =>

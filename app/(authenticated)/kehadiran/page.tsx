@@ -55,28 +55,12 @@ export default function KehadiranPage() {
   const availableSubjects = useMemo(() => {
     if (!session) return []
 
-    const dummyManajemenProyek: Subject = {
-      id: "dummy-manajemen-proyek",
-      kode: "TI301",
-      nama: "Manajemen Proyek",
-      semester: 5,
-      sks: 3,
-      kelas: "A",
-      angkatan: 2022,
-      status: "aktif" as const,
-      color: "#8b5cf6",
-      pengampuIds: session.role === "dosen" ? [session.id] : [],
-      prodi: "Teknik Informatika",
-    }
-
     let subjects: Subject[] = []
 
     if (session.role === "kaprodi") {
       subjects = useSubjectsStore.getState().subjects.filter((subject) => subject.status === "aktif") as Subject[]
-      subjects.push(dummyManajemenProyek)
     } else if (session.role === "dosen") {
       subjects = getSubjectsByPengampu(session.id).filter((subject) => subject.status === "aktif") as Subject[]
-      subjects.push(dummyManajemenProyek)
     }
 
     return subjects
@@ -86,63 +70,9 @@ export default function KehadiranPage() {
   const enrolledStudents = useMemo(() => {
     if (!selectedSubject) return []
 
-    const selectedSubjectData =
-      selectedSubject === "dummy-manajemen-proyek"
-        ? availableSubjects.find((s) => s.id === "dummy-manajemen-proyek")
-        : availableSubjects.find((s) => s.id === selectedSubject)
+    const selectedSubjectData = availableSubjects.find((s) => s.id === selectedSubject)
 
     if (!selectedSubjectData) return []
-
-    if (selectedSubject === "dummy-manajemen-proyek") {
-      const meetingData: Record<string, Record<string, string>> = {
-        "1": { "dummy-student-1": "hadir", "dummy-student-2": "hadir", "dummy-student-3": "hadir", "dummy-student-4": "hadir" },
-        "2": { "dummy-student-1": "hadir", "dummy-student-2": "hadir", "dummy-student-3": "alfa", "dummy-student-4": "hadir" },
-        "3": { "dummy-student-1": "hadir", "dummy-student-2": "alfa", "dummy-student-3": "alfa", "dummy-student-4": "hadir" },
-        "4": { "dummy-student-1": "hadir", "dummy-student-2": "hadir", "dummy-student-3": "hadir", "dummy-student-4": "hadir" },
-        "5": { "dummy-student-1": "hadir", "dummy-student-2": "hadir", "dummy-student-3": "hadir", "dummy-student-4": "izin" },
-        "6": { "dummy-student-1": "hadir", "dummy-student-2": "hadir", "dummy-student-3": "hadir", "dummy-student-4": "hadir" },
-        "7": { "dummy-student-1": "hadir", "dummy-student-2": "hadir", "dummy-student-3": "alfa", "dummy-student-4": "hadir" },
-        "8": { "dummy-student-1": "hadir", "dummy-student-2": "hadir", "dummy-student-3": "hadir", "dummy-student-4": "hadir" },
-        "9": { "dummy-student-1": "hadir", "dummy-student-2": "hadir", "dummy-student-3": "hadir", "dummy-student-4": "hadir" },
-        "10": { "dummy-student-1": "hadir", "dummy-student-2": "izin", "dummy-student-3": "izin", "dummy-student-4": "hadir" },
-        "11": { "dummy-student-1": "hadir", "dummy-student-2": "hadir", "dummy-student-3": "hadir", "dummy-student-4": "hadir" },
-        "12": { "dummy-student-1": "hadir", "dummy-student-2": "hadir", "dummy-student-3": "alfa", "dummy-student-4": "alfa" },
-        "13": { "dummy-student-1": "hadir", "dummy-student-2": "hadir", "dummy-student-3": "hadir", "dummy-student-4": "hadir" },
-        "14": { "dummy-student-1": "alfa", "dummy-student-2": "hadir", "dummy-student-3": "hadir", "dummy-student-4": "hadir" },
-        "15": { "dummy-student-1": "hadir", "dummy-student-2": "hadir", "dummy-student-3": "hadir", "dummy-student-4": "izin" },
-      }
-      
-      return [
-        {
-          id: "dummy-student-1",
-          nim: "20220001",
-          name: "Ahmad Rizki",
-          currentAttendance: meetingData[selectedMeeting]?.["dummy-student-1"] as "hadir" | "alfa" | "izin" | "sakit" || "hadir",
-          attendancePercentage: 95,
-        },
-        {
-          id: "dummy-student-2",
-          nim: "20220002", 
-          name: "Sari Dewi",
-          currentAttendance: meetingData[selectedMeeting]?.["dummy-student-2"] as "hadir" | "alfa" | "izin" | "sakit" || "hadir",
-          attendancePercentage: 88,
-        },
-        {
-          id: "dummy-student-3",
-          nim: "20220003",
-          name: "Budi Santoso",
-          currentAttendance: meetingData[selectedMeeting]?.["dummy-student-3"] as "hadir" | "alfa" | "izin" | "sakit" || "hadir",
-          attendancePercentage: 72,
-        },
-        {
-          id: "dummy-student-4",
-          nim: "20220004",
-          name: "Dewi Sartika",
-          currentAttendance: meetingData[selectedMeeting]?.["dummy-student-4"] as "hadir" | "alfa" | "izin" | "sakit" || "hadir",
-          attendancePercentage: 85,
-        },
-      ]
-    }
 
     const krsItems = getKrsBySubject(selectedSubject)
     const mahasiswaUsers = getMahasiswaUsers()
@@ -189,10 +119,7 @@ export default function KehadiranPage() {
     return option?.color || "bg-gray-100 text-gray-800"
   }
 
-  const selectedSubjectData =
-    selectedSubject === "dummy-manajemen-proyek"
-      ? availableSubjects.find((s) => s.id === "dummy-manajemen-proyek")
-      : availableSubjects.find((s) => s.id === selectedSubject)
+  const selectedSubjectData = availableSubjects.find((s) => s.id === selectedSubject)
 
   // Statistics
   const totalStudents = enrolledStudents.length
