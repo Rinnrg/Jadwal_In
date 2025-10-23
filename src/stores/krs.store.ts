@@ -3,6 +3,7 @@ import { persist, createJSONStorage } from "zustand/middleware"
 import type { KrsItem } from "@/data/schema"
 import { arr, generateId } from "@/lib/utils"
 import { ActivityLogger } from "@/lib/activity-logger"
+import { useGradesStore } from "./grades.store"
 
 interface KrsState {
   krsItems: KrsItem[]
@@ -34,15 +35,44 @@ export const useKrsStore = create<KrsState>()(
           krsItems: [...state.krsItems, newItem],
         }))
         
+        // Automatically add to KHS (grades) with no grade yet
+        const gradesStore = useGradesStore.getState()
+        const existingGrade = gradesStore.grades.find(
+          (grade) => grade.userId === userId && grade.subjectId === subjectId && grade.term === term
+        )
+        
+        // Only add if grade doesn't exist yet
+        if (!existingGrade) {
+          gradesStore.addGrade(userId, subjectId, term, undefined, undefined)
+        }
+        
         // Log activity
         if (subjectName) {
           ActivityLogger.krsAdded(userId, subjectName, sks || 0)
         }
       },
       removeKrsItem: (id, userId, subjectName) => {
+        // Get the KRS item before deleting to get subjectId and term
+        const krsItem = get().krsItems.find((item) => item.id === id)
+        
         set((state) => ({
           krsItems: state.krsItems.filter((item) => item.id !== id),
         }))
+        
+        // Remove from KHS (grades) if the grade is still empty (no nilaiAngka or nilaiHuruf)
+        if (krsItem) {
+          const gradesStore = useGradesStore.getState()
+          const grade = gradesStore.grades.find(
+            (g) => g.userId === krsItem.userId && 
+                   g.subjectId === krsItem.subjectId && 
+                   g.term === krsItem.term
+          )
+          
+          // Only remove if grade is empty (hasn't been graded yet)
+          if (grade && !grade.nilaiAngka && !grade.nilaiHuruf) {
+            gradesStore.removeGrade(grade.id)
+          }
+        }
         
         // Log activity
         if (userId && subjectName) {

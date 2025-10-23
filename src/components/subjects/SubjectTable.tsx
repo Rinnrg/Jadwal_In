@@ -16,11 +16,13 @@ import { confirmAction, showSuccess, showError } from "@/lib/alerts"
 import { arr } from "@/lib/utils"
 
 interface SubjectTableProps {
+  subjects?: Subject[]
   onEdit?: (subject: Subject) => void
 }
 
-export function SubjectTable({ onEdit }: SubjectTableProps) {
-  const { subjects, deleteSubject, updateSubject } = useSubjectsStore()
+export function SubjectTable({ subjects: subjectsProp, onEdit }: SubjectTableProps) {
+  const { subjects: allSubjects, deleteSubject, updateSubject } = useSubjectsStore()
+  const subjects = subjectsProp || allSubjects
   const { getUserById } = useUsersStore()
   const { getOfferingsBySubject, updateOffering } = useOfferingsStore()
   const [searchTerm, setSearchTerm] = useState("")

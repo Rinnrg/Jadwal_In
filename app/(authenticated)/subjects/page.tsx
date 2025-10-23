@@ -8,10 +8,8 @@ import { canAccessSubjects, canEditSubject } from "@/lib/rbac"
 import type { Subject } from "@/data/schema"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { SubjectForm } from "@/components/subjects/SubjectForm"
 import { SubjectTable } from "@/components/subjects/SubjectTable"
-import { OfferingsTable } from "@/components/subjects/OfferingsTable"
 import {
   Plus,
   ArrowLeft,
@@ -70,17 +68,17 @@ export default function SubjectsPage() {
 
   if (showForm) {
     return (
-      <div className="space-y-6 md:space-y-8 animate-fade-in px-2 md:px-4">
-        <div className="flex items-center space-x-4 md:space-x-6 animate-slide-in-left">
-          <Button variant="ghost" onClick={handleCancel} className="button-modern cursor-pointer text-xs md:text-sm">
-            <ArrowLeft className="h-4 w-4 md:h-5 md:w-5 mr-1.5 md:mr-2" />
+      <div className="space-y-4 md:space-y-6 px-2 md:px-4">
+        <div className="flex items-center space-x-3 md:space-x-4">
+          <Button variant="ghost" onClick={handleCancel} className="text-xs md:text-sm">
+            <ArrowLeft className="h-3.5 w-3.5 md:h-4 md:w-4 mr-1.5 md:mr-2" />
             Kembali
           </Button>
           <div>
-            <h1 className="text-2xl md:text-3xl lg:text-4xl font-bold tracking-tight">
+            <h1 className="text-xl md:text-2xl lg:text-3xl font-bold tracking-tight">
               {editingSubject ? "Edit Mata Kuliah" : "Tambah Mata Kuliah"}
             </h1>
-            <p className="text-muted-foreground text-sm md:text-base lg:text-lg mt-1 md:mt-2">
+            <p className="text-gray-900 dark:text-gray-100 font-bold text-sm md:text-base">
               {editingSubject ? "Perbarui informasi mata kuliah" : "Tambahkan mata kuliah baru ke katalog"}
             </p>
           </div>
@@ -118,28 +116,28 @@ export default function SubjectsPage() {
   }
 
   return (
-    <div className="space-y-6 md:space-y-8 animate-fade-in max-w-7xl mx-auto pb-16 px-2 md:px-4">
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 animate-slide-up">
+    <div className="space-y-4 md:space-y-6 px-2 md:px-4">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h1 className="text-2xl md:text-3xl lg:text-4xl xl:text-5xl font-bold tracking-tight animate-float">
+          <h1 className="text-xl md:text-2xl lg:text-3xl font-bold tracking-tight">
             Mata Kuliah
           </h1>
-          <p className="text-muted-foreground text-sm md:text-base lg:text-xl mt-1 md:mt-2 animate-slide-in-left" style={{ animationDelay: "0.1s" }}>
+          <p className="text-gray-900 dark:text-gray-100 font-bold text-sm md:text-base">
             Kelola mata kuliah program studi
           </p>
         </div>
         {canEditSubject(session.role) && (
           <Button
             onClick={() => setShowForm(true)}
-            className="px-4 md:px-6 py-2 md:py-3 rounded-xl shadow-lg animate-slide-in-right cursor-pointer text-xs md:text-sm w-full sm:w-auto"
+            className="text-xs md:text-sm"
           >
-            <Plus className="h-4 w-4 md:h-5 md:w-5 mr-1.5 md:mr-2" />
+            <Plus className="h-3.5 w-3.5 md:h-4 md:w-4 mr-1.5 md:mr-2" />
             Tambah Mata Kuliah
           </Button>
         )}
       </div>
 
-      <div className="hidden md:flex gap-3 md:gap-4 overflow-x-auto pb-2 snap-x snap-mandatory animate-slide-up" style={{ animationDelay: "0.2s" }}>
+      <div className="hidden md:flex gap-3 md:gap-4 overflow-x-auto pb-2 snap-x snap-mandatory">
         <Card className="card-interactive border-2 border-blue-200 dark:border-blue-800 hover:border-blue-400 dark:hover:border-blue-600 group min-w-[240px] md:min-w-[280px] snap-start">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 md:pb-3 px-3 md:px-6 pt-3 md:pt-6">
             <CardTitle className="text-xs md:text-sm font-bold">Total Mata Kuliah</CardTitle>
@@ -201,20 +199,91 @@ export default function SubjectsPage() {
         </Card>
       </div>
 
-      <Tabs defaultValue="subjects" className="space-y-4">
-        <TabsList className="grid w-full max-w-md grid-cols-2">
-          <TabsTrigger value="subjects">Mata Kuliah</TabsTrigger>
-          <TabsTrigger value="offerings">Penawaran Kelas</TabsTrigger>
-        </TabsList>
+      <SubjectsGroupedByAngkatan 
+        subjects={subjects}
+        onEdit={canEditSubject(session.role) ? handleEdit : undefined} 
+      />
+    </div>
+  )
+}
+
+// Component to display subjects grouped by angkatan
+function SubjectsGroupedByAngkatan({ subjects, onEdit }: { subjects: Subject[], onEdit?: (subject: Subject) => void }) {
+  const [expandedAngkatan, setExpandedAngkatan] = useState<number | null>(null)
+  
+  // Group subjects by angkatan
+  const groupedByAngkatan = subjects.reduce((acc, subject) => {
+    const angkatan = subject.angkatan
+    if (!acc[angkatan]) {
+      acc[angkatan] = []
+    }
+    acc[angkatan].push(subject)
+    return acc
+  }, {} as Record<number, Subject[]>)
+  
+  // Sort angkatan descending (newest first)
+  const sortedAngkatans = Object.keys(groupedByAngkatan)
+    .map(Number)
+    .sort((a, b) => b - a)
+  
+  const toggleAngkatan = (angkatan: number) => {
+    setExpandedAngkatan(expandedAngkatan === angkatan ? null : angkatan)
+  }
+  
+  if (subjects.length === 0) {
+    return (
+      <Card className="glass-effect border-2 border-primary/20 p-8 text-center">
+        <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center mx-auto mb-4">
+          <BookOpen className="h-8 w-8 text-primary" />
+        </div>
+        <h2 className="text-2xl font-bold mb-2">Belum Ada Mata Kuliah</h2>
+        <p className="text-muted-foreground">Tambahkan mata kuliah pertama untuk memulai.</p>
+      </Card>
+    )
+  }
+  
+  return (
+    <div className="space-y-4">
+      {sortedAngkatans.map((angkatan) => {
+        const angkatanSubjects = groupedByAngkatan[angkatan]
+        const isExpanded = expandedAngkatan === angkatan
         
-        <TabsContent value="subjects" className="space-y-4">
-          <SubjectTable onEdit={canEditSubject(session.role) ? handleEdit : undefined} />
-        </TabsContent>
-        
-        <TabsContent value="offerings" className="space-y-4">
-          <OfferingsTable />
-        </TabsContent>
-      </Tabs>
+        return (
+          <Card key={angkatan} className="border-2 hover:border-primary/50 transition-colors">
+            <CardHeader 
+              className="cursor-pointer hover:bg-muted/50 transition-colors"
+              onClick={() => toggleAngkatan(angkatan)}
+            >
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="w-12 h-12 rounded-full bg-gradient-to-br from-blue-500 to-purple-500 flex items-center justify-center text-white font-bold">
+                    {angkatan.toString().slice(-2)}
+                  </div>
+                  <div>
+                    <CardTitle className="text-xl">Angkatan {angkatan}</CardTitle>
+                    <p className="text-sm text-muted-foreground">
+                      {angkatanSubjects.length} mata kuliah • {angkatanSubjects.reduce((acc, s) => acc + s.sks, 0)} SKS
+                    </p>
+                  </div>
+                </div>
+                <Button variant="ghost" size="sm">
+                  {isExpanded ? "Tutup" : "Lihat"}
+                  <ArrowLeft className={`h-4 w-4 ml-2 transition-transform ${isExpanded ? '-rotate-90' : 'rotate-180'}`} />
+                </Button>
+              </div>
+            </CardHeader>
+            
+            {isExpanded && (
+              <CardContent className="animate-slide-up">
+                <SubjectTable 
+                  subjects={angkatanSubjects}
+                  onEdit={onEdit} 
+                />
+              </CardContent>
+            )}
+          </Card>
+        )
+      })}
     </div>
   )
 }
