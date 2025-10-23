@@ -216,12 +216,15 @@ export async function PUT(request: NextRequest) {
       }
     }
 
+    // Separate pengampuIds from other data
+    const { pengampuIds, ...subjectData } = data
+
     const subject = await prisma.subject.update({
       where: { id },
       data: {
-        ...data,
-        pengampus: data.pengampuIds ? {
-          set: data.pengampuIds.map(id => ({ id }))
+        ...subjectData,
+        pengampus: pengampuIds ? {
+          set: pengampuIds.map(id => ({ id }))
         } : undefined,
       },
       include: {
@@ -252,8 +255,11 @@ export async function PUT(request: NextRequest) {
       )
     }
 
+    // Return more detailed error message
+    const errorMessage = error instanceof Error ? error.message : 'Failed to update subject'
+    
     return NextResponse.json(
-      { error: 'Failed to update subject' },
+      { error: errorMessage, details: error },
       { status: 500 }
     )
   }

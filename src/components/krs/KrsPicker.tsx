@@ -25,7 +25,7 @@ interface KrsPickerProps {
 export function KrsPicker({ userId, term }: KrsPickerProps) {
   const { getSubjectById } = useSubjectsStore()
   const { getOfferingsForStudent } = useOfferingsStore()
-  const { addKrsItem, isOfferingInKrs, getKrsByOffering } = useKrsStore()
+  const { addKrsItem, isOfferingInKrs, getKrsByOffering, getKrsByUser, krsItems } = useKrsStore()
   const { getProfile } = useProfileStore()
   const { session } = useSessionStore()
   const [searchTerm, setSearchTerm] = useState("")
@@ -42,7 +42,7 @@ export function KrsPicker({ userId, term }: KrsPickerProps) {
     const offerings = getOfferingsForStudent(userAngkatan)
 
     // Get all KRS items for this user to check for duplicate subjects
-    const userKrsItems = useKrsStore.getState().getKrsByUser(userId, term)
+    const userKrsItems = getKrsByUser(userId, term)
     const enrolledSubjectIds = new Set(userKrsItems.map(item => item.subjectId))
 
     return offerings.filter((offering) => {
@@ -73,7 +73,7 @@ export function KrsPicker({ userId, term }: KrsPickerProps) {
 
       return true
     })
-  }, [userAngkatan, getOfferingsForStudent, getSubjectById, userId, term, getKrsByOffering, searchTerm])
+  }, [userAngkatan, getOfferingsForStudent, getSubjectById, userId, term, getKrsByOffering, getKrsByUser, searchTerm, krsItems])
 
   // Group offerings by kelas
   const groupedOfferings = useMemo(() => {
@@ -134,20 +134,6 @@ export function KrsPicker({ userId, term }: KrsPickerProps) {
     } catch (error) {
       showError("Gagal menambahkan mata kuliah ke KRS")
     }
-  }
-
-  const getSemesterBadge = (semester: number) => {
-    const colors = [
-      "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200",
-      "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200",
-      "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200",
-      "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200",
-      "bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200",
-      "bg-pink-100 text-pink-800 dark:bg-pink-900 dark:text-pink-200",
-      "bg-indigo-100 text-indigo-800 dark:bg-indigo-900 dark:text-indigo-200",
-      "bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-200",
-    ]
-    return colors[(semester - 1) % colors.length]
   }
 
   const getEnrollmentInfo = (offering: CourseOffering) => {
@@ -220,7 +206,6 @@ export function KrsPicker({ userId, term }: KrsPickerProps) {
                           <TableRow>
                             <TableHead>Nama</TableHead>
                             <TableHead>SKS</TableHead>
-                            <TableHead>Semester</TableHead>
                             <TableHead>Kapasitas</TableHead>
                             <TableHead className="w-[100px]">Aksi</TableHead>
                           </TableRow>
@@ -240,9 +225,6 @@ export function KrsPicker({ userId, term }: KrsPickerProps) {
                                   </div>
                                 </TableCell>
                                 <TableCell>{subject.sks}</TableCell>
-                                <TableCell>
-                                  <Badge className={getSemesterBadge(offering.semester)}>Semester {offering.semester}</Badge>
-                                </TableCell>
                                 <TableCell>
                                   {getEnrollmentInfo(offering) || <span className="text-muted-foreground">—</span>}
                                 </TableCell>
