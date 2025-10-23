@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { useSessionStore } from "@/stores/session.store"
 import { useSubjectsStore } from "@/stores/subjects.store"
 import { canAccessSubjects, canEditSubject } from "@/lib/rbac"
@@ -24,9 +24,14 @@ import {
 
 export default function SubjectsPage() {
   const { session } = useSessionStore()
-  const { subjects } = useSubjectsStore()
+  const { subjects, fetchSubjects, isLoading } = useSubjectsStore()
   const [showForm, setShowForm] = useState(false)
   const [editingSubject, setEditingSubject] = useState<Subject | null>(null)
+
+  // Fetch subjects from API on mount
+  useEffect(() => {
+    fetchSubjects()
+  }, [])
 
   if (!session || !canAccessSubjects(session.role)) {
     return (
@@ -90,6 +95,20 @@ export default function SubjectsPage() {
       subjects.length > 0
         ? Math.round((subjects.reduce((acc, s) => acc + s.sks, 0) / subjects.length) * 10) / 10
         : 0,
+  }
+
+  if (isLoading) {
+    return (
+      <div className="min-h-[60vh] flex items-center justify-center animate-fade-in">
+        <Card className="glass-effect border-2 border-primary/20 p-8 text-center">
+          <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center mx-auto mb-4 animate-spin">
+            <Clock className="h-8 w-8 text-primary" />
+          </div>
+          <h2 className="text-2xl font-bold mb-2">Memuat Data</h2>
+          <p className="text-muted-foreground">Mohon tunggu sebentar...</p>
+        </Card>
+      </div>
+    )
   }
 
   return (

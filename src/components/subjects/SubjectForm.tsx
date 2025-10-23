@@ -96,7 +96,7 @@ export function SubjectForm({ subject, onSuccess, onCancel }: SubjectFormProps) 
     },
   })
 
-  const onSubmit = (data: SubjectFormData) => {
+  const onSubmit = async (data: SubjectFormData) => {
     // Check for duplicate kode (excluding current subject if editing)
     const existingSubject = subjects.find(
       (s) => s.kode.toLowerCase() === data.kode.toLowerCase() && s.id !== subject?.id,
@@ -131,10 +131,10 @@ export function SubjectForm({ subject, onSuccess, onCancel }: SubjectFormProps) 
 
     try {
       if (subject) {
-        updateSubject(subject.id, subjectData)
+        await updateSubject(subject.id, subjectData)
         showSuccess("Mata kuliah berhasil diperbarui")
       } else {
-        addSubject(subjectData)
+        await addSubject(subjectData)
         showSuccess("Mata kuliah berhasil ditambahkan")
       }
       onSuccess?.()
