@@ -32,9 +32,28 @@ export function UserMenu() {
     const confirmed = await confirmAction("Keluar dari Sistem", "Apakah Anda yakin ingin keluar?", "Ya, Keluar")
 
     if (confirmed) {
-      logout()
-      // Force a hard redirect to login page
-      window.location.href = "/login"
+      try {
+        // 1. Call logout API FIRST to clear server-side cookies
+        await fetch('/api/auth/logout', {
+          method: 'POST',
+          credentials: 'include'
+        })
+        
+        // 2. Clear client-side session after server confirms
+        logout()
+        
+        // 3. Small delay to ensure cookies are cleared in browser
+        await new Promise(resolve => setTimeout(resolve, 200))
+        
+        // 4. Force full page reload to login (this will clear any remaining state)
+        window.location.href = "/login"
+      } catch (error) {
+        console.error("Logout error:", error)
+        // Even if API fails, try to clear client-side and redirect
+        logout()
+        await new Promise(resolve => setTimeout(resolve, 200))
+        window.location.href = "/login"
+      }
     }
   }
 

@@ -163,6 +163,20 @@ export default function KhsPage() {
         </Card>
       </div>
 
+      {/* Info Box */}
+      <Card className="border-blue-200 bg-blue-50 dark:border-blue-800 dark:bg-blue-900/20">
+        <CardHeader className="px-3 md:px-6 pt-3 md:pt-6 pb-2 md:pb-4">
+          <CardTitle className="text-blue-800 dark:text-blue-200 text-sm md:text-base flex items-center gap-2">
+            <GraduationCap className="h-4 w-4" />
+            Informasi KHS
+          </CardTitle>
+          <CardDescription className="text-blue-700 dark:text-blue-300 text-[10px] md:text-xs">
+            Mata kuliah yang Anda ambil di KRS akan otomatis muncul di KHS dengan status "Belum Dinilai". 
+            Nilai akan diperbarui setelah dosen melakukan penilaian.
+          </CardDescription>
+        </CardHeader>
+      </Card>
+
       {/* Profile Warning */}
       {!profile?.angkatan && (
         <Card className="border-yellow-200 bg-yellow-50 dark:border-yellow-800 dark:bg-yellow-900/20">
@@ -261,14 +275,14 @@ export default function KhsPage() {
                                 {grade.nilaiAngka ? (
                                   <span className="font-medium">{grade.nilaiAngka}</span>
                                 ) : (
-                                  <span className="text-muted-foreground">-</span>
+                                  <Badge variant="outline" className="text-xs">Belum Dinilai</Badge>
                                 )}
                               </TableCell>
                               <TableCell>
                                 {grade.nilaiHuruf ? (
                                   <Badge className={`${getGradeColor(grade.nilaiHuruf)} text-xs`}>{grade.nilaiHuruf}</Badge>
                                 ) : (
-                                  <span className="text-muted-foreground text-xs md:text-sm">-</span>
+                                  <Badge variant="outline" className="text-xs">Belum Dinilai</Badge>
                                 )}
                               </TableCell>
                             </TableRow>
@@ -319,14 +333,14 @@ export default function KhsPage() {
                           {grade.nilaiAngka ? (
                             <span className="font-medium">{grade.nilaiAngka}</span>
                           ) : (
-                            <span className="text-muted-foreground">-</span>
+                            <Badge variant="outline" className="text-xs">Belum Dinilai</Badge>
                           )}
                         </TableCell>
                         <TableCell>
                           {grade.nilaiHuruf ? (
                             <Badge className={`${getGradeColor(grade.nilaiHuruf)} text-xs`}>{grade.nilaiHuruf}</Badge>
                           ) : (
-                            <span className="text-muted-foreground text-xs md:text-sm">-</span>
+                            <Badge variant="outline" className="text-xs">Belum Dinilai</Badge>
                           )}
                         </TableCell>
                       </TableRow>

@@ -12,9 +12,9 @@ export default function Hero() {
   const handleNavigateToDashboard = async () => {
     setIsNavigating(true);
     
-    // Delay untuk menampilkan animasi loading
+    // Redirect ke login page
     setTimeout(() => {
-      router.push('/dashboard');
+      window.location.href = '/login';
     }, 800);
   };
 
@@ -33,7 +33,7 @@ export default function Hero() {
           <span className="w-fit h-full text-sm bg-card px-2 py-1 border border-border rounded-full">
             Sistem Manajemen Jadwal
           </span>
-          <h1 className="text-4xl font-medium tracking-tighter mx-auto md:text-6xl text-pretty bg-linear-to-b from-sky-800 dark:from-sky-100 to-foreground dark:to-foreground bg-clip-text text-transparent">
+          <h1 className="text-4xl font-medium tracking-tighter mx-auto md:text-6xl text-pretty bg-gradient-to-b from-blue-600 via-sky-500 to-blue-800 dark:from-blue-400 dark:via-sky-300 dark:to-blue-600 bg-clip-text text-transparent">
             Jadwal Gak Pernah Telat, Reminder Selalu Ingat
           </h1>
           <p className="max-w-2xl text-lg mx-auto text-muted-foreground text-balance">

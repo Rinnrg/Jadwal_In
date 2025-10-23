@@ -113,27 +113,27 @@ export function OfferingsTable() {
 
   return (
     <Card>
-      <CardHeader>
-        <div className="flex items-center justify-between">
+      <CardHeader className="px-4 md:px-6 pt-4 md:pt-6">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 md:gap-4">
           <div>
-            <CardTitle>Penawaran Mata Kuliah</CardTitle>
-            <CardDescription>Kelola penawaran mata kuliah per angkatan dan kelas</CardDescription>
+            <CardTitle className="text-xl md:text-2xl">Penawaran Mata Kuliah</CardTitle>
+            <CardDescription className="text-sm md:text-base mt-1">Kelola penawaran mata kuliah per angkatan dan kelas</CardDescription>
           </div>
-          <Button onClick={() => setShowForm(true)}>
+          <Button onClick={() => setShowForm(true)} className="w-full sm:w-auto">
             <Plus className="h-4 w-4 mr-2" />
             Tambah Penawaran
           </Button>
         </div>
       </CardHeader>
-      <CardContent>
-        <div className="flex flex-col sm:flex-row gap-4 mb-6">
+      <CardContent className="px-4 md:px-6">
+        <div className="flex flex-col sm:flex-row gap-3 md:gap-4 mb-6">
           <div className="relative flex-1">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
             <Input
               placeholder="Cari penawaran..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-10"
+              className="pl-10 h-10 md:h-11"
             />
           </div>
           <div className="flex gap-2">
@@ -141,6 +141,7 @@ export function OfferingsTable() {
               variant={statusFilter === "all" ? "default" : "outline"}
               size="sm"
               onClick={() => setStatusFilter("all")}
+              className="flex-1 sm:flex-none h-10"
             >
               Semua
             </Button>
@@ -148,6 +149,7 @@ export function OfferingsTable() {
               variant={statusFilter === "buka" ? "default" : "outline"}
               size="sm"
               onClick={() => setStatusFilter("buka")}
+              className="flex-1 sm:flex-none h-10 bg-green-500 hover:bg-green-600 data-[state=active]:bg-green-500"
             >
               Buka
             </Button>
@@ -155,6 +157,7 @@ export function OfferingsTable() {
               variant={statusFilter === "tutup" ? "default" : "outline"}
               size="sm"
               onClick={() => setStatusFilter("tutup")}
+              className="flex-1 sm:flex-none h-10"
             >
               Tutup
             </Button>
@@ -163,93 +166,186 @@ export function OfferingsTable() {
 
         {filteredOfferings.length === 0 ? (
           <div className="text-center py-8">
-            <p className="text-muted-foreground">
+            <p className="text-sm md:text-base text-muted-foreground">
               {searchTerm || statusFilter !== "all"
                 ? "Tidak ada penawaran yang sesuai dengan filter"
                 : "Belum ada penawaran mata kuliah. Tambahkan penawaran pertama Anda."}
             </p>
           </div>
         ) : (
-          <div className="rounded-md border">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Mata Kuliah</TableHead>
-                  <TableHead>Angkatan</TableHead>
-                  <TableHead>Kelas</TableHead>
-                  <TableHead>Semester</TableHead>
-                  <TableHead>Term</TableHead>
-                  <TableHead>Kapasitas</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead className="w-[50px]"></TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {filteredOfferings.map((offering) => {
-                  const subject = getSubjectById(offering.subjectId)
-                  const enrollmentCount = getEnrollmentCount(offering.id)
+          <>
+            {/* Desktop Table View */}
+            <div className="hidden md:block rounded-md border">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Mata Kuliah</TableHead>
+                    <TableHead>Angkatan</TableHead>
+                    <TableHead>Kelas</TableHead>
+                    <TableHead>Semester</TableHead>
+                    <TableHead>Term</TableHead>
+                    <TableHead>Kapasitas</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead className="w-[50px]"></TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {filteredOfferings.map((offering) => {
+                    const subject = getSubjectById(offering.subjectId)
+                    const enrollmentCount = getEnrollmentCount(offering.id)
 
-                  return (
-                    <TableRow key={offering.id}>
-                      <TableCell>
-                        <div>
-                          <p className="font-medium">{subject?.kode}</p>
-                          <p className="text-sm text-muted-foreground">{subject?.nama}</p>
-                        </div>
-                      </TableCell>
-                      <TableCell>{offering.angkatan}</TableCell>
-                      <TableCell>
-                        <Badge variant="outline">{offering.kelas}</Badge>
-                      </TableCell>
-                      <TableCell>{offering.semester}</TableCell>
-                      <TableCell>{offering.term || "—"}</TableCell>
-                      <TableCell>
-                        {offering.capacity ? (
-                          <div className="flex items-center gap-1">
-                            <Users className="h-4 w-4 text-muted-foreground" />
-                            <span className={enrollmentCount >= offering.capacity ? "text-red-500 font-medium" : ""}>
-                              {enrollmentCount}/{offering.capacity}
-                            </span>
+                    return (
+                      <TableRow key={offering.id}>
+                        <TableCell>
+                          <div>
+                            <p className="font-medium">{subject?.kode}</p>
+                            <p className="text-sm text-muted-foreground">{subject?.nama}</p>
                           </div>
-                        ) : (
-                          <span className="text-muted-foreground">—</span>
-                        )}
-                      </TableCell>
-                      <TableCell>
+                        </TableCell>
+                        <TableCell>{offering.angkatan}</TableCell>
+                        <TableCell>
+                          <Badge variant="outline">{offering.kelas}</Badge>
+                        </TableCell>
+                        <TableCell>{offering.semester}</TableCell>
+                        <TableCell>{offering.term || "—"}</TableCell>
+                        <TableCell>
+                          {offering.capacity ? (
+                            <div className="flex items-center gap-1">
+                              <Users className="h-4 w-4 text-muted-foreground" />
+                              <span className={enrollmentCount >= offering.capacity ? "text-red-500 font-medium" : ""}>
+                                {enrollmentCount}/{offering.capacity}
+                              </span>
+                            </div>
+                          ) : (
+                            <span className="text-muted-foreground">—</span>
+                          )}
+                        </TableCell>
+                        <TableCell>
+                          <Button
+                            variant={offering.status === "buka" ? "default" : "outline"}
+                            size="sm"
+                            onClick={() => handleToggleStatus(offering)}
+                            className={offering.status === "buka" ? "bg-green-500 hover:bg-green-600" : ""}
+                          >
+                            {offering.status === "buka" ? "Buka" : "Tutup"}
+                          </Button>
+                        </TableCell>
+                        <TableCell>
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button variant="ghost" className="h-8 w-8 p-0">
+                                <MoreHorizontal className="h-4 w-4" />
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end">
+                              <DropdownMenuItem onClick={() => handleEdit(offering)}>
+                                <Edit className="mr-2 h-4 w-4" />
+                                Edit
+                              </DropdownMenuItem>
+                              <DropdownMenuItem onClick={() => handleDelete(offering)} className="text-destructive">
+                                <Trash2 className="mr-2 h-4 w-4" />
+                                Hapus
+                              </DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
+                        </TableCell>
+                      </TableRow>
+                    )
+                  })}
+                </TableBody>
+              </Table>
+            </div>
+
+            {/* Mobile Card View */}
+            <div className="md:hidden space-y-3">
+              {filteredOfferings.map((offering) => {
+                const subject = getSubjectById(offering.subjectId)
+                const enrollmentCount = getEnrollmentCount(offering.id)
+
+                return (
+                  <Card key={offering.id} className="border-2 hover:border-primary/50 transition-colors">
+                    <CardContent className="p-4 space-y-3">
+                      {/* Header */}
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2 mb-1 flex-wrap">
+                            <Badge variant="outline" className="text-xs font-mono">
+                              {subject?.kode}
+                            </Badge>
+                            <Badge variant={offering.status === "buka" ? "default" : "secondary"} 
+                              className={`text-xs ${offering.status === "buka" ? "bg-green-500 hover:bg-green-600" : ""}`}>
+                              {offering.status === "buka" ? "Buka" : "Tutup"}
+                            </Badge>
+                          </div>
+                          <h4 className="font-semibold text-sm leading-tight break-words">
+                            {subject?.nama}
+                          </h4>
+                        </div>
+                      </div>
+
+                      {/* Details Grid */}
+                      <div className="grid grid-cols-2 gap-2 text-xs">
+                        <div>
+                          <p className="text-muted-foreground">Angkatan</p>
+                          <p className="font-medium">{offering.angkatan}</p>
+                        </div>
+                        <div>
+                          <p className="text-muted-foreground">Kelas</p>
+                          <Badge variant="outline" className="text-xs">{offering.kelas}</Badge>
+                        </div>
+                        <div>
+                          <p className="text-muted-foreground">Semester</p>
+                          <p className="font-medium">{offering.semester}</p>
+                        </div>
+                        <div>
+                          <p className="text-muted-foreground">Term</p>
+                          <p className="font-medium">{offering.term || "—"}</p>
+                        </div>
+                      </div>
+
+                      {/* Capacity */}
+                      {offering.capacity && (
+                        <div className="flex items-center gap-2 p-2 bg-muted/50 rounded-md">
+                          <Users className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+                          <span className={`text-sm ${enrollmentCount >= offering.capacity ? "text-red-500 font-medium" : ""}`}>
+                            {enrollmentCount} / {offering.capacity} mahasiswa
+                          </span>
+                        </div>
+                      )}
+
+                      {/* Actions */}
+                      <div className="flex items-center gap-2 pt-2 border-t">
                         <Button
                           variant={offering.status === "buka" ? "default" : "outline"}
                           size="sm"
+                          className={`flex-1 h-9 text-xs ${offering.status === "buka" ? "bg-green-500 hover:bg-green-600" : ""}`}
                           onClick={() => handleToggleStatus(offering)}
-                          className={offering.status === "buka" ? "bg-green-500 hover:bg-green-600" : ""}
                         >
-                          {offering.status === "buka" ? "Buka" : "Tutup"}
+                          {offering.status === "buka" ? "Tutup Penawaran" : "Buka Penawaran"}
                         </Button>
-                      </TableCell>
-                      <TableCell>
-                        <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
-                            <Button variant="ghost" className="h-8 w-8 p-0">
-                              <MoreHorizontal className="h-4 w-4" />
-                            </Button>
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end">
-                            <DropdownMenuItem onClick={() => handleEdit(offering)}>
-                              <Edit className="mr-2 h-4 w-4" />
-                              Edit
-                            </DropdownMenuItem>
-                            <DropdownMenuItem onClick={() => handleDelete(offering)} className="text-destructive">
-                              <Trash2 className="mr-2 h-4 w-4" />
-                              Hapus
-                            </DropdownMenuItem>
-                          </DropdownMenuContent>
-                        </DropdownMenu>
-                      </TableCell>
-                    </TableRow>
-                  )
-                })}
-              </TableBody>
-            </Table>
-          </div>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="h-9"
+                          onClick={() => handleEdit(offering)}
+                        >
+                          <Edit className="h-3.5 w-3.5" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="h-9 w-9 p-0 text-destructive hover:bg-destructive/10"
+                          onClick={() => handleDelete(offering)}
+                        >
+                          <Trash2 className="h-3.5 w-3.5" />
+                        </Button>
+                      </div>
+                    </CardContent>
+                  </Card>
+                )
+              })}
+            </div>
+          </>
         )}
       </CardContent>
     </Card>

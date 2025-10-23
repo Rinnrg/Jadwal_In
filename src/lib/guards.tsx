@@ -24,61 +24,62 @@ export function HydrationGuard({ children }: { children: React.ReactNode }) {
 
 // Protected route guard
 export function Protected({ children }: { children: React.ReactNode }) {
-  const router = useRouter()
-  const { session, hasHydrated } = useSessionStore()
+  const { session, setSession, hasHydrated } = useSessionStore()
   const [hasMounted, setHasMounted] = useState(false)
-  const [isCheckingAuth, setIsCheckingAuth] = useState(true)
 
   useEffect(() => {
     setHasMounted(true)
   }, [])
 
   useEffect(() => {
-    if (hasMounted && hasHydrated) {
-      // Check both session from store and cookie
-      const hasAuthCookie = typeof document !== 'undefined' 
-        ? document.cookie.includes('jadwalin-auth=true')
-        : false
+    if (!hasMounted || !hasHydrated) return
 
-      // If no session AND no auth cookie, redirect to login
-      if (!session && !hasAuthCookie) {
-        router.replace("/login")
-        return
-      }
-      
-      // If we have cookie but no session, user might need to re-login
-      if (!session && hasAuthCookie) {
-        // Clear invalid cookie and redirect with proper attributes
-        const isProduction = window.location.protocol === 'https:'
-        const cookieAttributes = [
-          "jadwalin-auth=",
-          "path=/",
-          "expires=Thu, 01 Jan 1970 00:00:00 GMT",
-          "SameSite=Lax"
-        ]
-        
-        if (isProduction) {
-          cookieAttributes.push("Secure")
-        }
-        
-        document.cookie = cookieAttributes.join("; ")
-        router.replace("/login")
-        return
-      }
+    // Check for auth cookies
+    const hasManualCookie = document.cookie.includes('jadwalin-auth=true')
+    const hasGoogleCookie = document.cookie.includes('session_token=')
 
-      setIsCheckingAuth(false)
+    // If no cookies AND no session in store, let middleware handle redirect
+    if (!hasManualCookie && !hasGoogleCookie && !session) {
+      // Don't redirect here, let middleware handle it to avoid race conditions
+      console.log('[Protected] No auth found, middleware will redirect')
+      return
     }
-  }, [session, hasMounted, hasHydrated, router])
 
-  // Show loading while mounting, hydrating, or checking auth
-  if (!hasMounted || !hasHydrated || isCheckingAuth) {
-    return <PageLoading message="Memverifikasi sesi..." />
+    // If has Google cookie but no session in store, fetch in background
+    if (hasGoogleCookie && !session) {
+      // Fetch session in background, don't block rendering
+      fetch('/api/auth/session', { 
+        cache: 'no-store',
+        signal: AbortSignal.timeout(5000) // 5 second timeout
+      })
+        .then(res => res.json())
+        .then(data => {
+          if (data.user) {
+            setSession({
+              id: data.user.id,
+              email: data.user.email,
+              name: data.user.name,
+              role: data.user.role,
+              image: data.user.image,
+            })
+          } else {
+            // Invalid session, clear and let middleware redirect
+            console.log('[Protected] Invalid session, clearing')
+          }
+        })
+        .catch((error) => {
+          console.error('Failed to fetch session:', error)
+          // Don't redirect on fetch error, middleware will handle auth
+        })
+    }
+  }, [hasMounted, hasHydrated, session, setSession])
+
+  // Only show loading during hydration
+  if (!hasMounted || !hasHydrated) {
+    return <PageLoading message="Memuat..." />
   }
 
-  // If no session, don't render anything (will redirect)
-  if (!session) {
-    return <PageLoading message="Mengalihkan ke halaman login..." />
-  }
-
+  // Render immediately if cookie exists (middleware protects the route)
   return <>{children}</>
 }
+
