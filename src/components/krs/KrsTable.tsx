@@ -141,11 +141,9 @@ export function KrsTable({ userId, term, onScheduleSuggestion }: KrsTableProps) 
                   <Table>
                     <TableHeader>
                       <TableRow>
-                        <TableHead>Kode</TableHead>
                         <TableHead>Nama</TableHead>
                         <TableHead>SKS</TableHead>
                         <TableHead>Semester</TableHead>
-                        <TableHead>Warna</TableHead>
                         <TableHead>Ditambahkan</TableHead>
                         <TableHead className="w-[120px]">Aksi</TableHead>
                       </TableRow>
@@ -156,7 +154,6 @@ export function KrsTable({ userId, term, onScheduleSuggestion }: KrsTableProps) 
                           key={item!.id}
                           className="hover:bg-muted/50 transition-all duration-300 hover:shadow-md hover:scale-[1.01]"
                         >
-                          <TableCell className="font-medium">{item!.subject.kode}</TableCell>
                           <TableCell>
                             <div>
                               <p className="font-medium">{item!.subject.nama}</p>
@@ -171,12 +168,6 @@ export function KrsTable({ userId, term, onScheduleSuggestion }: KrsTableProps) 
                             >
                               Semester {item!.offering?.semester || item!.subject.semester}
                             </Badge>
-                          </TableCell>
-                          <TableCell>
-                            <div
-                              className="w-6 h-6 rounded-full border hover:scale-125 transition-transform duration-200 cursor-pointer shadow-md"
-                              style={{ backgroundColor: item!.subject.color }}
-                            />
                           </TableCell>
                           <TableCell className="text-sm text-muted-foreground">{fmtDateTime(item!.createdAt)}</TableCell>
                           <TableCell>
