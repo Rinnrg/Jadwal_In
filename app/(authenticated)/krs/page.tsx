@@ -1,6 +1,8 @@
 "use client"
+import { useEffect } from "react"
 import { useSessionStore } from "@/stores/session.store"
 import { useSubjectsStore } from "@/stores/subjects.store"
+import { useOfferingsStore } from "@/stores/offerings.store"
 import { useKrsStore } from "@/stores/krs.store"
 import { useProfileStore } from "@/stores/profile.store"
 import { canAccessKRS } from "@/lib/rbac"
@@ -9,15 +11,22 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { SksCounter } from "@/components/krs/SksCounter"
 import { KrsPicker } from "@/components/krs/KrsPicker"
 import { KrsTable } from "@/components/krs/KrsTable"
-import { Trash2, Download } from "lucide-react"
+import { Trash2, Download, Loader2 } from "lucide-react"
 import { confirmAction, showSuccess } from "@/lib/alerts"
 import { ActivityLogger } from "@/lib/activity-logger"
 
 export default function KrsPage() {
   const { session } = useSessionStore()
-  const { subjects } = useSubjectsStore()
+  const { subjects, fetchSubjects, isLoading: subjectsLoading } = useSubjectsStore()
+  const { fetchOfferings, isLoading: offeringsLoading } = useOfferingsStore()
   const { getTotalSks, clearKrsByUserAndTerm } = useKrsStore()
   const { getProfile } = useProfileStore()
+
+  // Fetch data on mount
+  useEffect(() => {
+    fetchSubjects()
+    fetchOfferings()
+  }, [])
 
   const currentYear = new Date().getFullYear()
   const currentMonth = new Date().getMonth()
@@ -34,6 +43,21 @@ export default function KrsPage() {
 
   const profile = getProfile(session.id)
   const totalSks = getTotalSks(session.id, currentTerm, subjects)
+
+  // Show loading state
+  if (subjectsLoading || offeringsLoading) {
+    return (
+      <div className="min-h-[60vh] flex items-center justify-center">
+        <Card className="glass-effect border-2 border-primary/20 p-8 text-center">
+          <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center mx-auto mb-4">
+            <Loader2 className="h-8 w-8 text-primary animate-spin" />
+          </div>
+          <h2 className="text-2xl font-bold mb-2">Memuat Data KRS</h2>
+          <p className="text-muted-foreground">Mohon tunggu sebentar...</p>
+        </Card>
+      </div>
+    )
+  }
 
   const handleClearKrs = async () => {
     const confirmed = await confirmAction(

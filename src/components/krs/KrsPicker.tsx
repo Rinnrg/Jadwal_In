@@ -71,14 +71,55 @@ export function KrsPicker({ userId, term }: KrsPickerProps) {
     })
   }, [userAngkatan, getOfferingsForStudent, getSubjectById, userId, isOfferingInKrs, getKrsByOffering, searchTerm])
 
+  // Group offerings by kelas
+  const groupedOfferings = useMemo(() => {
+    const groups = availableOfferings.reduce((acc, offering) => {
+      const kelas = offering.kelas.trim()
+      if (!acc[kelas]) {
+        acc[kelas] = []
+      }
+      acc[kelas].push(offering)
+      return acc
+    }, {} as Record<string, typeof availableOfferings>)
+
+    // Sort by kelas name
+    return Object.entries(groups)
+      .sort(([kelasA], [kelasB]) => kelasA.localeCompare(kelasB))
+      .map(([kelas, offerings]) => ({ kelas, offerings }))
+  }, [availableOfferings])
+
   // Debug info - log to console to help troubleshoot
   if (typeof window !== 'undefined' && process.env.NODE_ENV === 'development') {
-    console.log('[KRS Debug] User Email:', session?.email)
-    console.log('[KRS Debug] User Profile:', profile)
-    console.log('[KRS Debug] Auto-extracted Info:', studentInfo)
-    console.log('[KRS Debug] Final Angkatan:', userAngkatan, 'Kelas (Info):', userKelas)
-    console.log('[KRS Debug] Available Offerings (All Classes):', availableOfferings.length)
-    console.log('[KRS Debug] All Offerings for Angkatan:', getOfferingsForStudent(userAngkatan))
+    const allOfferings = useOfferingsStore.getState().offerings
+    const subjectsData = useSubjectsStore.getState().subjects
+    
+    console.group('🎓 KRS Debug Info')
+    console.log('User Email:', session?.email)
+    console.log('User Profile:', profile)
+    console.log('Auto-extracted Info:', studentInfo)
+    console.log('Final Angkatan:', userAngkatan, 'Kelas (Info):', userKelas)
+    console.log('---')
+    console.log('All Subjects in Store:', subjectsData.length)
+    console.log('Subjects:', subjectsData.map(s => ({ kode: s.kode, nama: s.nama, angkatan: s.angkatan, status: s.status })))
+    console.log('---')
+    console.log('All Offerings in Store:', allOfferings.length)
+    console.log('Offerings:', allOfferings.map(o => ({ 
+      subjectId: o.subjectId, 
+      angkatan: o.angkatan, 
+      kelas: o.kelas, 
+      status: o.status,
+      subject: getSubjectById(o.subjectId)?.nama 
+    })))
+    console.log('---')
+    console.log('Offerings for Student Angkatan', userAngkatan + ':', getOfferingsForStudent(userAngkatan).length)
+    console.log('Available Offerings (After Filters):', availableOfferings.length)
+    console.log('Available:', availableOfferings.map(o => ({
+      subject: getSubjectById(o.subjectId)?.nama,
+      angkatan: o.angkatan,
+      kelas: o.kelas,
+      status: o.status
+    })))
+    console.groupEnd()
   }
 
   const handleAddOffering = (offering: CourseOffering) => {
@@ -155,59 +196,73 @@ export function KrsPicker({ userId, term }: KrsPickerProps) {
               </p>
             </div>
           ) : (
-            <div className="rounded-md border">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Kode</TableHead>
-                    <TableHead>Nama</TableHead>
-                    <TableHead>SKS</TableHead>
-                    <TableHead>Semester</TableHead>
-                    <TableHead>Kelas</TableHead>
-                    <TableHead>Kapasitas</TableHead>
-                    <TableHead>Warna</TableHead>
-                    <TableHead className="w-[100px]">Aksi</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {availableOfferings.map((offering) => {
-                    const subject = getSubjectById(offering.subjectId)
-                    if (!subject) return null
+            <div className="space-y-6">
+              {groupedOfferings.map((group, groupIndex) => (
+                <Card key={group.kelas} className="animate-slide-in-left" style={{ animationDelay: `${groupIndex * 0.1}s` }}>
+                  <CardContent className="pt-6">
+                    <div className="mb-4">
+                      <h3 className="text-lg font-semibold flex items-center gap-2">
+                        <Badge variant="default" className="text-sm">
+                          Kelas {group.kelas}
+                        </Badge>
+                        <span className="text-sm text-muted-foreground ml-auto">
+                          {group.offerings.length} mata kuliah
+                        </span>
+                      </h3>
+                    </div>
+                    <div className="rounded-md border">
+                      <Table>
+                        <TableHeader>
+                          <TableRow>
+                            <TableHead>Kode</TableHead>
+                            <TableHead>Nama</TableHead>
+                            <TableHead>SKS</TableHead>
+                            <TableHead>Semester</TableHead>
+                            <TableHead>Kapasitas</TableHead>
+                            <TableHead>Warna</TableHead>
+                            <TableHead className="w-[100px]">Aksi</TableHead>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          {group.offerings.map((offering) => {
+                            const subject = getSubjectById(offering.subjectId)
+                            if (!subject) return null
 
-                    return (
-                      <TableRow key={offering.id}>
-                        <TableCell className="font-medium">{subject.kode}</TableCell>
-                        <TableCell>
-                          <div>
-                            <p className="font-medium">{subject.nama}</p>
-                            {subject.prodi && <p className="text-sm text-muted-foreground">{subject.prodi}</p>}
-                            {offering.term && <p className="text-xs text-muted-foreground">{offering.term}</p>}
-                          </div>
-                        </TableCell>
-                        <TableCell>{subject.sks}</TableCell>
-                        <TableCell>
-                          <Badge className={getSemesterBadge(offering.semester)}>Semester {offering.semester}</Badge>
-                        </TableCell>
-                        <TableCell>
-                          <Badge variant="outline">{offering.kelas}</Badge>
-                        </TableCell>
-                        <TableCell>
-                          {getEnrollmentInfo(offering) || <span className="text-muted-foreground">—</span>}
-                        </TableCell>
-                        <TableCell>
-                          <div className="w-6 h-6 rounded-full border" style={{ backgroundColor: subject.color }} />
-                        </TableCell>
-                        <TableCell>
-                          <Button size="sm" onClick={() => handleAddOffering(offering)}>
-                            <Plus className="h-4 w-4 mr-1" />
-                            Ambil
-                          </Button>
-                        </TableCell>
-                      </TableRow>
-                    )
-                  })}
-                </TableBody>
-              </Table>
+                            return (
+                              <TableRow key={offering.id}>
+                                <TableCell className="font-medium">{subject.kode}</TableCell>
+                                <TableCell>
+                                  <div>
+                                    <p className="font-medium">{subject.nama}</p>
+                                    {subject.prodi && <p className="text-sm text-muted-foreground">{subject.prodi}</p>}
+                                    {offering.term && <p className="text-xs text-muted-foreground">{offering.term}</p>}
+                                  </div>
+                                </TableCell>
+                                <TableCell>{subject.sks}</TableCell>
+                                <TableCell>
+                                  <Badge className={getSemesterBadge(offering.semester)}>Semester {offering.semester}</Badge>
+                                </TableCell>
+                                <TableCell>
+                                  {getEnrollmentInfo(offering) || <span className="text-muted-foreground">—</span>}
+                                </TableCell>
+                                <TableCell>
+                                  <div className="w-6 h-6 rounded-full border" style={{ backgroundColor: subject.color }} />
+                                </TableCell>
+                                <TableCell>
+                                  <Button size="sm" onClick={() => handleAddOffering(offering)}>
+                                    <Plus className="h-4 w-4 mr-1" />
+                                    Ambil
+                                  </Button>
+                                </TableCell>
+                              </TableRow>
+                            )
+                          })}
+                        </TableBody>
+                      </Table>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
             </div>
           )}
         </div>
