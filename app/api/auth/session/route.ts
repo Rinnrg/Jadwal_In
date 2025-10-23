@@ -3,6 +3,10 @@ import { PrismaClient } from '@/generated/prisma'
 
 const prisma = new PrismaClient()
 
+// Force dynamic rendering
+export const dynamic = 'force-dynamic'
+export const runtime = 'nodejs'
+
 export async function GET(request: NextRequest) {
   try {
     const sessionToken = request.cookies.get('session_token')?.value

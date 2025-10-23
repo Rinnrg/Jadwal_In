@@ -5,6 +5,10 @@ import { randomBytes } from 'crypto'
 
 const prisma = new PrismaClient()
 
+// Force dynamic rendering
+export const dynamic = 'force-dynamic'
+export const runtime = 'nodejs'
+
 export async function GET(request: NextRequest) {
   try {
     console.log('🔵 Google Callback Started')
