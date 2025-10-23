@@ -143,7 +143,6 @@ export function KrsTable({ userId, term, onScheduleSuggestion }: KrsTableProps) 
                       <TableRow>
                         <TableHead>Nama</TableHead>
                         <TableHead>SKS</TableHead>
-                        <TableHead>Semester</TableHead>
                         <TableHead>Ditambahkan</TableHead>
                         <TableHead className="w-[120px]">Aksi</TableHead>
                       </TableRow>
@@ -162,13 +161,6 @@ export function KrsTable({ userId, term, onScheduleSuggestion }: KrsTableProps) 
                             </div>
                           </TableCell>
                           <TableCell>{item!.subject.sks}</TableCell>
-                          <TableCell>
-                            <Badge
-                              className={`${getSemesterBadge(item!.offering?.semester || item!.subject.semester)} hover:scale-110 transition-transform duration-200`}
-                            >
-                              Semester {item!.offering?.semester || item!.subject.semester}
-                            </Badge>
-                          </TableCell>
                           <TableCell className="text-sm text-muted-foreground">{fmtDateTime(item!.createdAt)}</TableCell>
                           <TableCell>
                             <div className="flex space-x-1">

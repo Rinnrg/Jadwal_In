@@ -114,13 +114,17 @@ export function SubjectForm({ subject, onSuccess, onCancel }: SubjectFormProps) 
       kode: data.kode,
       nama: data.nama,
       sks: data.sks,
-      semester: 1, // default semester
       prodi: data.prodi,
-      status: "aktif", // default status
       angkatan: data.angkatan,
       kelas: data.kelas,
       color: data.color,
       pengampuIds: data.pengampuIds,
+    }
+
+    // Only add semester and status for new subjects
+    if (!subject) {
+      subjectData.semester = 1 // default semester for new subjects
+      subjectData.status = "aktif" // default status for new subjects
     }
 
     // Add schedule slot fields if enabled
@@ -129,6 +133,12 @@ export function SubjectForm({ subject, onSuccess, onCancel }: SubjectFormProps) 
       subjectData.slotStartUTC = parseTimeToMinutes(data.defaultStartTime) * 60 * 1000
       subjectData.slotEndUTC = parseTimeToMinutes(data.defaultEndTime) * 60 * 1000
       subjectData.slotRuang = data.defaultRuang
+    } else if (subject) {
+      // Clear slot fields if disabled during edit
+      subjectData.slotDay = null
+      subjectData.slotStartUTC = null
+      subjectData.slotEndUTC = null
+      subjectData.slotRuang = null
     }
 
     try {

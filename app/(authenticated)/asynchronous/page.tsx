@@ -16,8 +16,8 @@ import type { Subject } from "@/data/schema"
 
 export default function AsynchronousPage() {
   const { session } = useSessionStore()
-  const { getSubjectsByPengampu, getActiveSubjects, getSubjectById } = useSubjectsStore()
-  const { getKrsByUser } = useKrsStore()
+  const { subjects, getSubjectsByPengampu, getActiveSubjects, getSubjectById } = useSubjectsStore()
+  const { krsItems, getKrsByUser } = useKrsStore()
   const [selectedSubject, setSelectedSubject] = useState("")
 
   const availableSubjects = useMemo(() => {
@@ -37,7 +37,7 @@ export default function AsynchronousPage() {
     }
 
     return subjects
-  }, [session, getSubjectsByPengampu, getActiveSubjects, getKrsByUser])
+  }, [session, subjects, krsItems, getSubjectsByPengampu, getActiveSubjects, getKrsByUser])
 
   const selectedSubjectData = selectedSubject ? getSubjectById(selectedSubject) : undefined
 
