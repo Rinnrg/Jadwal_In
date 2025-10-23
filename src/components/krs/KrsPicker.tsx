@@ -41,14 +41,18 @@ export function KrsPicker({ userId, term }: KrsPickerProps) {
     // Get ALL offerings for angkatan (tidak filter by kelas, mahasiswa bebas pilih kelas mana saja)
     const offerings = getOfferingsForStudent(userAngkatan)
 
+    // Get all KRS items for this user to check for duplicate subjects
+    const userKrsItems = useKrsStore.getState().getKrsByUser(userId, term)
+    const enrolledSubjectIds = new Set(userKrsItems.map(item => item.subjectId))
+
     return offerings.filter((offering) => {
       const subject = getSubjectById(offering.subjectId)
 
       // Only show if subject exists and is active
       if (!subject || subject.status !== "aktif") return false
 
-      // Check if already in KRS
-      if (isOfferingInKrs(userId, offering.id)) return false
+      // Check if subject already in KRS (regardless of offering/kelas)
+      if (enrolledSubjectIds.has(offering.subjectId)) return false
 
       // Check capacity if set
       if (offering.capacity) {
@@ -69,7 +73,7 @@ export function KrsPicker({ userId, term }: KrsPickerProps) {
 
       return true
     })
-  }, [userAngkatan, getOfferingsForStudent, getSubjectById, userId, isOfferingInKrs, getKrsByOffering, searchTerm])
+  }, [userAngkatan, getOfferingsForStudent, getSubjectById, userId, term, getKrsByOffering, searchTerm])
 
   // Group offerings by kelas
   const groupedOfferings = useMemo(() => {
@@ -214,12 +218,10 @@ export function KrsPicker({ userId, term }: KrsPickerProps) {
                       <Table>
                         <TableHeader>
                           <TableRow>
-                            <TableHead>Kode</TableHead>
                             <TableHead>Nama</TableHead>
                             <TableHead>SKS</TableHead>
                             <TableHead>Semester</TableHead>
                             <TableHead>Kapasitas</TableHead>
-                            <TableHead>Warna</TableHead>
                             <TableHead className="w-[100px]">Aksi</TableHead>
                           </TableRow>
                         </TableHeader>
@@ -230,7 +232,6 @@ export function KrsPicker({ userId, term }: KrsPickerProps) {
 
                             return (
                               <TableRow key={offering.id}>
-                                <TableCell className="font-medium">{subject.kode}</TableCell>
                                 <TableCell>
                                   <div>
                                     <p className="font-medium">{subject.nama}</p>
@@ -244,9 +245,6 @@ export function KrsPicker({ userId, term }: KrsPickerProps) {
                                 </TableCell>
                                 <TableCell>
                                   {getEnrollmentInfo(offering) || <span className="text-muted-foreground">—</span>}
-                                </TableCell>
-                                <TableCell>
-                                  <div className="w-6 h-6 rounded-full border" style={{ backgroundColor: subject.color }} />
                                 </TableCell>
                                 <TableCell>
                                   <Button size="sm" onClick={() => handleAddOffering(offering)}>
