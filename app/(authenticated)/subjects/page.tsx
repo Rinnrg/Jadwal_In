@@ -3,12 +3,15 @@
 import { useState, useEffect } from "react"
 import { useSessionStore } from "@/stores/session.store"
 import { useSubjectsStore } from "@/stores/subjects.store"
+import { useOfferingsStore } from "@/stores/offerings.store"
 import { canAccessSubjects, canEditSubject } from "@/lib/rbac"
 import type { Subject } from "@/data/schema"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { SubjectForm } from "@/components/subjects/SubjectForm"
 import { SubjectTable } from "@/components/subjects/SubjectTable"
+import { OfferingsTable } from "@/components/subjects/OfferingsTable"
 import {
   Plus,
   ArrowLeft,
@@ -25,12 +28,15 @@ import {
 export default function SubjectsPage() {
   const { session } = useSessionStore()
   const { subjects, fetchSubjects, isLoading } = useSubjectsStore()
+  const { fetchOfferings } = useOfferingsStore()
   const [showForm, setShowForm] = useState(false)
   const [editingSubject, setEditingSubject] = useState<Subject | null>(null)
+  const [selectedSubjectForOfferings, setSelectedSubjectForOfferings] = useState<Subject | null>(null)
 
-  // Fetch subjects from API on mount
+  // Fetch subjects and offerings from API on mount
   useEffect(() => {
     fetchSubjects()
+    fetchOfferings()
   }, [])
 
   if (!session || !canAccessSubjects(session.role)) {
@@ -195,7 +201,20 @@ export default function SubjectsPage() {
         </Card>
       </div>
 
-      <SubjectTable onEdit={canEditSubject(session.role) ? handleEdit : undefined} />
+      <Tabs defaultValue="subjects" className="space-y-4">
+        <TabsList className="grid w-full max-w-md grid-cols-2">
+          <TabsTrigger value="subjects">Mata Kuliah</TabsTrigger>
+          <TabsTrigger value="offerings">Penawaran Kelas</TabsTrigger>
+        </TabsList>
+        
+        <TabsContent value="subjects" className="space-y-4">
+          <SubjectTable onEdit={canEditSubject(session.role) ? handleEdit : undefined} />
+        </TabsContent>
+        
+        <TabsContent value="offerings" className="space-y-4">
+          <OfferingsTable />
+        </TabsContent>
+      </Tabs>
     </div>
   )
 }

@@ -3,7 +3,6 @@
 import { useState } from "react"
 import { useOfferingsStore } from "@/stores/offerings.store"
 import { useSubjectsStore } from "@/stores/subjects.store"
-import { useUsersStore } from "@/stores/users.store"
 import { useKrsStore } from "@/stores/krs.store"
 import type { CourseOffering } from "@/data/schema"
 import { Button } from "@/components/ui/button"
@@ -14,7 +13,6 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { MoreHorizontal, Edit, Trash2, Search, Plus, Users, ArrowLeft } from "lucide-react"
 import { confirmAction, showSuccess } from "@/lib/alerts"
-import { arr } from "@/lib/utils"
 import { OfferingForm } from "@/components/subjects/OfferingForm"
 
 export function OfferingsTable() {
@@ -45,6 +43,23 @@ export function OfferingsTable() {
     setShowForm(true)
   }
 
+  const handleToggleStatus = async (offering: CourseOffering) => {
+    const subject = getSubjectById(offering.subjectId)
+    const newStatus = offering.status === "buka" ? "tutup" : "buka"
+    const action = newStatus === "buka" ? "membuka" : "menutup"
+    
+    const confirmed = await confirmAction(
+      `${newStatus === "buka" ? "Buka" : "Tutup"} Penawaran`,
+      `Apakah Anda yakin ingin ${action} penawaran "${subject?.nama}" kelas ${offering.kelas}?${newStatus === "buka" ? "\n\nMata kuliah akan muncul di KRS mahasiswa angkatan " + offering.angkatan : "\n\nMahasiswa tidak akan bisa mengambil mata kuliah ini"}`,
+      `Ya, ${newStatus === "buka" ? "Buka" : "Tutup"}`,
+    )
+
+    if (confirmed) {
+      await useOfferingsStore.getState().updateOffering(offering.id, { status: newStatus })
+      showSuccess(`Penawaran berhasil di${action}`)
+    }
+  }
+
   const handleDelete = async (offering: CourseOffering) => {
     const subject = getSubjectById(offering.subjectId)
     const confirmed = await confirmAction(
@@ -54,7 +69,7 @@ export function OfferingsTable() {
     )
 
     if (confirmed) {
-      removeOffering(offering.id)
+      await removeOffering(offering.id)
       showSuccess("Penawaran berhasil dihapus")
     }
   }
@@ -67,41 +82,6 @@ export function OfferingsTable() {
   const handleCancel = () => {
     setShowForm(false)
     setEditingOffering(null)
-  }
-
-  const getStatusBadge = (status: CourseOffering["status"]) => {
-    return status === "buka" ? (
-      <Badge variant="default" className="bg-green-500">
-        Buka
-      </Badge>
-    ) : (
-      <Badge variant="secondary">Tutup</Badge>
-    )
-  }
-
-  const renderPengampuChips = (pengampuIds: string[]) => {
-    if (!pengampuIds || pengampuIds.length === 0) {
-      return <span className="text-muted-foreground">—</span>
-    }
-
-    const pengampuNames = arr(pengampuIds)
-      .map((id) => getUserById(id))
-      .filter(Boolean)
-      .map((user) => user!.name)
-
-    if (pengampuNames.length === 0) {
-      return <span className="text-muted-foreground">—</span>
-    }
-
-    return (
-      <div className="flex flex-wrap gap-1">
-        {pengampuNames.map((name, index) => (
-          <Badge key={index} variant="outline" className="text-xs">
-            {name}
-          </Badge>
-        ))}
-      </div>
-    )
   }
 
   const getEnrollmentCount = (offeringId: string) => {
@@ -199,7 +179,6 @@ export function OfferingsTable() {
                   <TableHead>Kelas</TableHead>
                   <TableHead>Semester</TableHead>
                   <TableHead>Term</TableHead>
-                  <TableHead>Pengampu</TableHead>
                   <TableHead>Kapasitas</TableHead>
                   <TableHead>Status</TableHead>
                   <TableHead className="w-[50px]"></TableHead>
@@ -224,7 +203,6 @@ export function OfferingsTable() {
                       </TableCell>
                       <TableCell>{offering.semester}</TableCell>
                       <TableCell>{offering.term || "—"}</TableCell>
-                      <TableCell>{renderPengampuChips(offering.pengampuIds || [])}</TableCell>
                       <TableCell>
                         {offering.capacity ? (
                           <div className="flex items-center gap-1">
@@ -237,7 +215,16 @@ export function OfferingsTable() {
                           <span className="text-muted-foreground">—</span>
                         )}
                       </TableCell>
-                      <TableCell>{getStatusBadge(offering.status)}</TableCell>
+                      <TableCell>
+                        <Button
+                          variant={offering.status === "buka" ? "default" : "outline"}
+                          size="sm"
+                          onClick={() => handleToggleStatus(offering)}
+                          className={offering.status === "buka" ? "bg-green-500 hover:bg-green-600" : ""}
+                        >
+                          {offering.status === "buka" ? "Buka" : "Tutup"}
+                        </Button>
+                      </TableCell>
                       <TableCell>
                         <DropdownMenu>
                           <DropdownMenuTrigger asChild>

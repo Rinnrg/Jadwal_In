@@ -12,6 +12,7 @@ import { Switch } from "@/components/ui/switch"
 import { AssigneePicker } from "@/components/subjects/AssigneePicker"
 import type { Subject } from "@/data/schema"
 import { useSubjectsStore } from "@/stores/subjects.store"
+import { useOfferingsStore } from "@/stores/offerings.store"
 import { showSuccess, showError } from "@/lib/alerts"
 import { parseTimeToMinutes, minutesToTimeString } from "@/lib/time"
 
@@ -72,6 +73,7 @@ const getRandomColor = () => {
 
 export function SubjectForm({ subject, onSuccess, onCancel }: SubjectFormProps) {
   const { subjects, addSubject, updateSubject } = useSubjectsStore()
+  const { addOffering } = useOfferingsStore()
 
   const form = useForm<SubjectFormData>({
     resolver: zodResolver(subjectFormSchema),
@@ -84,15 +86,15 @@ export function SubjectForm({ subject, onSuccess, onCancel }: SubjectFormProps) 
       kelas: subject?.kelas || "",
       color: subject?.color || getRandomColor(),
       pengampuIds: subject?.pengampuIds || [],
-      hasDefaultSlot: subject ? !!subject?.slotDefault : true,
-      defaultDay: subject?.slotDefault?.day,
-      defaultStartTime: subject?.slotDefault
-        ? minutesToTimeString(Math.floor(subject.slotDefault.startUTC / (1000 * 60)) % (24 * 60))
+      hasDefaultSlot: subject ? !!(subject?.slotDay !== null && subject?.slotDay !== undefined) : true,
+      defaultDay: subject?.slotDay ?? undefined,
+      defaultStartTime: subject?.slotStartUTC
+        ? minutesToTimeString(Math.floor(subject.slotStartUTC / (1000 * 60)) % (24 * 60))
         : "",
-      defaultEndTime: subject?.slotDefault
-        ? minutesToTimeString(Math.floor(subject.slotDefault.endUTC / (1000 * 60)) % (24 * 60))
+      defaultEndTime: subject?.slotEndUTC
+        ? minutesToTimeString(Math.floor(subject.slotEndUTC / (1000 * 60)) % (24 * 60))
         : "",
-      defaultRuang: subject?.slotDefault?.ruang || "",
+      defaultRuang: subject?.slotRuang || "",
     },
   })
 
@@ -107,7 +109,8 @@ export function SubjectForm({ subject, onSuccess, onCancel }: SubjectFormProps) 
       return
     }
 
-    const subjectData: Omit<Subject, "id"> = {
+    // Transform data to match Prisma schema
+    const subjectData: any = {
       kode: data.kode,
       nama: data.nama,
       sks: data.sks,
@@ -118,15 +121,14 @@ export function SubjectForm({ subject, onSuccess, onCancel }: SubjectFormProps) 
       kelas: data.kelas,
       color: data.color,
       pengampuIds: data.pengampuIds,
-      slotDefault:
-        data.hasDefaultSlot && data.defaultDay !== undefined && data.defaultStartTime && data.defaultEndTime
-          ? {
-              day: data.defaultDay,
-              startUTC: parseTimeToMinutes(data.defaultStartTime) * 60 * 1000,
-              endUTC: parseTimeToMinutes(data.defaultEndTime) * 60 * 1000,
-              ruang: data.defaultRuang,
-            }
-          : undefined,
+    }
+
+    // Add schedule slot fields if enabled
+    if (data.hasDefaultSlot && data.defaultDay !== undefined && data.defaultStartTime && data.defaultEndTime) {
+      subjectData.slotDay = data.defaultDay
+      subjectData.slotStartUTC = parseTimeToMinutes(data.defaultStartTime) * 60 * 1000
+      subjectData.slotEndUTC = parseTimeToMinutes(data.defaultEndTime) * 60 * 1000
+      subjectData.slotRuang = data.defaultRuang
     }
 
     try {
@@ -134,12 +136,14 @@ export function SubjectForm({ subject, onSuccess, onCancel }: SubjectFormProps) 
         await updateSubject(subject.id, subjectData)
         showSuccess("Mata kuliah berhasil diperbarui")
       } else {
+        // API will automatically create course offering
         await addSubject(subjectData)
         showSuccess("Mata kuliah berhasil ditambahkan")
       }
       onSuccess?.()
     } catch (error) {
-      showError("Terjadi kesalahan saat menyimpan mata kuliah")
+      console.error('Error saving subject:', error)
+      showError(error instanceof Error ? error.message : "Terjadi kesalahan saat menyimpan mata kuliah")
     }
   }
 

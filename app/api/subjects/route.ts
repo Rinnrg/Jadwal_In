@@ -73,7 +73,13 @@ export async function GET(request: NextRequest) {
       ],
     })
 
-    return NextResponse.json(subjects)
+    // Transform to include pengampuIds array
+    const subjectsWithIds = subjects.map((subject) => ({
+      ...subject,
+      pengampuIds: subject.pengampus.map(p => p.id),
+    }))
+
+    return NextResponse.json(subjectsWithIds)
   } catch (error) {
     console.error('Error fetching subjects:', error)
     return NextResponse.json(
@@ -131,7 +137,36 @@ export async function POST(request: NextRequest) {
       },
     })
 
-    return NextResponse.json(subject, { status: 201 })
+    // Auto-create course offering for this subject
+    try {
+      const currentYear = new Date().getFullYear()
+      const currentMonth = new Date().getMonth()
+      const isOddSemester = currentMonth >= 8 || currentMonth <= 1
+      const currentTerm = `${currentYear}/${currentYear + 1}-${isOddSemester ? "Ganjil" : "Genap"}`
+
+      await prisma.courseOffering.create({
+        data: {
+          subjectId: subject.id,
+          semester: data.semester,
+          status: 'tutup', // Default tutup, kaprodi bisa buka lewat switch
+          angkatan: data.angkatan,
+          kelas: data.kelas,
+          term: currentTerm,
+          capacity: 40, // Default capacity
+        },
+      })
+    } catch (offeringError) {
+      console.error('Error creating course offering:', offeringError)
+      // Don't fail the whole operation if offering creation fails
+    }
+
+    // Transform to include pengampuIds array
+    const subjectWithIds = {
+      ...subject,
+      pengampuIds: subject.pengampus.map(p => p.id),
+    }
+
+    return NextResponse.json(subjectWithIds, { status: 201 })
   } catch (error) {
     console.error('Error creating subject:', error)
     
@@ -200,7 +235,13 @@ export async function PUT(request: NextRequest) {
       },
     })
 
-    return NextResponse.json(subject)
+    // Transform to include pengampuIds array
+    const subjectWithIds = {
+      ...subject,
+      pengampuIds: subject.pengampus.map(p => p.id),
+    }
+
+    return NextResponse.json(subjectWithIds)
   } catch (error) {
     console.error('Error updating subject:', error)
     

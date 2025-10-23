@@ -5,18 +5,13 @@ import type React from "react"
 import { useState } from "react"
 import { useOfferingsStore } from "@/stores/offerings.store"
 import { useSubjectsStore } from "@/stores/subjects.store"
-import { useUsersStore } from "@/stores/users.store"
 import type { CourseOffering } from "@/data/schema"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Badge } from "@/components/ui/badge"
-import { Checkbox } from "@/components/ui/checkbox"
-import { generateId } from "@/lib/utils"
 import { showSuccess } from "@/lib/alerts"
-import { X } from "lucide-react"
 
 interface OfferingFormProps {
   offering?: CourseOffering
@@ -27,7 +22,6 @@ interface OfferingFormProps {
 export function OfferingForm({ offering, onSuccess, onCancel }: OfferingFormProps) {
   const { addOffering, updateOffering } = useOfferingsStore()
   const { subjects } = useSubjectsStore()
-  const { users } = useUsersStore()
 
   const [formData, setFormData] = useState({
     subjectId: offering?.subjectId || "",
@@ -37,13 +31,11 @@ export function OfferingForm({ offering, onSuccess, onCancel }: OfferingFormProp
     term: offering?.term || "",
     capacity: offering?.capacity?.toString() || "",
     status: offering?.status || ("buka" as const),
-    pengampuIds: offering?.pengampuIds || [],
   })
 
   const [errors, setErrors] = useState<Record<string, string>>({})
 
   const activeSubjects = subjects.filter((subject) => subject.status === "aktif")
-  const dosenUsers = users.filter((user) => user.role === "dosen")
 
   const validateForm = () => {
     const newErrors: Record<string, string> = {}
@@ -72,15 +64,14 @@ export function OfferingForm({ offering, onSuccess, onCancel }: OfferingFormProp
     return Object.keys(newErrors).length === 0
   }
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
 
     if (!validateForm()) {
       return
     }
 
-    const offeringData: CourseOffering = {
-      id: offering?.id || generateId(),
+    const offeringData: any = {
       subjectId: formData.subjectId,
       angkatan: formData.angkatan,
       kelas: formData.kelas.trim(),
@@ -88,36 +79,21 @@ export function OfferingForm({ offering, onSuccess, onCancel }: OfferingFormProp
       term: formData.term.trim() || undefined,
       capacity: formData.capacity ? Number.parseInt(String(formData.capacity)) : undefined,
       status: formData.status,
-      pengampuIds: formData.pengampuIds,
-      createdAt: offering?.createdAt || Date.now(),
     }
 
-    if (offering) {
-      updateOffering(offering.id, offeringData)
-      showSuccess("Penawaran berhasil diperbarui")
-    } else {
-      addOffering(offeringData)
-      showSuccess("Penawaran berhasil ditambahkan")
+    try {
+      if (offering) {
+        await updateOffering(offering.id, offeringData)
+        showSuccess("Penawaran berhasil diperbarui")
+      } else {
+        await addOffering(offeringData)
+        showSuccess("Penawaran berhasil ditambahkan")
+      }
+      onSuccess()
+    } catch (error) {
+      console.error('Error saving offering:', error)
     }
-
-    onSuccess()
   }
-
-  const handlePengampuToggle = (dosenId: string, checked: boolean) => {
-    setFormData((prev) => ({
-      ...prev,
-      pengampuIds: checked ? [...prev.pengampuIds, dosenId] : prev.pengampuIds.filter((id) => id !== dosenId),
-    }))
-  }
-
-  const removePengampu = (dosenId: string) => {
-    setFormData((prev) => ({
-      ...prev,
-      pengampuIds: prev.pengampuIds.filter((id) => id !== dosenId),
-    }))
-  }
-
-  const selectedDosen = dosenUsers.filter((user) => formData.pengampuIds.includes(user.id))
 
   return (
     <Card className="max-w-2xl">
@@ -235,44 +211,6 @@ export function OfferingForm({ offering, onSuccess, onCancel }: OfferingFormProp
                   <SelectItem value="tutup">Tutup</SelectItem>
                 </SelectContent>
               </Select>
-            </div>
-          </div>
-
-          <div>
-            <Label>Dosen Pengampu (Opsional)</Label>
-            <div className="mt-2 space-y-2">
-              {selectedDosen.length > 0 && (
-                <div className="flex flex-wrap gap-2 mb-3">
-                  {selectedDosen.map((dosen) => (
-                    <Badge key={dosen.id} variant="secondary" className="flex items-center gap-1">
-                      {dosen.name}
-                      <button
-                        type="button"
-                        onClick={() => removePengampu(dosen.id)}
-                        className="ml-1 hover:bg-muted-foreground/20 rounded-full p-0.5"
-                        aria-label={`Hapus ${dosen.name} dari dosen pengampu`}
-                      >
-                        <X className="h-3 w-3" />
-                      </button>
-                    </Badge>
-                  ))}
-                </div>
-              )}
-
-              <div className="max-h-32 overflow-y-auto border rounded-md p-2 space-y-2">
-                {dosenUsers.map((dosen) => (
-                  <div key={dosen.id} className="flex items-center space-x-2">
-                    <Checkbox
-                      id={`dosen-${dosen.id}`}
-                      checked={formData.pengampuIds.includes(dosen.id)}
-                      onCheckedChange={(checked) => handlePengampuToggle(dosen.id, checked as boolean)}
-                    />
-                    <Label htmlFor={`dosen-${dosen.id}`} className="text-sm font-normal">
-                      {dosen.name}
-                    </Label>
-                  </div>
-                ))}
-              </div>
             </div>
           </div>
 

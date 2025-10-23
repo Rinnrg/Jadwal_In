@@ -59,14 +59,11 @@ export const SubjectSchema = z.object({
   kelas: z.string(), // Added kelas field for mata kuliah
   color: z.string(),
   pengampuIds: z.array(z.string()).default([]),
-  slotDefault: z
-    .object({
-      day: z.number().min(0).max(6),
-      startUTC: z.number(),
-      endUTC: z.number(),
-      ruang: z.string().optional(), // Added ruang field for default location
-    })
-    .optional(),
+  // Schedule default fields (matching Prisma schema)
+  slotDay: z.number().min(0).max(6).optional().nullable(),
+  slotStartUTC: z.number().optional().nullable(),
+  slotEndUTC: z.number().optional().nullable(),
+  slotRuang: z.string().optional().nullable(),
 })
 
 export type Subject = z.infer<typeof SubjectSchema>
@@ -218,18 +215,24 @@ export const CourseOfferingSchema = z.object({
   angkatan: z.number(),
   kelas: z.string(),
   semester: z.number(),
-  term: z.string().optional(),
-  capacity: z.number().optional(),
-  pengampuIds: z.array(z.string()).default([]),
-  slotDefault: z
-    .object({
-      day: z.number().min(0).max(6),
-      startUTC: z.number(),
-      endUTC: z.number(),
-    })
-    .optional(),
+  term: z.string().optional().nullable(),
+  capacity: z.number().optional().nullable(),
+  // Schedule default fields (matching Prisma schema)
+  slotDay: z.number().min(0).max(6).optional().nullable(),
+  slotStartUTC: z.number().optional().nullable(),
+  slotEndUTC: z.number().optional().nullable(),
   status: z.enum(["buka", "tutup"]).default("buka"),
-  createdAt: z.number(),
+  // Optional fields from API response
+  subject: z.object({
+    id: z.string(),
+    kode: z.string(),
+    nama: z.string(),
+    sks: z.number(),
+    semester: z.number(),
+    color: z.string(),
+  }).optional(),
+  createdAt: z.date().optional(),
+  updatedAt: z.date().optional(),
 })
 
 export type CourseOffering = z.infer<typeof CourseOfferingSchema>
