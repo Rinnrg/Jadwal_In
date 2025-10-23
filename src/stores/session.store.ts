@@ -51,7 +51,12 @@ export const useSessionStore = create<SessionState>()(
       session: null,
       isLoading: false, // Changed: Start with false instead of true
       hasHydrated: false,
-      setSession: (session) => set({ session, isLoading: false }),
+      setSession: (session) => {
+        console.log('[SessionStore] setSession called with:', session?.email || 'null')
+        console.log('[SessionStore] Current state before set:', get().session?.email || 'null')
+        set({ session, isLoading: false })
+        console.log('[SessionStore] State after set:', get().session?.email || 'null')
+      },
       setLoading: (isLoading) => set({ isLoading }),
       updateSessionImage: (imageUrl) => {
         const { session } = get()

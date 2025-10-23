@@ -6,34 +6,26 @@ import { useSubjectsStore } from "@/stores/subjects.store"
 import { useGradesStore } from "@/stores/grades.store"
 import { useProfileStore } from "@/stores/profile.store"
 import { canAccessKHS } from "@/lib/rbac"
+import { generateTranscriptPDF } from "@/lib/pdf-transcript"
 import { Button } from "@/components/ui/button"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import { Download, GraduationCap, TrendingUp } from "lucide-react"
-import { showSuccess } from "@/lib/alerts"
+import { Printer, GraduationCap, TrendingUp } from "lucide-react"
+import { showSuccess, showError } from "@/lib/alerts"
 
 export default function KhsPage() {
   const { session } = useSessionStore()
   const { subjects } = useSubjectsStore()
-  const { getGradesByUser, calculateGPA, calculateSemesterGPA } = useGradesStore()
+  const { getGradesByUser, calculateGPA, calculateSemesterGPA, grades: allGrades } = useGradesStore()
   const { getProfile } = useProfileStore()
 
-  // Generate term options (current and previous semesters)
-  const currentYear = new Date().getFullYear()
-  const currentMonth = new Date().getMonth()
-  const isOddSemester = currentMonth >= 8 || currentMonth <= 1
-
-  const termOptions = [
-    "Semua Semester",
-    `${currentYear}/${currentYear + 1}-${isOddSemester ? "Ganjil" : "Genap"}`,
-    `${currentYear}/${currentYear + 1}-${isOddSemester ? "Genap" : "Ganjil"}`,
-    `${currentYear - 1}/${currentYear}-Genap`,
-    `${currentYear - 1}/${currentYear}-Ganjil`,
-  ]
-
   const [selectedTerm, setSelectedTerm] = useState("Semua Semester")
+
+  // Get all unique semesters from user's grades
+  const userGrades = getGradesByUser(session?.id || "")
+  const availableSemesters = ["Semua Semester", ...Array.from(new Set(userGrades.map(g => g.term))).sort().reverse()]
 
   if (!session || !canAccessKHS(session.role)) {
     return (
@@ -82,30 +74,29 @@ export default function KhsPage() {
   }
 
   const handleExportTranscript = () => {
-    const csvContent = [
-      ["Semester", "Kode", "Nama Mata Kuliah", "SKS", "Nilai Angka", "Nilai Huruf"].join(","),
-      ...grades.map((grade) => {
-        const subject = subjects.find((s) => s.id === grade.subjectId)
-        return [
-          grade.term,
-          subject?.kode || "",
-          `"${subject?.nama || ""}"`,
-          subject?.sks || "",
-          grade.nilaiAngka || "",
-          grade.nilaiHuruf || "",
-        ].join(",")
-      }),
-    ].join("\n")
+    try {
+      const profile = getProfile(session.id)
+      
+      if (!profile) {
+        showError("Profil tidak ditemukan. Silakan lengkapi profil Anda terlebih dahulu.")
+        return
+      }
 
-    const blob = new Blob([csvContent], { type: "text/csv" })
-    const url = URL.createObjectURL(blob)
-    const a = document.createElement("a")
-    a.href = url
-    a.download = `Transkrip-${session.name.replace(/\s+/g, "-")}.csv`
-    a.click()
-    URL.revokeObjectURL(url)
+      generateTranscriptPDF({
+        studentName: session.name,
+        studentNIM: profile.nim || "-",
+        studentProdi: profile.prodi || "Belum diisi",
+        studentAngkatan: profile.angkatan?.toString() || "-",
+        grades: grades,
+        subjects: subjects,
+        cumulativeGPA: cumulativeGPA
+      })
 
-    showSuccess("Transkrip berhasil diekspor")
+      showSuccess("Transkrip berhasil dicetak dalam format PDF")
+    } catch (error) {
+      console.error("Error generating PDF:", error)
+      showError("Gagal mencetak transkrip. Silakan coba lagi.")
+    }
   }
 
   return (
@@ -116,8 +107,8 @@ export default function KhsPage() {
           <p className="text-muted-foreground text-sm md:text-base">Lihat hasil studi dan prestasi akademik Anda</p>
         </div>
         <Button onClick={handleExportTranscript} disabled={grades.length === 0} className="text-xs md:text-sm w-full sm:w-auto">
-          <Download className="h-3.5 w-3.5 md:h-4 md:w-4 mr-1.5 md:mr-2" />
-          Export Transkrip
+          <Printer className="h-3.5 w-3.5 md:h-4 md:w-4 mr-1.5 md:mr-2" />
+          Cetak Transkrip
         </Button>
       </div>
 
@@ -177,23 +168,6 @@ export default function KhsPage() {
         </CardHeader>
       </Card>
 
-      {/* Profile Warning */}
-      {!profile?.angkatan && (
-        <Card className="border-yellow-200 bg-yellow-50 dark:border-yellow-800 dark:bg-yellow-900/20">
-          <CardHeader className="px-3 md:px-6 pt-3 md:pt-6 pb-2 md:pb-4">
-            <CardTitle className="text-yellow-800 dark:text-yellow-200 text-sm md:text-base">Lengkapi Profil</CardTitle>
-            <CardDescription className="text-yellow-700 dark:text-yellow-300 text-[10px] md:text-xs">
-              Anda perlu mengisi angkatan di profil untuk melihat data yang lebih akurat.
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="px-3 md:px-6 pb-3 md:pb-6">
-            <Button asChild className="text-xs md:text-sm h-8 md:h-9">
-              <a href="/profile">Lengkapi Profil</a>
-            </Button>
-          </CardContent>
-        </Card>
-      )}
-
       {/* Term Selection */}
       <Card>
         <CardHeader className="px-3 md:px-6 pt-3 md:pt-6 pb-2 md:pb-4">
@@ -206,7 +180,7 @@ export default function KhsPage() {
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
-              {termOptions.map((term) => (
+              {availableSemesters.map((term) => (
                 <SelectItem key={term} value={term} className="text-xs md:text-sm">
                   {term}
                 </SelectItem>

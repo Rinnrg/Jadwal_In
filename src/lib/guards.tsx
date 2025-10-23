@@ -2,7 +2,7 @@
 
 import type React from "react"
 
-import { useEffect, useState } from "react"
+import { useEffect, useState, useRef } from "react"
 import { useRouter } from "next/navigation"
 import { useSessionStore } from "@/stores/session.store"
 import { PageLoading } from "@/components/ui/loading"
@@ -26,6 +26,8 @@ export function HydrationGuard({ children }: { children: React.ReactNode }) {
 export function Protected({ children }: { children: React.ReactNode }) {
   const { session, setSession, hasHydrated } = useSessionStore()
   const [hasMounted, setHasMounted] = useState(false)
+  const [isLoadingSession, setIsLoadingSession] = useState(false)
+  const fetchingRef = useRef(false)
 
   useEffect(() => {
     setHasMounted(true)
@@ -33,53 +35,62 @@ export function Protected({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     if (!hasMounted || !hasHydrated) return
+    if (fetchingRef.current) return // Already fetching
+    if (session) return // Already have session
 
-    // Check for auth cookies
-    const hasManualCookie = document.cookie.includes('jadwalin-auth=true')
-    const hasGoogleCookie = document.cookie.includes('session_token=')
-
-    // If no cookies AND no session in store, let middleware handle redirect
-    if (!hasManualCookie && !hasGoogleCookie && !session) {
-      // Don't redirect here, let middleware handle it to avoid race conditions
-      console.log('[Protected] No auth found, middleware will redirect')
-      return
-    }
-
-    // If has Google cookie but no session in store, fetch in background
-    if (hasGoogleCookie && !session) {
-      // Fetch session in background, don't block rendering
-      fetch('/api/auth/session', { 
-        cache: 'no-store',
-        signal: AbortSignal.timeout(5000) // 5 second timeout
+    console.log('[Protected] No session in store, fetching from API...')
+    fetchingRef.current = true
+    setIsLoadingSession(true)
+    
+    // Always try to fetch session from API
+    // This works for both manual and Google auth (httpOnly cookie)
+    fetch('/api/auth/session', { 
+      cache: 'no-store',
+      credentials: 'include', // Important! Include httpOnly cookies
+    })
+      .then(res => {
+        console.log('[Protected] API response status:', res.status)
+        if (!res.ok) throw new Error(`HTTP ${res.status}`)
+        return res.json()
       })
-        .then(res => res.json())
-        .then(data => {
-          if (data.user) {
-            setSession({
-              id: data.user.id,
-              email: data.user.email,
-              name: data.user.name,
-              role: data.user.role,
-              image: data.user.image,
-            })
-          } else {
-            // Invalid session, clear and let middleware redirect
-            console.log('[Protected] Invalid session, clearing')
+      .then(data => {
+        console.log('[Protected] API response data:', data)
+        if (data.user) {
+          console.log('[Protected] Session found! Email:', data.user.email)
+          
+          const newSession = {
+            id: data.user.id,
+            email: data.user.email,
+            name: data.user.name,
+            role: data.user.role,
+            image: data.user.image,
           }
-        })
-        .catch((error) => {
-          console.error('Failed to fetch session:', error)
-          // Don't redirect on fetch error, middleware will handle auth
-        })
-    }
+          
+          console.log('[Protected] Calling setSession with:', newSession)
+          setSession(newSession)
+          
+          // Verify after set
+          setTimeout(() => {
+            console.log('[Protected] Verification - session should be set')
+          }, 50)
+        } else {
+          console.log('[Protected] No valid session from API')
+        }
+      })
+      .catch((error) => {
+        console.error('[Protected] Failed to fetch session:', error)
+      })
+      .finally(() => {
+        setIsLoadingSession(false)
+      })
   }, [hasMounted, hasHydrated, session, setSession])
 
-  // Only show loading during hydration
-  if (!hasMounted || !hasHydrated) {
-    return <PageLoading message="Memuat..." />
+  // Show loading during hydration OR session fetch
+  if (!hasMounted || !hasHydrated || isLoadingSession) {
+    return <PageLoading message="Memuat sesi..." />
   }
 
-  // Render immediately if cookie exists (middleware protects the route)
+  // Render children immediately, let dashboard handle its own loading
   return <>{children}</>
 }
 

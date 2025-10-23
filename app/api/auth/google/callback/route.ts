@@ -105,6 +105,7 @@ export async function GET(request: NextRequest) {
     )
 
     // Set session cookie
+    console.log('🍪 Setting session cookie:', sessionToken.substring(0, 20) + '...')
     response.cookies.set('session_token', sessionToken, {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
@@ -112,6 +113,7 @@ export async function GET(request: NextRequest) {
       maxAge: 60 * 60 * 24 * 30, // 30 days
       path: '/',
     })
+    console.log('🍪 Cookie set in response')
 
     // Clear callback URL cookie
     response.cookies.delete('google_callback_url')

@@ -48,6 +48,11 @@ export default function DashboardPage() {
     const timer = setInterval(() => setCurrentTime(new Date()), 1000)
     return () => clearInterval(timer)
   }, [])
+  
+  // Debug log
+  useEffect(() => {
+    console.log('[Dashboard] Session state:', session)
+  }, [session])
 
   // Fungsi untuk menentukan ucapan berdasarkan waktu
   const getGreeting = () => {
@@ -154,7 +159,22 @@ export default function DashboardPage() {
       .slice(0, 2)
   }
 
-  if (!session) return null
+  if (!session) {
+    console.log('[Dashboard] No session, rendering loading state')
+    return (
+      <div className="flex items-center justify-center min-h-[calc(100vh-8rem)]">
+        <div className="text-center space-y-4">
+          <div className="flex justify-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+          </div>
+          <div>
+            <p className="text-lg font-medium text-foreground">Memuat Dashboard</p>
+            <p className="text-sm text-muted-foreground mt-1">Mohon tunggu sebentar...</p>
+          </div>
+        </div>
+      </div>
+    )
+  }
 
   const profile = getProfile(session.id)
   const avatarUrl = profile?.avatarUrl || session.image
