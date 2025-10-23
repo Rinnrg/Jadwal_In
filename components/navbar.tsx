@@ -26,6 +26,11 @@ export default function NavBar() {
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
+  const handleLogin = () => {
+    // Redirect ke login page
+    window.location.href = "/login"
+  }
+
   return (
     <>
       {/* Navbar fixed dengan conditional visibility */}
@@ -52,21 +57,20 @@ export default function NavBar() {
             </div>
             <div className="flex items-center space-x-4">
               <ThemeSwitcher />
-              <Link href="/login">
-                <Button 
-                  variant="default"
-                  size="sm"
-                  className="
-                    bg-blue-600 hover:bg-blue-700 
-                    dark:bg-blue-600 dark:hover:bg-blue-700 
-                    text-white font-medium px-4 py-2 
-                    transition-all duration-200 
-                    shadow-sm hover:shadow-md
-                  "
-                >
-                  Masuk
-                </Button>
-              </Link>
+              <Button 
+                onClick={handleLogin}
+                variant="default"
+                size="sm"
+                className="
+                  bg-blue-600 hover:bg-blue-700 
+                  dark:bg-blue-600 dark:hover:bg-blue-700 
+                  text-white font-medium px-4 py-2 
+                  transition-all duration-200 
+                  shadow-sm hover:shadow-md
+                "
+              >
+                Masuk
+              </Button>
             </div>
           </div>
         </div>

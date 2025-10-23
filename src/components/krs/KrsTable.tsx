@@ -99,14 +99,14 @@ export function KrsTable({ userId, term, onScheduleSuggestion }: KrsTableProps) 
   if (krsWithDetails.length === 0) {
     return (
       <Card>
-        <CardHeader>
-          <CardTitle>KRS Anda</CardTitle>
-          <CardDescription>Mata kuliah yang telah Anda ambil</CardDescription>
+        <CardHeader className="px-4 md:px-6 pt-4 md:pt-6">
+          <CardTitle className="text-xl md:text-2xl">KRS Anda</CardTitle>
+          <CardDescription className="text-sm md:text-base">Mata kuliah yang telah Anda ambil</CardDescription>
         </CardHeader>
-        <CardContent>
-          <div className="text-center py-8">
-            <p className="text-muted-foreground">Belum ada mata kuliah yang diambil.</p>
-            <p className="text-sm text-muted-foreground mt-1">Pilih mata kuliah dari daftar di atas.</p>
+        <CardContent className="px-4 md:px-6">
+          <div className="text-center py-8 md:py-12">
+            <p className="text-sm md:text-base text-muted-foreground">Belum ada mata kuliah yang diambil.</p>
+            <p className="text-xs md:text-sm text-muted-foreground mt-1">Pilih mata kuliah dari daftar di atas.</p>
           </div>
         </CardContent>
       </Card>
@@ -115,29 +115,33 @@ export function KrsTable({ userId, term, onScheduleSuggestion }: KrsTableProps) 
 
   return (
     <Card>
-      <CardHeader>
-        <CardTitle>KRS Anda</CardTitle>
-        <CardDescription>{krsWithDetails.length} mata kuliah telah dipilih untuk semester ini</CardDescription>
+      <CardHeader className="px-4 md:px-6 pt-4 md:pt-6">
+        <CardTitle className="text-xl md:text-2xl">KRS Anda</CardTitle>
+        <CardDescription className="text-sm md:text-base">{krsWithDetails.length} mata kuliah telah dipilih untuk semester ini</CardDescription>
       </CardHeader>
-      <CardContent>
-        <div className="space-y-6">
+      <CardContent className="px-4 md:px-6">
+        <div className="space-y-4 md:space-y-6">
           {groupedKrs.map((group, groupIndex) => (
             <Card key={`${group.angkatan}-${group.kelas}`} className="animate-slide-in-left" style={{ animationDelay: `${groupIndex * 0.1}s` }}>
-              <CardContent className="pt-6">
+              <CardContent className="pt-4 md:pt-6">
                 <div className="mb-4">
-                  <h3 className="text-lg font-semibold flex items-center gap-2">
-                    <Badge variant="default" className="text-sm">
-                      Angkatan {group.angkatan}
-                    </Badge>
-                    <Badge variant="outline" className="text-sm">
-                      Kelas {group.kelas}
-                    </Badge>
-                    <span className="text-sm text-muted-foreground ml-auto">
-                      {group.items.length} mata kuliah
-                    </span>
-                  </h3>
+                  <div className="flex flex-col sm:flex-row sm:items-center gap-2">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <Badge variant="default" className="text-xs md:text-sm">
+                        Angkatan {group.angkatan}
+                      </Badge>
+                      <Badge variant="outline" className="text-xs md:text-sm">
+                        Kelas {group.kelas}
+                      </Badge>
+                      <span className="text-xs md:text-sm text-muted-foreground">
+                        {group.items.length} mata kuliah
+                      </span>
+                    </div>
+                  </div>
                 </div>
-                <div className="rounded-md border">
+                
+                {/* Desktop Table View */}
+                <div className="hidden md:block rounded-md border">
                   <Table>
                     <TableHeader>
                       <TableRow>
@@ -191,6 +195,63 @@ export function KrsTable({ userId, term, onScheduleSuggestion }: KrsTableProps) 
                       ))}
                     </TableBody>
                   </Table>
+                </div>
+
+                {/* Mobile Card View */}
+                <div className="md:hidden space-y-3">
+                  {group.items.map((item) => (
+                    <Card key={item!.id} className="border-2 hover:border-primary/50 transition-colors">
+                      <CardContent className="p-3 md:p-4 space-y-3">
+                        {/* Header */}
+                        <div className="flex items-start justify-between gap-2">
+                          <div className="flex-1 min-w-0">
+                            <h4 className="font-semibold text-sm leading-tight break-words">
+                              {item!.subject.nama}
+                            </h4>
+                            {item!.subject.prodi && (
+                              <p className="text-xs text-muted-foreground mt-0.5">{item!.subject.prodi}</p>
+                            )}
+                            {item!.offering?.term && (
+                              <p className="text-xs text-muted-foreground">{item!.offering.term}</p>
+                            )}
+                          </div>
+                          <Badge className="text-xs flex-shrink-0">{item!.subject.sks} SKS</Badge>
+                        </div>
+
+                        {/* Details */}
+                        <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                          <Calendar className="h-3.5 w-3.5 flex-shrink-0" />
+                          <span>Ditambahkan: {fmtDateTime(item!.createdAt)}</span>
+                        </div>
+
+                        {/* Actions */}
+                        <div className="flex items-center gap-2 pt-2 border-t">
+                          {((item!.offering?.slotDay && item!.offering?.slotStartUTC) || 
+                            (item!.subject.slotDay && item!.subject.slotStartUTC)) && 
+                            onScheduleSuggestion && (
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => onScheduleSuggestion(item!.subject.id)}
+                              className="flex-1 h-9 text-xs"
+                            >
+                              <Calendar className="h-3.5 w-3.5 mr-1.5" />
+                              Tambah ke Jadwal
+                            </Button>
+                          )}
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => handleRemoveSubject(item!, item!.subject.nama, item!.offering?.kelas)}
+                            className="text-destructive hover:text-destructive h-9 flex-1"
+                          >
+                            <Trash2 className="h-3.5 w-3.5 mr-1.5" />
+                            Hapus
+                          </Button>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ))}
                 </div>
               </CardContent>
             </Card>

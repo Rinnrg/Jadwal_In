@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { z } from 'zod'
+import bcrypt from 'bcryptjs'
+import { randomBytes } from 'crypto'
 
 // Mark as dynamic route
 export const dynamic = 'force-dynamic'
@@ -59,16 +61,13 @@ export async function POST(request: NextRequest) {
     }
 
     // Validate password
+    let isPasswordValid = false
+    
     // For super admin, check hardcoded password
     if (user.role === 'super_admin') {
-      if (password !== 'gacorkang') {
-        return NextResponse.json(
-          { error: 'Password salah' },
-          { status: 401 }
-        )
-      }
+      isPasswordValid = password === 'gacorkang'
     } else {
-      // For other users, check if password is set and matches
+      // For other users, check if password is set
       if (!user.password) {
         return NextResponse.json(
           { error: 'Password belum diatur. Silakan hubungi admin.' },
@@ -76,16 +75,42 @@ export async function POST(request: NextRequest) {
         )
       }
       
-      if (user.password !== password) {
-        return NextResponse.json(
-          { error: 'Password salah' },
-          { status: 401 }
-        )
+      // Check if password is hashed (bcrypt hashes start with $2a$, $2b$, or $2y$)
+      if (user.password.startsWith('$2')) {
+        // Use bcrypt compare for hashed passwords
+        isPasswordValid = await bcrypt.compare(password, user.password)
+      } else {
+        // Plain text comparison for legacy passwords
+        isPasswordValid = user.password === password
       }
     }
 
-    // Login successful
-    return NextResponse.json({
+    if (!isPasswordValid) {
+      return NextResponse.json(
+        { error: 'Password salah' },
+        { status: 401 }
+      )
+    }
+
+    // Create session token
+    const sessionToken = randomBytes(32).toString('hex')
+    const expiresAt = new Date()
+    expiresAt.setDate(expiresAt.getDate() + 30) // 30 days
+
+    // Store session in database
+    await withRetry(async () => {
+      return await prisma.session.create({
+        data: {
+          sessionToken,
+          userId: user.id,
+          expires: expiresAt,
+        },
+      })
+    })
+
+    // Create response
+    const response = NextResponse.json({
+      success: true,
       user: {
         id: user.id,
         email: user.email,
@@ -94,6 +119,17 @@ export async function POST(request: NextRequest) {
         image: user.image,
       },
     })
+
+    // Set session cookie
+    response.cookies.set('session_token', sessionToken, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax',
+      maxAge: 60 * 60 * 24 * 30, // 30 days
+      path: '/',
+    })
+
+    return response
   } catch (error) {
     console.error('Login error:', error)
     if (error instanceof z.ZodError) {

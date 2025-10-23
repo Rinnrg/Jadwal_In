@@ -1,0 +1,249 @@
+"use client"
+
+import { useState } from "react"
+import { useRouter } from "next/navigation"
+import { useForm } from "react-hook-form"
+import { zodResolver } from "@hookform/resolvers/zod"
+import { z } from "zod"
+import Image from "next/image"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
+import { useSessionStore } from "@/stores/session.store"
+import { showError } from "@/lib/alerts"
+import { Check, Mail, Lock, Eye, EyeOff, ArrowRight, CheckCircle, Shield } from "lucide-react"
+import { ButtonLoading } from "@/components/ui/loading"
+
+const loginSchema = z.object({
+  email: z.string()
+    .email("Format email tidak valid"),
+  password: z.string().min(1, "Kata sandi wajib diisi"),
+})
+
+type LoginForm = z.infer<typeof loginSchema>
+
+export function AdminLoginCard() {
+  const router = useRouter()
+  const { setSession } = useSessionStore()
+  const [isLoading, setIsLoading] = useState(false)
+  const [showSuccess, setShowSuccess] = useState(false)
+  const [showPassword, setShowPassword] = useState(false)
+
+  const form = useForm<LoginForm>({
+    resolver: zodResolver(loginSchema),
+    mode: "onChange",
+    defaultValues: {
+      email: "",
+      password: "",
+    },
+  })
+
+  // Check if email is valid
+  const isEmailValid = form.watch("email") && !form.formState.errors.email && form.formState.touchedFields.email
+
+  const onSubmit = async (data: LoginForm) => {
+    setIsLoading(true)
+
+    try {
+      // Call API untuk login admin
+      const response = await fetch('/api/auth/admin/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          email: data.email,
+          password: data.password,
+        }),
+      })
+
+      if (!response.ok) {
+        const error = await response.json()
+        setIsLoading(false)
+        showError(error.error || 'Login gagal')
+        return
+      }
+
+      const { user } = await response.json()
+
+      // Validasi bahwa user adalah super admin
+      if (user.role !== 'super_admin') {
+        setIsLoading(false)
+        showError('Akses ditolak. Halaman ini khusus untuk Super Admin.')
+        return
+      }
+
+      // Show success animation
+      setShowSuccess(true)
+
+      // Set session after animation
+      setTimeout(() => {
+        // Set auth cookie for middleware with proper attributes
+        const isProduction = window.location.protocol === 'https:'
+        const cookieAttributes = [
+          "jadwalin-auth=true",
+          "path=/",
+          "max-age=86400", // 24 hours
+          "SameSite=Lax"
+        ]
+        
+        // Add Secure flag for HTTPS
+        if (isProduction) {
+          cookieAttributes.push("Secure")
+        }
+        
+        document.cookie = cookieAttributes.join("; ")
+        
+        setSession({
+          id: user.id,
+          email: user.email,
+          name: user.name,
+          role: user.role,
+          image: user.image,
+        })
+        router.push("/dashboard")
+        setIsLoading(false)
+      }, 1000)
+    } catch (error) {
+      console.error('Login error:', error)
+      showError("Terjadi kesalahan saat login")
+      setIsLoading(false)
+    }
+  }
+
+  return (
+    <div className="w-full max-w-md mx-auto">
+      <Card className="bg-card border-2 border-red-500/30 shadow-2xl">
+        <CardHeader className="text-center pb-8">
+          <div className="flex items-center justify-center mb-4">
+            <div className="relative">
+              <div className="absolute inset-0 bg-red-500/20 rounded-2xl blur-xl animate-pulse" />
+              <div className="relative bg-red-500/10 p-3 rounded-2xl">
+                <Shield className="w-10 h-10 text-red-600 dark:text-red-400 animate-pulse" />
+              </div>
+            </div>
+          </div>
+          <CardTitle className="text-3xl font-bold text-foreground mb-2">
+            Admin Portal
+          </CardTitle>
+          <CardDescription className="text-muted-foreground text-lg">
+            Login Super Admin - Jadwal_in
+          </CardDescription>
+          <div className="mt-2 px-4 py-2 bg-red-500/10 border border-red-500/20 rounded-lg">
+            <p className="text-xs text-red-600 dark:text-red-400 flex items-center justify-center">
+              <Shield className="h-3 w-3 mr-1" />
+              Area Terbatas - Hanya untuk Super Administrator
+            </p>
+          </div>
+        </CardHeader>
+
+        <CardContent className="space-y-6">
+          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+            <div className="space-y-2">
+              <Label htmlFor="email" className="text-foreground font-medium">
+                Email Administrator
+              </Label>
+              <div className="relative">
+                <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+                <Input
+                  id="email"
+                  type="email"
+                  placeholder="admin@jadwalin.com"
+                  aria-describedby="email-error"
+                  aria-invalid={!!form.formState.errors.email}
+                  className={`
+                    pl-10 pr-12 h-12 bg-input border-border text-foreground placeholder:text-muted-foreground
+                    focus:bg-background transition-all duration-300 rounded-xl
+                    ${isEmailValid 
+                      ? 'border-green-500 focus:border-green-500 bg-green-50 dark:bg-green-950/20' 
+                      : form.formState.errors.email 
+                        ? 'border-destructive focus:border-destructive' 
+                        : 'focus:border-red-500/40'
+                    }
+                  `}
+                  {...form.register("email")}
+                  disabled={isLoading}
+                />
+                {isEmailValid && (
+                  <CheckCircle className="absolute right-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-green-500" />
+                )}
+              </div>
+              {form.formState.errors.email && (
+                <p id="email-error" className="text-sm text-destructive" role="alert">
+                  {form.formState.errors.email.message}
+                </p>
+              )}
+              {isEmailValid && (
+                <p className="text-sm text-green-600 dark:text-green-400 flex items-center">
+                  <CheckCircle className="h-4 w-4 mr-1" />
+                  Format email valid
+                </p>
+              )}
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="password" className="text-foreground font-medium">
+                Kata Sandi Admin
+              </Label>
+              <div className="relative">
+                <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+                <Input
+                  id="password"
+                  type={showPassword ? "text" : "password"}
+                  placeholder="••••••••"
+                  aria-describedby="password-error"
+                  aria-invalid={!!form.formState.errors.password}
+                  className="
+                    pl-10 pr-12 h-12 bg-input border-border text-foreground placeholder:text-muted-foreground
+                    focus:bg-background focus:border-red-500/40 transition-all duration-300
+                    rounded-xl
+                  "
+                  {...form.register("password")}
+                  disabled={isLoading}
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  aria-label={showPassword ? "Sembunyikan kata sandi" : "Tampilkan kata sandi"}
+                  className="absolute right-3 top-1/2 transform -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+                >
+                  {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
+                </button>
+              </div>
+              {form.formState.errors.password && (
+                <p id="password-error" className="text-sm text-destructive" role="alert">
+                  {form.formState.errors.password.message}
+                </p>
+              )}
+            </div>
+
+            <Button
+              type="submit"
+              className="
+                w-full h-12 bg-red-600 text-white hover:bg-red-700
+                font-semibold rounded-xl transition-all duration-300
+                hover:scale-105 hover:shadow-xl transform
+              "
+              disabled={isLoading}
+              aria-busy={isLoading}
+            >
+              {showSuccess ? (
+                <div className="flex items-center">
+                  <Check className="h-5 w-5 mr-2" />
+                  Berhasil Masuk!
+                </div>
+              ) : (
+                <ButtonLoading isLoading={isLoading} loadingText="Memverifikasi...">
+                  <div className="flex items-center">
+                    <Shield className="h-5 w-5 mr-2" />
+                    Masuk sebagai Admin
+                    <ArrowRight className="h-5 w-5 ml-2 group-hover:translate-x-1 transition-transform" />
+                  </div>
+                </ButtonLoading>
+              )}
+            </Button>
+          </form>
+        </CardContent>
+      </Card>
+    </div>
+  )
+}

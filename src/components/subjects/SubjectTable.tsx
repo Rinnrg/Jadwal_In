@@ -213,8 +213,8 @@ export function SubjectTable({ subjects: subjectsProp, onEdit }: SubjectTablePro
       <CardContent className="pt-6">
         <div className="space-y-6">
           <div>
-            <h2 className="text-2xl font-bold tracking-tight">Daftar Mata Kuliah</h2>
-            <p className="text-muted-foreground">Kelola mata kuliah dalam katalog program studi</p>
+            <h2 className="text-xl md:text-2xl font-bold tracking-tight">Daftar Mata Kuliah</h2>
+            <p className="text-sm md:text-base text-muted-foreground">Kelola mata kuliah dalam katalog program studi</p>
           </div>
           
           <div className="flex flex-col sm:flex-row gap-4">
@@ -224,17 +224,17 @@ export function SubjectTable({ subjects: subjectsProp, onEdit }: SubjectTablePro
                 placeholder="Cari mata kuliah..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-10"
+                className="pl-10 h-10 md:h-11"
               />
             </div>
           </div>
 
-          <div className="flex flex-col sm:flex-row gap-4">
+          <div className="flex flex-col sm:flex-row gap-3 md:gap-4">
             <div className="flex-1">
               <select
                 value={angkatanFilter}
                 onChange={(e) => setAngkatanFilter(e.target.value)}
-                className="w-full px-3 py-2 border border-input bg-background rounded-md text-sm cursor-pointer"
+                className="w-full h-10 md:h-11 px-3 py-2 border border-input bg-background rounded-md text-sm cursor-pointer"
                 aria-label="Filter berdasarkan angkatan"
               >
                 <option value="">Semua Angkatan</option>
@@ -249,7 +249,7 @@ export function SubjectTable({ subjects: subjectsProp, onEdit }: SubjectTablePro
               <select
                 value={kelasFilter}
                 onChange={(e) => setKelasFilter(e.target.value)}
-                className="w-full px-3 py-2 border border-input bg-background rounded-md text-sm cursor-pointer"
+                className="w-full h-10 md:h-11 px-3 py-2 border border-input bg-background rounded-md text-sm cursor-pointer"
                 aria-label="Filter berdasarkan kelas"
               >
                 <option value="">Semua Kelas</option>
@@ -264,7 +264,7 @@ export function SubjectTable({ subjects: subjectsProp, onEdit }: SubjectTablePro
 
           {filteredSubjects.length === 0 ? (
           <div className="text-center py-8">
-            <p className="text-muted-foreground">
+            <p className="text-sm md:text-base text-muted-foreground">
               {searchTerm || angkatanFilter || kelasFilter
                 ? "Tidak ada mata kuliah yang sesuai dengan filter"
                 : "Belum ada mata kuliah. Tambahkan mata kuliah pertama Anda."}
@@ -274,28 +274,32 @@ export function SubjectTable({ subjects: subjectsProp, onEdit }: SubjectTablePro
           <div className="space-y-6">
             {sortedGroups.map((group, groupIndex) => (
               <Card key={`${group.angkatan}-${group.kelas}`} className="animate-slide-in-left" style={{ animationDelay: `${groupIndex * 0.1}s` }}>
-                <CardContent className="pt-6">
+                <CardContent className="pt-4 md:pt-6">
                   <div className="mb-4">
-                    <h3 className="text-lg font-semibold flex items-center gap-2">
-                      <Badge variant="default" className="text-sm">
-                        Angkatan {group.angkatan}
-                      </Badge>
-                      <Badge variant="outline" className="text-sm">
-                        Kelas {group.kelas}
-                      </Badge>
-                      <span className="text-sm text-muted-foreground ml-auto">
-                        {group.subjects.length} mata kuliah
-                      </span>
-                      <div className="flex items-center gap-2 ml-2">
-                        <span className="text-sm text-muted-foreground">Tampil di KRS:</span>
+                    <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <Badge variant="default" className="text-xs md:text-sm">
+                          Angkatan {group.angkatan}
+                        </Badge>
+                        <Badge variant="outline" className="text-xs md:text-sm">
+                          Kelas {group.kelas}
+                        </Badge>
+                        <span className="text-xs md:text-sm text-muted-foreground">
+                          {group.subjects.length} mata kuliah
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-2 sm:ml-auto">
+                        <span className="text-xs md:text-sm text-muted-foreground">Tampil di KRS:</span>
                         <Switch
                           checked={getGroupOfferingsStatus(group.angkatan, group.kelas) === "buka"}
                           onCheckedChange={() => handleToggleGroupOfferings(group.angkatan, group.kelas)}
                         />
                       </div>
-                    </h3>
+                    </div>
                   </div>
-                  <div className="rounded-md border">
+                  
+                  {/* Desktop Table View */}
+                  <div className="hidden md:block rounded-md border">
                     <Table>
                       <TableHeader>
                         <TableRow>
@@ -358,6 +362,78 @@ export function SubjectTable({ subjects: subjectsProp, onEdit }: SubjectTablePro
                         ))}
                       </TableBody>
                     </Table>
+                  </div>
+
+                  {/* Mobile Card View */}
+                  <div className="md:hidden space-y-3">
+                    {group.subjects.map((subject) => (
+                      <Card key={subject.id} className="border-2 hover:border-primary/50 transition-colors">
+                        <CardContent className="p-4 space-y-3">
+                          {/* Header */}
+                          <div className="flex items-start justify-between gap-2">
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center gap-2 mb-1">
+                                <Badge variant="outline" className="text-xs font-mono">
+                                  {subject.kode}
+                                </Badge>
+                                <Badge variant={subject.status === "aktif" ? "default" : "secondary"} className="text-xs">
+                                  {subject.status === "aktif" ? "Aktif" : "Arsip"}
+                                </Badge>
+                              </div>
+                              <h4 className="font-semibold text-sm leading-tight break-words">
+                                {subject.nama}
+                              </h4>
+                              {subject.prodi && (
+                                <p className="text-xs text-muted-foreground mt-1">{subject.prodi}</p>
+                              )}
+                            </div>
+                            <div className="flex flex-col items-end gap-1 flex-shrink-0">
+                              <Badge className="text-xs">{subject.sks} SKS</Badge>
+                            </div>
+                          </div>
+
+                          {/* Pengampu */}
+                          {subject.pengampuIds && subject.pengampuIds.length > 0 && (
+                            <div className="space-y-1">
+                              <p className="text-xs text-muted-foreground">Pengampu:</p>
+                              {renderPengampuChips(subject.pengampuIds)}
+                            </div>
+                          )}
+
+                          {/* Actions */}
+                          <div className="flex items-center gap-2 pt-2 border-t">
+                            <div className="flex items-center gap-2 flex-1">
+                              <Switch
+                                checked={subject.status === "aktif"}
+                                onCheckedChange={() => handleToggleSubjectStatus(subject)}
+                              />
+                              <span className="text-xs text-muted-foreground">
+                                {subject.status === "aktif" ? "Aktif" : "Arsip"}
+                              </span>
+                            </div>
+                            {onEdit && (
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                className="h-8"
+                                onClick={() => onEdit(subject)}
+                              >
+                                <Edit className="h-3.5 w-3.5 mr-1.5" />
+                                Edit
+                              </Button>
+                            )}
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="h-8 w-8 p-0 text-destructive hover:bg-destructive/10"
+                              onClick={() => handleDelete(subject)}
+                            >
+                              <Trash2 className="h-3.5 w-3.5" />
+                            </Button>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    ))}
                   </div>
                 </CardContent>
               </Card>

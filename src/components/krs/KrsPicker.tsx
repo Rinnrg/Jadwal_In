@@ -156,13 +156,13 @@ export function KrsPicker({ userId, term }: KrsPickerProps) {
 
   return (
     <Card>
-      <CardHeader>
-        <CardTitle>Pilih Mata Kuliah</CardTitle>
-        <CardDescription>
+      <CardHeader className="px-4 md:px-6 pt-4 md:pt-6">
+        <CardTitle className="text-xl md:text-2xl">Pilih Mata Kuliah</CardTitle>
+        <CardDescription className="text-sm md:text-base">
           Penawaran mata kuliah untuk angkatan {userAngkatan} - Semua kelas ({availableOfferings.length} penawaran)
         </CardDescription>
       </CardHeader>
-      <CardContent>
+      <CardContent className="px-4 md:px-6">
         <div className="space-y-4">
           <div className="relative">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
@@ -170,37 +170,39 @@ export function KrsPicker({ userId, term }: KrsPickerProps) {
               placeholder="Cari mata kuliah..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-10"
+              className="pl-10 h-10 md:h-11"
             />
           </div>
 
           {availableOfferings.length === 0 ? (
-            <div className="text-center py-8">
-              <p className="text-muted-foreground">
+            <div className="text-center py-8 md:py-12">
+              <p className="text-sm md:text-base text-muted-foreground">
                 {searchTerm
                   ? "Tidak ada penawaran mata kuliah yang sesuai dengan pencarian"
                   : "Tidak ada penawaran mata kuliah yang tersedia untuk angkatan Anda"}
               </p>
-              <p className="text-sm text-muted-foreground mt-2">
+              <p className="text-xs md:text-sm text-muted-foreground mt-2">
                 Angkatan: {userAngkatan}
               </p>
             </div>
           ) : (
-            <div className="space-y-6">
+            <div className="space-y-4 md:space-y-6">
               {groupedOfferings.map((group, groupIndex) => (
                 <Card key={group.kelas} className="animate-slide-in-left" style={{ animationDelay: `${groupIndex * 0.1}s` }}>
-                  <CardContent className="pt-6">
+                  <CardContent className="pt-4 md:pt-6">
                     <div className="mb-4">
-                      <h3 className="text-lg font-semibold flex items-center gap-2">
-                        <Badge variant="default" className="text-sm">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <Badge variant="default" className="text-xs md:text-sm">
                           Kelas {group.kelas}
                         </Badge>
-                        <span className="text-sm text-muted-foreground ml-auto">
+                        <span className="text-xs md:text-sm text-muted-foreground">
                           {group.offerings.length} mata kuliah
                         </span>
-                      </h3>
+                      </div>
                     </div>
-                    <div className="rounded-md border">
+                    
+                    {/* Desktop Table View */}
+                    <div className="hidden md:block rounded-md border">
                       <Table>
                         <TableHeader>
                           <TableRow>
@@ -239,6 +241,53 @@ export function KrsPicker({ userId, term }: KrsPickerProps) {
                           })}
                         </TableBody>
                       </Table>
+                    </div>
+
+                    {/* Mobile Card View */}
+                    <div className="md:hidden space-y-3">
+                      {group.offerings.map((offering) => {
+                        const subject = getSubjectById(offering.subjectId)
+                        if (!subject) return null
+
+                        return (
+                          <Card key={offering.id} className="border-2 hover:border-primary/50 transition-colors">
+                            <CardContent className="p-3 md:p-4 space-y-3">
+                              {/* Header */}
+                              <div className="flex items-start justify-between gap-2">
+                                <div className="flex-1 min-w-0">
+                                  <h4 className="font-semibold text-sm leading-tight break-words">
+                                    {subject.nama}
+                                  </h4>
+                                  {subject.prodi && (
+                                    <p className="text-xs text-muted-foreground mt-0.5">{subject.prodi}</p>
+                                  )}
+                                  {offering.term && (
+                                    <p className="text-xs text-muted-foreground">{offering.term}</p>
+                                  )}
+                                </div>
+                                <Badge className="text-xs flex-shrink-0">{subject.sks} SKS</Badge>
+                              </div>
+
+                              {/* Capacity Info */}
+                              {getEnrollmentInfo(offering) && (
+                                <div className="flex items-center gap-2 p-2 bg-muted/50 rounded-md">
+                                  {getEnrollmentInfo(offering)}
+                                </div>
+                              )}
+
+                              {/* Action Button */}
+                              <Button 
+                                size="sm" 
+                                onClick={() => handleAddOffering(offering)}
+                                className="w-full h-9"
+                              >
+                                <Plus className="h-3.5 w-3.5 mr-1.5" />
+                                Ambil Mata Kuliah
+                              </Button>
+                            </CardContent>
+                          </Card>
+                        )
+                      })}
                     </div>
                   </CardContent>
                 </Card>
