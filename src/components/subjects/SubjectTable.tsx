@@ -210,31 +210,31 @@ export function SubjectTable({ subjects: subjectsProp, onEdit }: SubjectTablePro
 
   return (
     <Card>
-      <CardContent className="pt-6">
-        <div className="space-y-6">
+      <CardContent className="pt-3 md:pt-6 px-2 md:px-6">
+        <div className="space-y-3 md:space-y-6">
           <div>
-            <h2 className="text-xl md:text-2xl font-bold tracking-tight">Daftar Mata Kuliah</h2>
-            <p className="text-sm md:text-base text-muted-foreground">Kelola mata kuliah dalam katalog program studi</p>
+            <h2 className="text-base md:text-2xl font-bold tracking-tight">Daftar Mata Kuliah</h2>
+            <p className="text-xs md:text-base text-muted-foreground">Kelola mata kuliah dalam katalog program studi</p>
           </div>
           
-          <div className="flex flex-col sm:flex-row gap-4">
+          <div className="flex flex-col sm:flex-row gap-2 md:gap-4">
             <div className="relative flex-1">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
+              <Search className="absolute left-2 md:left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-3.5 w-3.5 md:h-4 md:w-4" />
               <Input
                 placeholder="Cari mata kuliah..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-10 h-10 md:h-11"
+                className="pl-8 md:pl-10 h-9 md:h-11 text-sm"
               />
             </div>
           </div>
 
-          <div className="flex flex-col sm:flex-row gap-3 md:gap-4">
+          <div className="flex flex-col sm:flex-row gap-2 md:gap-4">
             <div className="flex-1">
               <select
                 value={angkatanFilter}
                 onChange={(e) => setAngkatanFilter(e.target.value)}
-                className="w-full h-10 md:h-11 px-3 py-2 border border-input bg-background rounded-md text-sm cursor-pointer"
+                className="w-full h-9 md:h-11 px-2 md:px-3 py-1.5 md:py-2 border border-input bg-background rounded-md text-xs md:text-sm cursor-pointer"
                 aria-label="Filter berdasarkan angkatan"
               >
                 <option value="">Semua Angkatan</option>
@@ -249,7 +249,7 @@ export function SubjectTable({ subjects: subjectsProp, onEdit }: SubjectTablePro
               <select
                 value={kelasFilter}
                 onChange={(e) => setKelasFilter(e.target.value)}
-                className="w-full h-10 md:h-11 px-3 py-2 border border-input bg-background rounded-md text-sm cursor-pointer"
+                className="w-full h-9 md:h-11 px-2 md:px-3 py-1.5 md:py-2 border border-input bg-background rounded-md text-xs md:text-sm cursor-pointer"
                 aria-label="Filter berdasarkan kelas"
               >
                 <option value="">Semua Kelas</option>
@@ -263,33 +263,33 @@ export function SubjectTable({ subjects: subjectsProp, onEdit }: SubjectTablePro
           </div>
 
           {filteredSubjects.length === 0 ? (
-          <div className="text-center py-8">
-            <p className="text-sm md:text-base text-muted-foreground">
+          <div className="text-center py-6 md:py-8">
+            <p className="text-xs md:text-base text-muted-foreground">
               {searchTerm || angkatanFilter || kelasFilter
                 ? "Tidak ada mata kuliah yang sesuai dengan filter"
                 : "Belum ada mata kuliah. Tambahkan mata kuliah pertama Anda."}
             </p>
           </div>
         ) : (
-          <div className="space-y-6">
+          <div className="space-y-3 md:space-y-6">
             {sortedGroups.map((group, groupIndex) => (
               <Card key={`${group.angkatan}-${group.kelas}`} className="animate-slide-in-left" style={{ animationDelay: `${groupIndex * 0.1}s` }}>
-                <CardContent className="pt-4 md:pt-6">
-                  <div className="mb-4">
+                <CardContent className="pt-3 md:pt-6 px-2 md:px-6">
+                  <div className="mb-3 md:mb-4">
                     <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3">
-                      <div className="flex items-center gap-2 flex-wrap">
-                        <Badge variant="default" className="text-xs md:text-sm">
+                      <div className="flex items-center gap-1.5 md:gap-2 flex-wrap">
+                        <Badge variant="default" className="text-[10px] md:text-sm">
                           Angkatan {group.angkatan}
                         </Badge>
-                        <Badge variant="outline" className="text-xs md:text-sm">
+                        <Badge variant="outline" className="text-[10px] md:text-sm">
                           Kelas {group.kelas}
                         </Badge>
-                        <span className="text-xs md:text-sm text-muted-foreground">
-                          {group.subjects.length} mata kuliah
+                        <span className="text-[10px] md:text-sm text-muted-foreground">
+                          {group.subjects.length} MK
                         </span>
                       </div>
-                      <div className="flex items-center gap-2 sm:ml-auto">
-                        <span className="text-xs md:text-sm text-muted-foreground">Tampil di KRS:</span>
+                      <div className="flex items-center gap-1.5 md:gap-2 sm:ml-auto">
+                        <span className="text-[10px] md:text-sm text-muted-foreground">Tampil di KRS:</span>
                         <Switch
                           checked={getGroupOfferingsStatus(group.angkatan, group.kelas) === "buka"}
                           onCheckedChange={() => handleToggleGroupOfferings(group.angkatan, group.kelas)}
@@ -365,49 +365,50 @@ export function SubjectTable({ subjects: subjectsProp, onEdit }: SubjectTablePro
                   </div>
 
                   {/* Mobile Card View */}
-                  <div className="md:hidden space-y-3">
+                  <div className="md:hidden space-y-2">
                     {group.subjects.map((subject) => (
                       <Card key={subject.id} className="border-2 hover:border-primary/50 transition-colors">
-                        <CardContent className="p-4 space-y-3">
+                        <CardContent className="p-3 space-y-2">
                           {/* Header */}
                           <div className="flex items-start justify-between gap-2">
                             <div className="flex-1 min-w-0">
-                              <div className="flex items-center gap-2 mb-1">
-                                <Badge variant="outline" className="text-xs font-mono">
+                              <div className="flex items-center gap-1.5 mb-1 flex-wrap">
+                                <Badge variant="outline" className="text-[10px] font-mono">
                                   {subject.kode}
                                 </Badge>
-                                <Badge variant={subject.status === "aktif" ? "default" : "secondary"} className="text-xs">
+                                <Badge variant={subject.status === "aktif" ? "default" : "secondary"} className="text-[10px]">
                                   {subject.status === "aktif" ? "Aktif" : "Arsip"}
                                 </Badge>
                               </div>
-                              <h4 className="font-semibold text-sm leading-tight break-words">
+                              <h4 className="font-semibold text-xs leading-tight break-words">
                                 {subject.nama}
                               </h4>
                               {subject.prodi && (
-                                <p className="text-xs text-muted-foreground mt-1">{subject.prodi}</p>
+                                <p className="text-[10px] text-muted-foreground mt-0.5">{subject.prodi}</p>
                               )}
                             </div>
                             <div className="flex flex-col items-end gap-1 flex-shrink-0">
-                              <Badge className="text-xs">{subject.sks} SKS</Badge>
+                              <Badge className="text-[10px]">{subject.sks} SKS</Badge>
                             </div>
                           </div>
 
                           {/* Pengampu */}
                           {subject.pengampuIds && subject.pengampuIds.length > 0 && (
-                            <div className="space-y-1">
-                              <p className="text-xs text-muted-foreground">Pengampu:</p>
+                            <div className="space-y-0.5">
+                              <p className="text-[10px] text-muted-foreground">Pengampu:</p>
                               {renderPengampuChips(subject.pengampuIds)}
                             </div>
                           )}
 
                           {/* Actions */}
-                          <div className="flex items-center gap-2 pt-2 border-t">
-                            <div className="flex items-center gap-2 flex-1">
+                          <div className="flex items-center gap-1.5 pt-1.5 border-t">
+                            <div className="flex items-center gap-1.5 flex-1">
                               <Switch
                                 checked={subject.status === "aktif"}
                                 onCheckedChange={() => handleToggleSubjectStatus(subject)}
+                                className="scale-90"
                               />
-                              <span className="text-xs text-muted-foreground">
+                              <span className="text-[10px] text-muted-foreground">
                                 {subject.status === "aktif" ? "Aktif" : "Arsip"}
                               </span>
                             </div>
@@ -415,20 +416,20 @@ export function SubjectTable({ subjects: subjectsProp, onEdit }: SubjectTablePro
                               <Button
                                 variant="outline"
                                 size="sm"
-                                className="h-8"
+                                className="h-7 text-[10px] px-2"
                                 onClick={() => onEdit(subject)}
                               >
-                                <Edit className="h-3.5 w-3.5 mr-1.5" />
+                                <Edit className="h-3 w-3 mr-1" />
                                 Edit
                               </Button>
                             )}
                             <Button
                               variant="ghost"
                               size="sm"
-                              className="h-8 w-8 p-0 text-destructive hover:bg-destructive/10"
+                              className="h-7 w-7 p-0 text-destructive hover:bg-destructive/10"
                               onClick={() => handleDelete(subject)}
                             >
-                              <Trash2 className="h-3.5 w-3.5" />
+                              <Trash2 className="h-3 w-3" />
                             </Button>
                           </div>
                         </CardContent>
