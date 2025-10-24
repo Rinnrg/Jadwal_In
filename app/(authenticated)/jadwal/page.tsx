@@ -45,7 +45,7 @@ export default function JadwalPage() {
   const { addReminder } = useRemindersStore()
   const { clearBadge } = useNotificationStore()
   const { getProfile, profiles } = useProfileStore()
-  const { getUserById } = useUsersStore()
+  const { getUserById, fetchUsers, users } = useUsersStore()
 
   const [viewMode, setViewMode] = useState<ViewMode>("simple")
   const [searchTerm, setSearchTerm] = useState("")
@@ -55,6 +55,11 @@ export default function JadwalPage() {
   const [defaultDay, setDefaultDay] = useState<number | undefined>()
   const [showImportDialog, setShowImportDialog] = useState(false)
   const [importFile, setImportFile] = useState<File | null>(null)
+
+  // Fetch users on mount to ensure lecturer data is available
+  useEffect(() => {
+    fetchUsers()
+  }, [])
 
   const userEvents = session ? getEventsByUser(session.id) : []
   const userKrsItems = session ? getKrsByUser(session.id) : []
@@ -295,6 +300,9 @@ export default function JadwalPage() {
       }
     }
     
+    // Get location from event or fallback to subject's slotRuang
+    const location = event.location || subject?.slotRuang || "-"
+    
     return {
       ...event,
       subject: subject?.nama || "Mata Kuliah Tidak Diketahui",
@@ -302,7 +310,7 @@ export default function JadwalPage() {
       code: subject?.kode || "-",
       time: `${startTime.toLocaleTimeString("id-ID", { hour: "2-digit", minute: "2-digit" })} - ${endTime.toLocaleTimeString("id-ID", { hour: "2-digit", minute: "2-digit" })}`,
       day: dayName,
-      room: event.location || "-",
+      room: location,
       type: "lecture" as const, // Default type
     }
   })
