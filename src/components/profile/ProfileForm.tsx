@@ -12,7 +12,7 @@ import { AvatarUploader } from "@/components/profile/AvatarUploader"
 import { EKTMDialog } from "@/components/profile/EKTMDialog"
 import { showSuccess, showError } from "@/lib/alerts"
 import { ActivityLogger } from "@/lib/activity-logger"
-import { Lock, IdCard } from "lucide-react"
+import { Lock, IdCard, Edit2, Check, X } from "lucide-react"
 
 interface ProfileFormProps {
   profile?: Profile
@@ -24,6 +24,9 @@ export function ProfileForm({ profile, onSuccess, onChangePassword }: ProfileFor
   const { session, updateSessionImage } = useSessionStore()
   const { updateProfile, createProfile } = useProfileStore()
   const [showEKTM, setShowEKTM] = useState(false)
+  const [isEditing, setIsEditing] = useState(false)
+  const [editedName, setEditedName] = useState(session?.name || "")
+  const [isSaving, setIsSaving] = useState(false)
 
   // Helper untuk extract NIM dari email
   const getNIMFromEmail = (email: string): string | undefined => {
@@ -161,6 +164,50 @@ export function ProfileForm({ profile, onSuccess, onChangePassword }: ProfileFor
     }
   }
 
+  const handleSaveName = async () => {
+    if (!session || !editedName.trim()) return
+
+    try {
+      setIsSaving(true)
+      
+      // Update profile via API
+      const response = await fetch(`/api/profile/${session.id}`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ name: editedName.trim() }),
+      })
+
+      if (!response.ok) {
+        throw new Error('Failed to update name')
+      }
+
+      // Update session store (will trigger re-render)
+      const sessionStore = useSessionStore.getState()
+      sessionStore.setSession({
+        ...session,
+        name: editedName.trim()
+      })
+      
+      setIsEditing(false)
+      showSuccess("Nama berhasil diperbarui")
+      
+      // Log activity
+      ActivityLogger.profileUpdated(session.id, "name")
+    } catch (error) {
+      console.error('Name update error:', error)
+      showError("Gagal menyimpan nama. Silakan coba lagi.")
+    } finally {
+      setIsSaving(false)
+    }
+  }
+
+  const handleCancelEdit = () => {
+    setEditedName(session?.name || "")
+    setIsEditing(false)
+  }
+
   if (!session) return null
 
   return (
@@ -221,8 +268,49 @@ export function ProfileForm({ profile, onSuccess, onChangePassword }: ProfileFor
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="name">Nama Lengkap</Label>
-                <Input id="name" value={session.name} disabled className="bg-muted" />
-                <p className="text-xs text-muted-foreground">Nama tidak dapat diubah</p>
+                <div className="flex gap-2">
+                  <Input 
+                    id="name" 
+                    value={isEditing ? editedName : session.name}
+                    onChange={(e) => setEditedName(e.target.value)}
+                    disabled={!isEditing}
+                    className={!isEditing ? "bg-muted" : ""}
+                  />
+                  {!isEditing ? (
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="icon"
+                      onClick={() => setIsEditing(true)}
+                    >
+                      <Edit2 className="h-4 w-4" />
+                    </Button>
+                  ) : (
+                    <>
+                      <Button
+                        type="button"
+                        variant="default"
+                        size="icon"
+                        onClick={handleSaveName}
+                        disabled={isSaving || !editedName.trim()}
+                      >
+                        <Check className="h-4 w-4" />
+                      </Button>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="icon"
+                        onClick={handleCancelEdit}
+                        disabled={isSaving}
+                      >
+                        <X className="h-4 w-4" />
+                      </Button>
+                    </>
+                  )}
+                </div>
+                {!isEditing && (
+                  <p className="text-xs text-muted-foreground">Klik ikon edit untuk mengubah nama</p>
+                )}
               </div>
 
               <div className="space-y-2">

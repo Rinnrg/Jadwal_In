@@ -34,8 +34,10 @@ function getProdiFromNIM(nim: string): string {
 export default async function EKTMPublicPage({ params }: PageProps) {
   const { nim } = params
 
-  // Find user by NIM in profile
-  const profile = await prisma.profile.findFirst({
+  console.log('[E-KTM] Searching for NIM:', nim)
+
+  // First, try to find user by NIM in profile
+  let profile = await prisma.profile.findFirst({
     where: { nim },
     include: {
       user: {
@@ -47,10 +49,16 @@ export default async function EKTMPublicPage({ params }: PageProps) {
     },
   })
 
-  // If not found in profile, try to find by email format
+  console.log('[E-KTM] Profile found by NIM:', profile ? 'Yes' : 'No')
+
+  // If not found, try to find by email pattern (for Google Auth users)
   if (!profile) {
+    console.log('[E-KTM] Trying to find by email pattern')
+    
+    // Extract NIM pattern from the full NIM (remove year prefix for email matching)
+    const nimPattern = nim.substring(2) // e.g., "22050974025" -> "050974025"
+    
     // Try to find user by email that contains the NIM pattern
-    const nimPattern = nim.substring(2) // Remove year prefix for email matching
     const user = await prisma.user.findFirst({
       where: {
         email: {
@@ -63,39 +71,25 @@ export default async function EKTMPublicPage({ params }: PageProps) {
       },
     })
 
-    if (!user) {
-      notFound()
+    console.log('[E-KTM] User by email found:', user ? 'Yes' : 'No')
+
+    if (user) {
+      // Create a temporary profile object for display
+      profile = {
+        nim: nim,
+        avatarUrl: user.profile?.avatarUrl || null,
+        user: {
+          name: user.name,
+          email: user.email,
+        },
+      } as any
     }
+  }
 
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-blue-100 p-4">
-        <div className="w-full max-w-lg">
-          <div className="text-center mb-6">
-            <h1 className="text-2xl font-bold text-gray-900 mb-2">
-              E-KTM Digital
-            </h1>
-            <p className="text-sm text-gray-600">
-              Kartu Tanda Mahasiswa Elektronik
-            </p>
-          </div>
-          
-          <div className="bg-white rounded-2xl shadow-xl p-6">
-            <EKTMCard
-              name={user.name}
-              nim={nim}
-              fakultas={getFakultasFromNIM(nim)}
-              programStudi={getProdiFromNIM(nim)}
-              avatarUrl={user.profile?.avatarUrl || undefined}
-            />
-          </div>
-
-          <div className="text-center mt-6 text-sm text-gray-600">
-            <p>Universitas Negeri Surabaya</p>
-            <p className="text-xs mt-1">Dokumen resmi mahasiswa aktif</p>
-          </div>
-        </div>
-      </div>
-    )
+  // If still not found, show 404
+  if (!profile) {
+    console.log('[E-KTM] No user found, showing 404')
+    notFound()
   }
 
   return (

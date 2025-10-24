@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { Calendar, Clock, MapPin, User, Plus, Search, Grid3x3, List, ArrowLeft, Download, Upload, Printer, Trash2, Command, Users, Sparkles, TrendingUp, Activity, Settings } from "lucide-react"
+import { Calendar, Clock, MapPin, User, Plus, Search, Grid3x3, List, Download, Upload, Printer, Trash2, Command } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -255,42 +255,11 @@ export default function JadwalPage() {
     }
   }
 
-  const todayEvents = userEvents.filter((event) => {
-    const today = new Date().getDay()
-    return event.dayOfWeek === today
-  })
-
-  const weeklyStats = {
-    totalEvents: userEvents.length,
-    todayEvents: todayEvents.length,
-    uniqueSubjects: new Set(userEvents.map((e) => e.subjectId)).size,
-    totalHours: userEvents.reduce((acc, event) => {
-      const start = new Date(event.startUTC)
-      const end = new Date(event.endUTC)
-      return acc + (end.getTime() - start.getTime()) / (1000 * 60 * 60)
-    }, 0),
-  }
-
   if (!session) return null
 
   if (showForm) {
     return (
-      <div className="space-y-8 animate-fade-in">
-        <div className="flex items-center space-x-6 animate-slide-in-left">
-          <Button variant="ghost" onClick={handleCancel} className="button-modern">
-            <ArrowLeft className="h-5 w-5 mr-2" />
-            Kembali
-          </Button>
-          <div>
-            <h1 className="text-4xl font-bold tracking-tight text-gray-900 dark:text-gray-100">
-              {editingEvent ? "Edit Jadwal" : "Tambah Jadwal"}
-            </h1>
-            <p className="text-muted-foreground text-lg mt-2">
-              {editingEvent ? "Perbarui informasi jadwal" : "Tambahkan jadwal baru ke kalender"}
-            </p>
-          </div>
-        </div>
-
+      <div className="space-y-4 md:space-y-6 animate-fade-in">
         <div className="animate-slide-up">
           <ScheduleForm
             userId={session.id}
@@ -401,23 +370,22 @@ export default function JadwalPage() {
 
   // Weekly View Component
   const renderWeeklyView = () => (
-    <div className="grid gap-8 lg:grid-cols-4 animate-fade-in">
-      <div className="lg:col-span-3">
-        <Card className="glass-effect border-2 border-primary/20 card-interactive overflow-hidden">
-          <CardHeader>
-            <CardTitle className="flex items-center space-x-3 text-2xl">
-              <Sparkles className="h-6 w-6 text-primary animate-pulse" />
+    <div className="grid gap-4 md:gap-8 lg:grid-cols-4 animate-fade-in w-full">
+      <div className="lg:col-span-3 w-full min-w-0">
+        <Card className="glass-effect border-2 border-primary/20 card-interactive overflow-hidden w-full">
+          <CardHeader className="px-3 md:px-6 py-3 md:py-6">
+            <CardTitle className="flex items-center space-x-2 text-lg md:text-2xl">
+              <Calendar className="h-5 w-5 md:h-6 md:w-6 text-primary" />
               <span>Jadwal Mingguan</span>
             </CardTitle>
-            <CardDescription className="text-base">Klik pada slot waktu untuk menambah jadwal baru</CardDescription>
           </CardHeader>
-          <CardContent className="p-0">
+          <CardContent className="p-0 w-full">
             <ScheduleGrid userId={session.id} onEditEvent={handleEditEvent} onAddEvent={handleAddEvent} />
           </CardContent>
         </Card>
       </div>
 
-      <div className="space-y-6">
+      <div className="space-y-4 md:space-y-6 w-full min-w-0">
         <div className="animate-slide-in-right">
           <NextUpCard userId={session.id} />
         </div>
@@ -431,26 +399,26 @@ export default function JadwalPage() {
   )
 
   return (
-    <div className="space-y-4 md:space-y-6 animate-fade-in px-2 md:px-4">
+    <div className="space-y-4 md:space-y-6 animate-fade-in w-full max-w-full overflow-hidden">
       {/* Header */}
-      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 animate-slide-up">
-        <div>
-          <h1 className="text-xl md:text-2xl lg:text-3xl font-bold tracking-tight animate-float">
+      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 animate-slide-up px-2 md:px-0">
+        <div className="min-w-0">
+          <h1 className="text-xl md:text-2xl lg:text-3xl font-bold tracking-tight truncate">
             Jadwal Kuliah
           </h1>
-          <p className="text-gray-900 dark:text-gray-100 font-bold text-sm md:text-base animate-slide-in-left">
+          <p className="text-muted-foreground text-sm md:text-base">
             Kelola jadwal mingguan Anda dengan mudah
           </p>
         </div>
 
-        <div className="flex flex-col sm:flex-row items-stretch sm:items-center space-y-2 sm:space-y-0 sm:space-x-3 animate-slide-in-right">
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center space-y-2 sm:space-y-0 sm:space-x-3 animate-slide-in-right flex-shrink-0">
           {/* View Mode Toggle */}
           <div className="flex items-center rounded-lg border-2 border-primary/20 bg-background p-1">
             <Button
               variant={viewMode === "simple" ? "default" : "ghost"}
               size="sm"
               onClick={() => setViewMode("simple")}
-              className="flex items-center gap-1.5 md:gap-2 text-xs md:text-sm flex-1 sm:flex-none"
+              className="flex items-center gap-1.5 md:gap-2 text-xs md:text-sm flex-1 sm:flex-none h-8 md:h-9"
             >
               <List className="h-3.5 w-3.5 md:h-4 md:w-4" />
               <span className="hidden xs:inline">Simpel</span>
@@ -459,7 +427,7 @@ export default function JadwalPage() {
               variant={viewMode === "weekly" ? "default" : "ghost"}
               size="sm"
               onClick={() => setViewMode("weekly")}
-              className="flex items-center gap-1.5 md:gap-2 text-xs md:text-sm flex-1 sm:flex-none"
+              className="flex items-center gap-1.5 md:gap-2 text-xs md:text-sm flex-1 sm:flex-none h-8 md:h-9"
             >
               <Grid3x3 className="h-3.5 w-3.5 md:h-4 md:w-4" />
               <span className="hidden xs:inline">Mingguan</span>
@@ -467,122 +435,14 @@ export default function JadwalPage() {
           </div>
 
           <Button
-            variant="outline"
+            variant="default"
             onClick={() => handleAddEvent()}
-            className="button-modern border-2 border-primary/20 hover:border-primary/50 text-xs md:text-sm"
+            className="h-8 md:h-9 text-xs md:text-sm px-3 md:px-4"
           >
-            <Plus className="h-4 w-4 md:h-5 md:w-5 mr-1.5 md:mr-2" />
+            <Plus className="h-3.5 w-3.5 md:h-4 md:w-4 mr-1.5 md:mr-2" />
             <span className="hidden xs:inline">Tambah </span>Jadwal
-            <kbd className="ml-2 md:ml-3 pointer-events-none hidden lg:inline-flex h-5 md:h-6 select-none items-center gap-1 rounded border bg-muted px-1.5 md:px-2 font-mono text-[10px] md:text-xs font-medium text-muted-foreground">
-              <Command className="h-2.5 w-2.5 md:h-3 md:w-3" />K
-            </kbd>
           </Button>
-
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button
-                variant="outline"
-                className="button-modern border-2 border-primary/20 hover:border-primary/50 bg-transparent px-2 md:px-3"
-              >
-                <Settings className="h-4 w-4 md:h-5 md:w-5" />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="glass-effect border-2 border-primary/20">
-              <DropdownMenuItem onClick={handleExportICS} className="hover:bg-primary/10 text-xs md:text-sm">
-                <Download className="mr-2 h-3.5 w-3.5 md:h-4 md:w-4" />
-                Export ICS
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => setShowImportDialog(true)} className="hover:bg-primary/10 text-xs md:text-sm">
-                <Upload className="mr-2 h-3.5 w-3.5 md:h-4 md:w-4" />
-                Import ICS
-              </DropdownMenuItem>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem onClick={handlePrint} className="hover:bg-primary/10 text-xs md:text-sm">
-                <Printer className="mr-2 h-3.5 w-3.5 md:h-4 md:w-4" />
-                Print
-              </DropdownMenuItem>
-              {viewMode === "weekly" && (
-                <>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem onClick={() => setShowNowLine(!showNowLine)} className="hover:bg-primary/10 text-xs md:text-sm">
-                    {showNowLine ? "Sembunyikan" : "Tampilkan"} Garis Waktu
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => setShowLegend(!showLegend)} className="hover:bg-primary/10 text-xs md:text-sm">
-                    {showLegend ? "Sembunyikan" : "Tampilkan"} Legenda
-                  </DropdownMenuItem>
-                </>
-              )}
-              <DropdownMenuSeparator />
-              <DropdownMenuItem onClick={handleClearSchedule} className="text-destructive hover:bg-destructive/10 text-xs md:text-sm">
-                <Trash2 className="mr-2 h-3.5 w-3.5 md:h-4 md:w-4" />
-                Hapus Semua
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
         </div>
-      </div>
-
-      {/* Stats Cards */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4 animate-slide-up">
-        <Card className="card-interactive border-2 border-blue-200 dark:border-blue-800 hover:border-blue-400 dark:hover:border-blue-600 group">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 px-4 md:px-6 pt-4 md:pt-6">
-            <CardTitle className="text-xs md:text-sm font-medium">Total Jadwal</CardTitle>
-            <Calendar className="h-4 w-4 md:h-5 md:w-5 text-blue-500 group-hover:scale-110 transition-transform" />
-          </CardHeader>
-          <CardContent className="px-4 md:px-6 pb-4 md:pb-6">
-            <div className="text-2xl md:text-3xl font-bold text-blue-600 dark:text-blue-400">{weeklyStats.totalEvents}</div>
-            <p className="text-[10px] md:text-xs text-muted-foreground mt-1">Jadwal mingguan</p>
-            <div className="mt-2 flex items-center text-[10px] md:text-xs text-blue-600 dark:text-blue-400">
-              <TrendingUp className="h-3 w-3 mr-1" />
-              {weeklyStats.uniqueSubjects} mata kuliah
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card className="card-interactive border-2 border-green-200 dark:border-green-800 hover:border-green-400 dark:hover:border-green-600 group">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 px-4 md:px-6 pt-4 md:pt-6">
-            <CardTitle className="text-xs md:text-sm font-medium">Hari Ini</CardTitle>
-            <Clock className="h-4 w-4 md:h-5 md:w-5 text-green-500 group-hover:scale-110 transition-transform" />
-          </CardHeader>
-          <CardContent className="px-4 md:px-6 pb-4 md:pb-6">
-            <div className="text-2xl md:text-3xl font-bold text-green-600 dark:text-green-400">{weeklyStats.todayEvents}</div>
-            <p className="text-[10px] md:text-xs text-muted-foreground mt-1">Kelas hari ini</p>
-            <div className="mt-2 flex items-center text-[10px] md:text-xs text-green-600 dark:text-green-400">
-              <Activity className="h-3 w-3 mr-1" />
-              {weeklyStats.todayEvents > 0 ? "Ada kelas" : "Tidak ada kelas"}
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card className="card-interactive border-2 border-purple-200 dark:border-purple-800 hover:border-purple-400 dark:hover:border-purple-600 group">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 px-4 md:px-6 pt-4 md:pt-6">
-            <CardTitle className="text-xs md:text-sm font-medium">Mata Kuliah</CardTitle>
-            <Users className="h-4 w-4 md:h-5 md:w-5 text-purple-500 group-hover:scale-110 transition-transform" />
-          </CardHeader>
-          <CardContent className="px-4 md:px-6 pb-4 md:pb-6">
-            <div className="text-2xl md:text-3xl font-bold text-purple-600 dark:text-purple-400">{weeklyStats.uniqueSubjects}</div>
-            <p className="text-[10px] md:text-xs text-muted-foreground mt-1">Mata kuliah aktif</p>
-            <div className="mt-2 flex items-center text-[10px] md:text-xs text-purple-600 dark:text-purple-400">
-              <Sparkles className="h-3 w-3 mr-1" />
-              Semester ini
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card className="card-interactive border-2 border-orange-200 dark:border-orange-800 hover:border-orange-400 dark:hover:border-orange-600 group">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 px-4 md:px-6 pt-4 md:pt-6">
-            <CardTitle className="text-xs md:text-sm font-medium">Total Jam</CardTitle>
-            <Clock className="h-4 w-4 md:h-5 md:w-5 text-orange-500 group-hover:scale-110 transition-transform" />
-          </CardHeader>
-          <CardContent className="px-4 md:px-6 pb-4 md:pb-6">
-            <div className="text-2xl md:text-3xl font-bold text-orange-600 dark:text-orange-400">{Math.round(weeklyStats.totalHours)}</div>
-            <p className="text-[10px] md:text-xs text-muted-foreground mt-1">Jam per minggu</p>
-            <div className="mt-2 flex items-center text-[10px] md:text-xs text-orange-600 dark:text-orange-400">
-              <TrendingUp className="h-3 w-3 mr-1" />
-              {Math.round(weeklyStats.totalHours / 7)} jam/hari
-            </div>
-          </CardContent>
-        </Card>
       </div>
 
       {/* View Mode Content */}

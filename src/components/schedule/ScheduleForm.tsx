@@ -5,6 +5,7 @@ import { zodResolver } from "@hookform/resolvers/zod"
 import { z } from "zod"
 import { useSubjectsStore } from "@/stores/subjects.store"
 import { useScheduleStore } from "@/stores/schedule.store"
+import { useKrsStore } from "@/stores/krs.store"
 import type { ScheduleEvent } from "@/data/schema"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -12,7 +13,6 @@ import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { ColorPicker } from "@/components/subjects/ColorPicker"
 import { showSuccess, showError, confirmAction } from "@/lib/alerts"
 import { parseTimeToMinutes, minutesToTimeString } from "@/lib/time"
 import { ActivityLogger } from "@/lib/activity-logger"
@@ -53,11 +53,36 @@ interface ScheduleFormProps {
 
 const dayNames = ["Minggu", "Senin", "Selasa", "Rabu", "Kamis", "Jumat", "Sabtu"]
 
+// Generate room options (A10.01.01 - A10.05.20)
+const generateRoomOptions = () => {
+  const rooms: string[] = []
+  for (let floor = 1; floor <= 5; floor++) {
+    for (let room = 1; room <= 20; room++) {
+      rooms.push(`A10.${String(floor).padStart(2, '0')}.${String(room).padStart(2, '0')}`)
+    }
+  }
+  return rooms
+}
+
 export function ScheduleForm({ userId, event, onSuccess, onCancel, defaultDay }: ScheduleFormProps) {
   const { subjects } = useSubjectsStore()
   const { addEvent, updateEvent, getConflicts } = useScheduleStore()
+  const { getKrsByUser } = useKrsStore()
 
-  const activeSubjects = subjects.filter((s) => s.status === "aktif")
+  // Get current term
+  const currentYear = new Date().getFullYear()
+  const currentMonth = new Date().getMonth()
+  const isOddSemester = currentMonth >= 8 || currentMonth <= 1
+  const currentTerm = `${currentYear}/${currentYear + 1}-${isOddSemester ? "Ganjil" : "Genap"}`
+
+  // Get user's KRS subjects
+  const userKrsItems = getKrsByUser(userId, currentTerm)
+  const krsSubjectIds = new Set(userKrsItems.map(item => item.subjectId))
+  
+  // Filter subjects to only show those in KRS and active
+  const availableSubjects = subjects.filter((s) => 
+    s.status === "aktif" && krsSubjectIds.has(s.id)
+  )
 
   const form = useForm<ScheduleFormData>({
     resolver: zodResolver(scheduleFormSchema),
@@ -76,6 +101,20 @@ export function ScheduleForm({ userId, event, onSuccess, onCancel, defaultDay }:
   const watchedValues = form.watch()
   const selectedSubject = watchedValues.subjectId ? subjects.find((s) => s.id === watchedValues.subjectId) : null
 
+  // Auto-calculate end time when subject or start time changes
+  const handleStartTimeChange = (startTime: string) => {
+    form.setValue("startTime", startTime)
+    
+    if (selectedSubject && watchedValues.subjectId !== "defaultSubjectId") {
+      const sks = selectedSubject.sks || 2
+      const startMinutes = parseTimeToMinutes(startTime)
+      const durationMinutes = sks * 50 // 1 SKS = 50 menit
+      const endMinutes = startMinutes + durationMinutes
+      const endTime = minutesToTimeString(endMinutes)
+      form.setValue("endTime", endTime)
+    }
+  }
+
   // Check for conflicts
   const conflicts =
     watchedValues.startTime && watchedValues.endTime
@@ -91,6 +130,21 @@ export function ScheduleForm({ userId, event, onSuccess, onCancel, defaultDay }:
   const onSubmit = async (data: ScheduleFormData) => {
     const startUTC = parseTimeToMinutes(data.startTime) * 60 * 1000
     const endUTC = parseTimeToMinutes(data.endTime) * 60 * 1000
+
+    // Check if subject already has a schedule (prevent duplicate subject schedules)
+    if (data.subjectId && data.subjectId !== "defaultSubjectId") {
+      const { hasSubjectScheduled } = useScheduleStore.getState()
+      const existingSchedule = hasSubjectScheduled(userId, data.subjectId)
+      
+      // If editing, check if it's a different event
+      if (!event || event.subjectId !== data.subjectId) {
+        if (existingSchedule) {
+          const subject = subjects.find((s) => s.id === data.subjectId)
+          showError(`${subject?.nama || "Mata kuliah ini"} sudah memiliki jadwal. Silakan edit jadwal yang ada atau hapus terlebih dahulu.`)
+          return
+        }
+      }
+    }
 
     // Check conflicts again
     const currentConflicts = getConflicts(userId, data.dayOfWeek, startUTC, endUTC, event?.id)
@@ -168,7 +222,7 @@ export function ScheduleForm({ userId, event, onSuccess, onCancel, defaultDay }:
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="defaultSubjectId">Jadwal Pribadi</SelectItem> {/* Updated value */}
-                  {activeSubjects.map((subject) => (
+                  {availableSubjects.map((subject) => (
                     <SelectItem key={subject.id} value={subject.id}>
                       {subject.kode} - {subject.nama}
                     </SelectItem>
@@ -198,9 +252,19 @@ export function ScheduleForm({ userId, event, onSuccess, onCancel, defaultDay }:
 
             <div className="space-y-2">
               <Label htmlFor="startTime">Jam Mulai</Label>
-              <Input id="startTime" type="time" {...form.register("startTime")} />
+              <Input 
+                id="startTime" 
+                type="time" 
+                value={watchedValues.startTime}
+                onChange={(e) => handleStartTimeChange(e.target.value)}
+              />
               {form.formState.errors.startTime && (
                 <p className="text-sm text-destructive">{form.formState.errors.startTime.message}</p>
+              )}
+              {selectedSubject && selectedSubject.sks && watchedValues.subjectId !== "defaultSubjectId" && (
+                <p className="text-xs text-muted-foreground">
+                  Durasi otomatis: {selectedSubject.sks} SKS × 50 menit = {selectedSubject.sks * 50} menit
+                </p>
               )}
             </div>
 
@@ -213,8 +277,34 @@ export function ScheduleForm({ userId, event, onSuccess, onCancel, defaultDay }:
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="location">Lokasi</Label>
-              <Input id="location" placeholder="Contoh: Ruang A101" {...form.register("location")} />
+              <Label htmlFor="location">Ruangan</Label>
+              <Select
+                value={form.watch("location") || "none"}
+                onValueChange={(value) => {
+                  if (value === "none") {
+                    form.setValue("location", "")
+                  } else {
+                    form.setValue("location", value)
+                  }
+                }}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Pilih ruangan (opsional)" />
+                </SelectTrigger>
+                <SelectContent className="max-h-[300px]">
+                  <SelectItem value="none">
+                    <span className="text-muted-foreground">Tidak ada ruangan</span>
+                  </SelectItem>
+                  {generateRoomOptions().map((room) => (
+                    <SelectItem key={room} value={room}>
+                      {room} (Lantai {room.split('.')[1]}, Ruang {room.split('.')[2]})
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <p className="text-xs text-muted-foreground">
+                Tersedia: Lantai 01-05, Ruang 01-20
+              </p>
             </div>
 
             <div className="space-y-2">
@@ -225,16 +315,6 @@ export function ScheduleForm({ userId, event, onSuccess, onCancel, defaultDay }:
               )}
             </div>
           </div>
-
-          {!selectedSubject && (
-            <div className="space-y-2">
-              <Label>Warna</Label>
-              <ColorPicker
-                value={form.watch("color") || "#3b82f6"}
-                onChange={(color) => form.setValue("color", color)}
-              />
-            </div>
-          )}
 
           <div className="space-y-2">
             <Label htmlFor="notes">Catatan</Label>

@@ -7,6 +7,7 @@ export const dynamic = 'force-dynamic'
 
 // Schema untuk update profile
 const updateProfileSchema = z.object({
+  name: z.string().optional(),
   nim: z.string().optional(),
   angkatan: z.number().optional(),
   kelas: z.string().optional(),
@@ -121,11 +122,15 @@ export async function PATCH(
       })
     }
 
-    // Also update the user's image field for consistency
-    if (data.avatarUrl !== undefined) {
+    // Update user's name and image if provided
+    const userUpdateData: any = {}
+    if (data.name !== undefined) userUpdateData.name = data.name
+    if (data.avatarUrl !== undefined) userUpdateData.image = data.avatarUrl
+    
+    if (Object.keys(userUpdateData).length > 0) {
       await prisma.user.update({
         where: { id: userId },
-        data: { image: data.avatarUrl },
+        data: userUpdateData,
       })
     }
 

@@ -21,6 +21,8 @@ interface ScheduleState {
   getNextUpcoming: (userId: string) => ScheduleEvent | null
   duplicateEvent: (id: string, newDay: number) => void
   clearUserSchedule: (userId: string) => void
+  rescheduleEvent: (id: string, newDay: number, newStartUTC: number, newEndUTC: number) => void
+  hasSubjectScheduled: (userId: string, subjectId: string) => boolean
 }
 
 export const useScheduleStore = create<ScheduleState>()(
@@ -102,6 +104,20 @@ export const useScheduleStore = create<ScheduleState>()(
         set((state) => ({
           events: state.events.filter((event) => event.userId !== userId),
         }))
+      },
+      rescheduleEvent: (id, newDay, newStartUTC, newEndUTC) => {
+        set((state) => ({
+          events: state.events.map((event) =>
+            event.id === id
+              ? { ...event, dayOfWeek: newDay, startUTC: newStartUTC, endUTC: newEndUTC }
+              : event
+          ),
+        }))
+      },
+      hasSubjectScheduled: (userId, subjectId) => {
+        return get().events.some(
+          (event) => event.userId === userId && event.subjectId === subjectId
+        )
       },
     }),
     {

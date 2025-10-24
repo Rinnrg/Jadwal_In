@@ -153,40 +153,47 @@ export function EKTMCard({ name, nim, fakultas, programStudi, avatarUrl }: EKTMC
 
       ctx.restore()
 
-      // Draw info section (bottom center) - exact position from CSS: bottom: 48px
-      const infoY = cardHeight - 48
+      // Draw info section (bottom center) - positioned more carefully
+      const infoY = cardHeight - 62 // Move up to give more space
       ctx.textAlign = 'center'
       ctx.textBaseline = 'top'
 
-      // Name - exact styling from CSS: font-size: 12px, font-weight: 700, color: #111827
+      // Name - with better font and spacing
       ctx.fillStyle = '#111827'
-      ctx.font = 'bold 12px Arial, sans-serif'
-      ctx.letterSpacing = '0.025em'
-      ctx.fillText(name.toUpperCase(), cardWidth / 2, infoY)
+      ctx.font = 'bold 13px Arial, Helvetica, sans-serif'
+      const nameText = name.toUpperCase()
+      ctx.fillText(nameText, cardWidth / 2, infoY)
 
-      // NIM - exact styling from CSS: font-size: 10px, font-weight: 600, color: #1f2937
-      ctx.font = '600 10px Arial, sans-serif'
+      // NIM - slightly larger and more spacing from name
+      ctx.font = '600 11px Arial, Helvetica, sans-serif'
       ctx.fillStyle = '#1f2937'
-      ctx.fillText(nim, cardWidth / 2, infoY + 14)
+      ctx.fillText(nim, cardWidth / 2, infoY + 16)
 
-      // Fakultas - exact styling from CSS: font-size: 9px, font-weight: 600, color: #1f2937
-      ctx.font = '600 9px Arial, sans-serif'
-      ctx.fillStyle = '#1f2937'
+      // Fakultas & Prodi - improved spacing and sizing
+      ctx.font = '600 9px Arial, Helvetica, sans-serif'
+      ctx.fillStyle = '#374151'
       
-      // Calculate proper line height for text wrapping
+      // Better line height for readability
       const lineHeight = 11
-      let currentY = infoY + 28
+      let currentY = infoY + 30
 
-      // Draw Fakultas with proper wrapping
-      const fakultasLines = wrapTextToLines(ctx, fakultas, cardWidth - 48)
-      fakultasLines.forEach(line => {
-        ctx.fillText(line, cardWidth / 2, currentY)
-        currentY += lineHeight
-      })
+      // Draw Fakultas - single line, truncate if too long
+      const maxTextWidth = cardWidth - 80
+      let fakultasText = fakultas
+      let fakultasWidth = ctx.measureText(fakultasText).width
+      while (fakultasWidth > maxTextWidth && fakultasText.length > 0) {
+        fakultasText = fakultasText.slice(0, -1)
+        fakultasWidth = ctx.measureText(fakultasText + '...').width
+      }
+      if (fakultasText.length < fakultas.length) {
+        fakultasText += '...'
+      }
+      ctx.fillText(fakultasText, cardWidth / 2, currentY)
+      currentY += lineHeight
 
-      // Draw Program Studi with proper wrapping
-      const prodiLines = wrapTextToLines(ctx, programStudi, cardWidth - 48)
-      prodiLines.forEach(line => {
+      // Draw Program Studi - wrap to 2 lines if needed
+      const prodiLines = wrapTextToLines(ctx, programStudi, maxTextWidth)
+      prodiLines.slice(0, 2).forEach((line) => {
         ctx.fillText(line, cardWidth / 2, currentY)
         currentY += lineHeight
       })

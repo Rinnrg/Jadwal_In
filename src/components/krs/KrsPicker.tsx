@@ -11,11 +11,10 @@ import type { CourseOffering } from "@/data/schema"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import { Search, Plus, Users } from "lucide-react"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible"
+import { Search, Plus, Users, ChevronDown, BookOpen } from "lucide-react"
 import { showSuccess, showError } from "@/lib/alerts"
-import { ActivityLogger } from "@/lib/activity-logger"
 
 interface KrsPickerProps {
   userId: string
@@ -29,6 +28,7 @@ export function KrsPicker({ userId, term }: KrsPickerProps) {
   const { getProfile } = useProfileStore()
   const { session } = useSessionStore()
   const [searchTerm, setSearchTerm] = useState("")
+  const [openKelas, setOpenKelas] = useState<string | null>(null)
 
   const profile = getProfile(userId)
   
@@ -155,147 +155,127 @@ export function KrsPicker({ userId, term }: KrsPickerProps) {
   }
 
   return (
-    <Card>
-      <CardHeader className="px-4 md:px-6 pt-4 md:pt-6">
-        <CardTitle className="text-xl md:text-2xl">Pilih Mata Kuliah</CardTitle>
-        <CardDescription className="text-sm md:text-base">
-          Penawaran mata kuliah untuk angkatan {userAngkatan} - Semua kelas ({availableOfferings.length} penawaran)
-        </CardDescription>
-      </CardHeader>
-      <CardContent className="px-4 md:px-6">
-        <div className="space-y-4">
+    <div className="space-y-3 md:space-y-4">
+      {/* Header */}
+      <div className="px-3 md:px-0">
+        <div className="space-y-3">
+          <div>
+            <h2 className="text-base md:text-xl font-bold">Pilih Mata Kuliah</h2>
+            <p className="text-xs md:text-sm text-muted-foreground mt-0.5">
+              Angkatan {userAngkatan} • {availableOfferings.length} penawaran
+            </p>
+          </div>
+          
+          {/* Search Bar */}
           <div className="relative">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
             <Input
               placeholder="Cari mata kuliah..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-10 h-10 md:h-11"
+              className="pl-10 h-9 md:h-10"
             />
           </div>
+        </div>
+      </div>
 
-          {availableOfferings.length === 0 ? (
-            <div className="text-center py-8 md:py-12">
-              <p className="text-sm md:text-base text-muted-foreground">
-                {searchTerm
-                  ? "Tidak ada penawaran mata kuliah yang sesuai dengan pencarian"
-                  : "Tidak ada penawaran mata kuliah yang tersedia untuk angkatan Anda"}
-              </p>
-              <p className="text-xs md:text-sm text-muted-foreground mt-2">
-                Angkatan: {userAngkatan}
-              </p>
-            </div>
-          ) : (
-            <div className="space-y-4 md:space-y-6">
-              {groupedOfferings.map((group, groupIndex) => (
-                <Card key={group.kelas} className="animate-slide-in-left" style={{ animationDelay: `${groupIndex * 0.1}s` }}>
-                  <CardContent className="pt-4 md:pt-6">
-                    <div className="mb-4">
-                      <div className="flex items-center gap-2 flex-wrap">
-                        <Badge variant="default" className="text-xs md:text-sm">
-                          Kelas {group.kelas}
-                        </Badge>
-                        <span className="text-xs md:text-sm text-muted-foreground">
-                          {group.offerings.length} mata kuliah
-                        </span>
+      {/* Content */}
+      {availableOfferings.length === 0 ? (
+        <div className="text-center py-8 md:py-12 px-3">
+          <p className="text-sm md:text-base text-muted-foreground">
+            {searchTerm
+              ? "Tidak ada penawaran mata kuliah yang sesuai dengan pencarian"
+              : "Tidak ada penawaran mata kuliah yang tersedia untuk angkatan Anda"}
+          </p>
+          <p className="text-xs md:text-sm text-muted-foreground mt-2">
+            Angkatan: {userAngkatan}
+          </p>
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 px-3 md:px-0">
+          {groupedOfferings.map((group) => (
+            <Collapsible
+              key={group.kelas}
+              open={openKelas === group.kelas}
+              onOpenChange={(isOpen) => setOpenKelas(isOpen ? group.kelas : null)}
+            >
+              <Card className="overflow-hidden hover:border-primary/50 transition-colors">
+                <CollapsibleTrigger asChild>
+                  <CardHeader className="cursor-pointer hover:bg-muted/50 transition-colors p-4">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-3">
+                        <div className="w-12 h-12 rounded-lg bg-primary/10 flex items-center justify-center">
+                          <BookOpen className="h-6 w-6 text-primary" />
+                        </div>
+                        <div>
+                          <CardTitle className="text-lg">{userAngkatan} {group.kelas}</CardTitle>
+                          <p className="text-sm text-muted-foreground">
+                            {group.offerings.length} mata kuliah
+                          </p>
+                        </div>
                       </div>
+                      <ChevronDown
+                        className={`h-5 w-5 text-muted-foreground transition-transform ${
+                          openKelas === group.kelas ? "rotate-180" : ""
+                        }`}
+                      />
                     </div>
-                    
-                    {/* Desktop Table View */}
-                    <div className="hidden md:block rounded-md border">
-                      <Table>
-                        <TableHeader>
-                          <TableRow>
-                            <TableHead>Nama</TableHead>
-                            <TableHead>SKS</TableHead>
-                            <TableHead>Kapasitas</TableHead>
-                            <TableHead className="w-[100px]">Aksi</TableHead>
-                          </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                          {group.offerings.map((offering) => {
-                            const subject = getSubjectById(offering.subjectId)
-                            if (!subject) return null
-
-                            return (
-                              <TableRow key={offering.id}>
-                                <TableCell>
-                                  <div>
-                                    <p className="font-medium">{subject.nama}</p>
-                                    {subject.prodi && <p className="text-sm text-muted-foreground">{subject.prodi}</p>}
-                                    {offering.term && <p className="text-xs text-muted-foreground">{offering.term}</p>}
-                                  </div>
-                                </TableCell>
-                                <TableCell>{subject.sks}</TableCell>
-                                <TableCell>
-                                  {getEnrollmentInfo(offering) || <span className="text-muted-foreground">—</span>}
-                                </TableCell>
-                                <TableCell>
-                                  <Button size="sm" onClick={() => handleAddOffering(offering)}>
-                                    <Plus className="h-4 w-4 mr-1" />
-                                    Ambil
-                                  </Button>
-                                </TableCell>
-                              </TableRow>
-                            )
-                          })}
-                        </TableBody>
-                      </Table>
-                    </div>
-
-                    {/* Mobile Card View */}
-                    <div className="md:hidden space-y-3">
+                  </CardHeader>
+                </CollapsibleTrigger>
+                
+                <CollapsibleContent>
+                  <CardContent className="p-0">
+                    <div className="divide-y">
                       {group.offerings.map((offering) => {
                         const subject = getSubjectById(offering.subjectId)
                         if (!subject) return null
 
+                        const enrollmentInfo = getEnrollmentInfo(offering)
+
                         return (
-                          <Card key={offering.id} className="border-2 hover:border-primary/50 transition-colors">
-                            <CardContent className="p-3 md:p-4 space-y-3">
-                              {/* Header */}
-                              <div className="flex items-start justify-between gap-2">
-                                <div className="flex-1 min-w-0">
-                                  <h4 className="font-semibold text-sm leading-tight break-words">
-                                    {subject.nama}
-                                  </h4>
+                          <div 
+                            key={offering.id} 
+                            className="p-4 hover:bg-muted/30 transition-colors"
+                          >
+                            <div className="flex items-start justify-between gap-3">
+                              <div className="flex-1 min-w-0">
+                                <h4 className="font-medium text-sm leading-tight mb-1">
+                                  {subject.nama}
+                                </h4>
+                                <div className="flex items-center gap-2 flex-wrap">
+                                  <Badge variant="secondary" className="text-xs">
+                                    {subject.sks} SKS
+                                  </Badge>
                                   {subject.prodi && (
-                                    <p className="text-xs text-muted-foreground mt-0.5">{subject.prodi}</p>
+                                    <span className="text-xs text-muted-foreground">{subject.prodi}</span>
                                   )}
-                                  {offering.term && (
-                                    <p className="text-xs text-muted-foreground">{offering.term}</p>
+                                  {enrollmentInfo && (
+                                    <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                                      {enrollmentInfo}
+                                    </div>
                                   )}
                                 </div>
-                                <Badge className="text-xs flex-shrink-0">{subject.sks} SKS</Badge>
                               </div>
-
-                              {/* Capacity Info */}
-                              {getEnrollmentInfo(offering) && (
-                                <div className="flex items-center gap-2 p-2 bg-muted/50 rounded-md">
-                                  {getEnrollmentInfo(offering)}
-                                </div>
-                              )}
-
-                              {/* Action Button */}
                               <Button 
                                 size="sm" 
                                 onClick={() => handleAddOffering(offering)}
-                                className="w-full h-9"
+                                className="h-8 px-3 flex-shrink-0"
                               >
-                                <Plus className="h-3.5 w-3.5 mr-1.5" />
-                                Ambil Mata Kuliah
+                                <Plus className="h-4 w-4 mr-1" />
+                                Ambil
                               </Button>
-                            </CardContent>
-                          </Card>
+                            </div>
+                          </div>
                         )
                       })}
                     </div>
                   </CardContent>
-                </Card>
-              ))}
-            </div>
-          )}
+                </CollapsibleContent>
+              </Card>
+            </Collapsible>
+          ))}
         </div>
-      </CardContent>
-    </Card>
+      )}
+    </div>
   )
 }
