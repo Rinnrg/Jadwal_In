@@ -93,18 +93,27 @@ export default async function EKTMPublicPage({ params }: PageProps) {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-blue-100 p-4">
+    <div 
+      className="min-h-screen flex items-center justify-center p-4"
+      style={{
+        backgroundImage: 'url(/BG_E-KTM.svg)',
+        backgroundSize: 'cover',
+        backgroundPosition: 'center',
+        backgroundRepeat: 'no-repeat',
+        backgroundColor: '#f0f9ff', // fallback color
+      }}
+    >
       <div className="w-full max-w-lg">
         <div className="text-center mb-6">
-          <h1 className="text-2xl font-bold text-gray-900 mb-2">
+          <h1 className="text-2xl font-bold text-gray-900 mb-2 drop-shadow-md">
             E-KTM Digital
           </h1>
-          <p className="text-sm text-gray-600">
+          <p className="text-sm text-gray-700 drop-shadow">
             Kartu Tanda Mahasiswa Elektronik
           </p>
         </div>
         
-        <div className="bg-white rounded-2xl shadow-xl p-6">
+        <div className="bg-white/90 backdrop-blur-sm rounded-2xl shadow-xl p-6">
           <EKTMCard
             name={profile.user.name}
             nim={nim}
@@ -114,8 +123,8 @@ export default async function EKTMPublicPage({ params }: PageProps) {
           />
         </div>
 
-        <div className="text-center mt-6 text-sm text-gray-600">
-          <p>Universitas Negeri Surabaya</p>
+        <div className="text-center mt-6 text-sm text-gray-700 drop-shadow">
+          <p className="font-semibold">Universitas Negeri Surabaya</p>
           <p className="text-xs mt-1">Dokumen resmi mahasiswa aktif</p>
         </div>
       </div>

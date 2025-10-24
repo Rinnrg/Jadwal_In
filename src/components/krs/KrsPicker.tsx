@@ -43,6 +43,7 @@ export function KrsPicker({ userId, term }: KrsPickerProps) {
 
     // Get all KRS items for this user to check for duplicate subjects
     const userKrsItems = getKrsByUser(userId, term)
+    const enrolledOfferingIds = new Set(userKrsItems.map(item => item.offeringId).filter(Boolean))
     const enrolledSubjectIds = new Set(userKrsItems.map(item => item.subjectId))
 
     return offerings.filter((offering) => {
@@ -51,8 +52,8 @@ export function KrsPicker({ userId, term }: KrsPickerProps) {
       // Only show if subject exists and is active
       if (!subject || subject.status !== "aktif") return false
 
-      // Check if subject already in KRS (regardless of offering/kelas)
-      if (enrolledSubjectIds.has(offering.subjectId)) return false
+      // Don't show if this specific offering is already taken
+      if (enrolledOfferingIds.has(offering.id)) return false
 
       // Check capacity if set
       if (offering.capacity) {
@@ -72,7 +73,11 @@ export function KrsPicker({ userId, term }: KrsPickerProps) {
       }
 
       return true
-    })
+    }).map(offering => ({
+      ...offering,
+      // Mark if subject is already taken in another class
+      subjectAlreadyTaken: enrolledSubjectIds.has(offering.subjectId)
+    }))
   }, [userAngkatan, getOfferingsForStudent, getSubjectById, userId, term, getKrsByOffering, getKrsByUser, searchTerm, krsItems])
 
   // Group offerings by kelas
@@ -92,48 +97,15 @@ export function KrsPicker({ userId, term }: KrsPickerProps) {
       .map(([kelas, offerings]) => ({ kelas, offerings }))
   }, [availableOfferings])
 
-  // Debug info - log to console to help troubleshoot
-  if (typeof window !== 'undefined' && process.env.NODE_ENV === 'development') {
-    const allOfferings = useOfferingsStore.getState().offerings
-    const subjectsData = useSubjectsStore.getState().subjects
-    
-    console.group('🎓 KRS Debug Info')
-    console.log('User Email:', session?.email)
-    console.log('User Profile:', profile)
-    console.log('Auto-extracted Info:', studentInfo)
-    console.log('Final Angkatan:', userAngkatan, 'Kelas (Info):', userKelas)
-    console.log('---')
-    console.log('All Subjects in Store:', subjectsData.length)
-    console.log('Subjects:', subjectsData.map(s => ({ kode: s.kode, nama: s.nama, angkatan: s.angkatan, status: s.status })))
-    console.log('---')
-    console.log('All Offerings in Store:', allOfferings.length)
-    console.log('Offerings:', allOfferings.map(o => ({ 
-      subjectId: o.subjectId, 
-      angkatan: o.angkatan, 
-      kelas: o.kelas, 
-      status: o.status,
-      subject: getSubjectById(o.subjectId)?.nama 
-    })))
-    console.log('---')
-    console.log('Offerings for Student Angkatan', userAngkatan + ':', getOfferingsForStudent(userAngkatan).length)
-    console.log('Available Offerings (After Filters):', availableOfferings.length)
-    console.log('Available:', availableOfferings.map(o => ({
-      subject: getSubjectById(o.subjectId)?.nama,
-      angkatan: o.angkatan,
-      kelas: o.kelas,
-      status: o.status
-    })))
-    console.log('---')
-    console.log('Grouped by Kelas:', groupedOfferings.map(g => ({
-      kelas: g.kelas,
-      count: g.offerings.length,
-      subjects: g.offerings.map(o => getSubjectById(o.subjectId)?.nama)
-    })))
-    console.groupEnd()
-  }
-
-  const handleAddOffering = (offering: CourseOffering) => {
+  const handleAddOffering = (offering: any) => {
     try {
+      // Check if subject is already taken in another class
+      if (offering.subjectAlreadyTaken) {
+        const subject = getSubjectById(offering.subjectId)
+        showError(`Anda sudah mengambil "${subject?.nama}" di kelas lain. Tidak bisa mengambil mata kuliah yang sama dua kali.`)
+        return
+      }
+
       const subject = getSubjectById(offering.subjectId)
       addKrsItem(userId, offering.subjectId, term, offering.id, subject?.nama, subject?.sks)
       showSuccess(`${subject?.nama} (Kelas ${offering.kelas}) berhasil ditambahkan ke KRS`)
@@ -193,94 +165,210 @@ export function KrsPicker({ userId, term }: KrsPickerProps) {
               ? "Tidak ada penawaran mata kuliah yang sesuai dengan pencarian"
               : "Tidak ada penawaran mata kuliah yang tersedia untuk angkatan Anda"}
           </p>
-          <p className="text-xs md:text-sm text-muted-foreground mt-2">
-            Angkatan: {userAngkatan}
-          </p>
+          {!searchTerm && (
+            <>
+              <p className="text-xs md:text-sm text-muted-foreground mt-2">
+                Angkatan Anda: <span className="font-semibold">{userAngkatan}</span>
+              </p>
+            </>
+          )}
         </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 px-3 md:px-0">
-          {groupedOfferings.map((group) => (
-            <Collapsible
-              key={group.kelas}
-              open={openKelas === group.kelas}
-              onOpenChange={(isOpen) => setOpenKelas(isOpen ? group.kelas : null)}
-            >
-              <Card className="overflow-hidden hover:border-primary/50 transition-colors">
-                <CollapsibleTrigger asChild>
-                  <CardHeader className="cursor-pointer hover:bg-muted/50 transition-colors p-4">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-3">
-                        <div className="w-12 h-12 rounded-lg bg-primary/10 flex items-center justify-center">
-                          <BookOpen className="h-6 w-6 text-primary" />
+        <>
+          {/* Mobile View - Card per kelas */}
+          <div className="md:hidden grid grid-cols-1 gap-3 px-3">
+            {groupedOfferings.map((group) => (
+              <Collapsible
+                key={group.kelas}
+                open={openKelas === group.kelas}
+                onOpenChange={(isOpen) => setOpenKelas(isOpen ? group.kelas : null)}
+              >
+                <Card className="overflow-hidden hover:border-primary/50 transition-colors">
+                  <CollapsibleTrigger asChild>
+                    <CardHeader className="cursor-pointer hover:bg-muted/50 transition-colors p-4">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-3">
+                          <div className="w-12 h-12 rounded-lg bg-primary/10 flex items-center justify-center">
+                            <BookOpen className="h-6 w-6 text-primary" />
+                          </div>
+                          <div>
+                            <CardTitle className="text-lg">{userAngkatan} {group.kelas}</CardTitle>
+                            <p className="text-sm text-muted-foreground">
+                              {group.offerings.length} mata kuliah
+                            </p>
+                          </div>
                         </div>
-                        <div>
-                          <CardTitle className="text-lg">{userAngkatan} {group.kelas}</CardTitle>
-                          <p className="text-sm text-muted-foreground">
-                            {group.offerings.length} mata kuliah
-                          </p>
-                        </div>
+                        <ChevronDown
+                          className={`h-5 w-5 text-muted-foreground transition-transform ${
+                            openKelas === group.kelas ? "rotate-180" : ""
+                          }`}
+                        />
                       </div>
-                      <ChevronDown
-                        className={`h-5 w-5 text-muted-foreground transition-transform ${
-                          openKelas === group.kelas ? "rotate-180" : ""
-                        }`}
-                      />
-                    </div>
-                  </CardHeader>
-                </CollapsibleTrigger>
-                
-                <CollapsibleContent>
-                  <CardContent className="p-0">
-                    <div className="divide-y">
-                      {group.offerings.map((offering) => {
-                        const subject = getSubjectById(offering.subjectId)
-                        if (!subject) return null
+                    </CardHeader>
+                  </CollapsibleTrigger>
+                  
+                  <CollapsibleContent>
+                    <CardContent className="p-0">
+                      <div className="divide-y">
+                        {group.offerings.map((offering) => {
+                          const subject = getSubjectById(offering.subjectId)
+                          if (!subject) return null
 
-                        const enrollmentInfo = getEnrollmentInfo(offering)
+                          const enrollmentInfo = getEnrollmentInfo(offering)
+                          const isAlreadyTaken = (offering as any).subjectAlreadyTaken
 
-                        return (
-                          <div 
-                            key={offering.id} 
-                            className="p-4 hover:bg-muted/30 transition-colors"
-                          >
-                            <div className="flex items-start justify-between gap-3">
-                              <div className="flex-1 min-w-0">
-                                <h4 className="font-medium text-sm leading-tight mb-1">
-                                  {subject.nama}
-                                </h4>
-                                <div className="flex items-center gap-2 flex-wrap">
-                                  <Badge variant="secondary" className="text-xs">
-                                    {subject.sks} SKS
-                                  </Badge>
-                                  {subject.prodi && (
-                                    <span className="text-xs text-muted-foreground">{subject.prodi}</span>
-                                  )}
-                                  {enrollmentInfo && (
-                                    <div className="flex items-center gap-1 text-xs text-muted-foreground">
-                                      {enrollmentInfo}
-                                    </div>
-                                  )}
+                          return (
+                            <div 
+                              key={offering.id} 
+                              className={`p-4 transition-colors ${isAlreadyTaken ? 'bg-muted/50 opacity-60' : 'hover:bg-muted/30'}`}
+                            >
+                              <div className="flex items-start justify-between gap-3">
+                                <div className="flex-1 min-w-0">
+                                  <h4 className="font-medium text-sm leading-tight mb-1">
+                                    {subject.nama}
+                                  </h4>
+                                  <div className="flex items-center gap-2 flex-wrap">
+                                    <Badge variant="secondary" className="text-xs">
+                                      {subject.sks} SKS
+                                    </Badge>
+                                    {isAlreadyTaken && (
+                                      <Badge variant="outline" className="text-xs border-orange-300 text-orange-700 bg-orange-50 dark:bg-orange-950/20">
+                                        Sudah diambil di kelas lain
+                                      </Badge>
+                                    )}
+                                    {subject.prodi && (
+                                      <span className="text-xs text-muted-foreground">{subject.prodi}</span>
+                                    )}
+                                    {enrollmentInfo && (
+                                      <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                                        {enrollmentInfo}
+                                      </div>
+                                    )}
+                                  </div>
                                 </div>
+                                <Button 
+                                  size="sm" 
+                                  onClick={() => handleAddOffering(offering)}
+                                  className="h-8 px-3 flex-shrink-0"
+                                  variant={isAlreadyTaken ? "outline" : "default"}
+                                  disabled={isAlreadyTaken}
+                                >
+                                  <Plus className="h-4 w-4 mr-1" />
+                                  Ambil
+                                </Button>
                               </div>
-                              <Button 
-                                size="sm" 
-                                onClick={() => handleAddOffering(offering)}
-                                className="h-8 px-3 flex-shrink-0"
-                              >
-                                <Plus className="h-4 w-4 mr-1" />
-                                Ambil
-                              </Button>
+                            </div>
+                          )
+                        })}
+                      </div>
+                    </CardContent>
+                  </CollapsibleContent>
+                </Card>
+              </Collapsible>
+            ))}
+          </div>
+
+          {/* Desktop View - Collapsible dengan card yang lebih panjang */}
+          <div className="hidden md:block px-0">
+            <div className="space-y-4">
+              {groupedOfferings.map((group) => (
+                <Collapsible
+                  key={group.kelas}
+                  open={openKelas === group.kelas}
+                  onOpenChange={() => setOpenKelas(openKelas === group.kelas ? null : group.kelas)}
+                >
+                  <Card>
+                    <CollapsibleTrigger asChild>
+                      <CardHeader className="cursor-pointer hover:bg-muted/30 transition-colors">
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-3">
+                            <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center">
+                              <BookOpen className="h-5 w-5 text-primary" />
+                            </div>
+                            <div>
+                              <h3 className="text-lg font-semibold">Kelas {group.kelas}</h3>
+                              <p className="text-sm text-muted-foreground">
+                                {group.offerings.length} mata kuliah tersedia
+                              </p>
                             </div>
                           </div>
-                        )
-                      })}
-                    </div>
-                  </CardContent>
-                </CollapsibleContent>
-              </Card>
-            </Collapsible>
-          ))}
-        </div>
+                          <ChevronDown
+                            className={`h-5 w-5 text-muted-foreground transition-transform ${
+                              openKelas === group.kelas ? "rotate-180" : ""
+                            }`}
+                          />
+                        </div>
+                      </CardHeader>
+                    </CollapsibleTrigger>
+                    
+                    <CollapsibleContent>
+                      <CardContent className="p-4">
+                        {/* Subject List - Single column dengan card yang lebih panjang */}
+                        <div className="space-y-3">
+                          {group.offerings.map((offering) => {
+                            const subject = getSubjectById(offering.subjectId)
+                            if (!subject) return null
+
+                            const enrollmentInfo = getEnrollmentInfo(offering)
+                            const isAlreadyTaken = (offering as any).subjectAlreadyTaken
+
+                            return (
+                              <Card 
+                                key={offering.id} 
+                                className={`transition-colors ${isAlreadyTaken ? 'opacity-60 border-muted' : 'hover:border-primary/50'}`}
+                              >
+                                <CardContent className="p-4">
+                                  <div className="flex items-start justify-between gap-4">
+                                    <div className="flex-1 min-w-0">
+                                      <h4 className="font-medium text-base leading-tight mb-2">
+                                        {subject.nama}
+                                      </h4>
+                                      <div className="flex items-center gap-2 flex-wrap">
+                                        <Badge variant="secondary" className="text-xs">
+                                          {subject.kode}
+                                        </Badge>
+                                        <Badge variant="secondary" className="text-xs">
+                                          {subject.sks} SKS
+                                        </Badge>
+                                        {isAlreadyTaken && (
+                                          <Badge variant="outline" className="text-xs border-orange-300 text-orange-700 bg-orange-50 dark:bg-orange-950/20">
+                                            Sudah diambil di kelas lain
+                                          </Badge>
+                                        )}
+                                        {subject.prodi && (
+                                          <span className="text-xs text-muted-foreground">{subject.prodi}</span>
+                                        )}
+                                        {enrollmentInfo && (
+                                          <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                                            {enrollmentInfo}
+                                          </div>
+                                        )}
+                                      </div>
+                                    </div>
+                                    <Button 
+                                      size="sm" 
+                                      onClick={() => handleAddOffering(offering)}
+                                      className="h-9 px-4 flex-shrink-0"
+                                      variant={isAlreadyTaken ? "outline" : "default"}
+                                      disabled={isAlreadyTaken}
+                                    >
+                                      <Plus className="h-4 w-4 mr-1" />
+                                      Ambil
+                                    </Button>
+                                  </div>
+                                </CardContent>
+                              </Card>
+                            )
+                          })}
+                        </div>
+                      </CardContent>
+                    </CollapsibleContent>
+                  </Card>
+                </Collapsible>
+              ))}
+            </div>
+          </div>
+        </>
       )}
     </div>
   )

@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { prisma } from '@/lib/prisma'
+import { prisma } from '@/src/lib/prisma'
 import { z } from 'zod'
 
 // Mark as dynamic route
@@ -65,7 +65,35 @@ export async function PATCH(
   try {
     const { userId } = params
     const body = await request.json()
+    console.log('PATCH /api/profile/[userId] - Received data:', body)
+    
     const data = updateProfileSchema.parse(body)
+
+    // First, check if user exists
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+    })
+
+    if (!user) {
+      console.error('User not found:', userId)
+      return NextResponse.json(
+        { error: 'User tidak ditemukan' },
+        { status: 404 }
+      )
+    }
+
+    // Update user's name and image if provided
+    const userUpdateData: any = {}
+    if (data.name !== undefined) userUpdateData.name = data.name
+    if (data.avatarUrl !== undefined) userUpdateData.image = data.avatarUrl
+    
+    if (Object.keys(userUpdateData).length > 0) {
+      console.log('Updating user with:', userUpdateData)
+      await prisma.user.update({
+        where: { id: userId },
+        data: userUpdateData,
+      })
+    }
 
     // Check if profile exists
     const existingProfile = await prisma.profile.findUnique({
@@ -76,12 +104,17 @@ export async function PATCH(
 
     if (!existingProfile) {
       // Create profile if it doesn't exist
+      console.log('Creating new profile for user:', userId)
       profile = await prisma.profile.create({
         data: {
           userId,
           angkatan: data.angkatan || new Date().getFullYear(),
           kelas: data.kelas || 'A',
-          ...data,
+          ...(data.nim !== undefined && { nim: data.nim }),
+          ...(data.prodi !== undefined && { prodi: data.prodi }),
+          ...(data.bio !== undefined && { bio: data.bio }),
+          ...(data.website !== undefined && { website: data.website }),
+          ...(data.avatarUrl !== undefined && { avatarUrl: data.avatarUrl }),
         },
         include: {
           user: {
@@ -91,12 +124,14 @@ export async function PATCH(
               email: true,
               role: true,
               image: true,
+              googleId: true,
             },
           },
         },
       })
     } else {
       // Update existing profile
+      console.log('Updating existing profile for user:', userId)
       profile = await prisma.profile.update({
         where: { userId },
         data: {
@@ -116,25 +151,18 @@ export async function PATCH(
               email: true,
               role: true,
               image: true,
+              googleId: true,
             },
           },
         },
       })
     }
 
-    // Update user's name and image if provided
-    const userUpdateData: any = {}
-    if (data.name !== undefined) userUpdateData.name = data.name
-    if (data.avatarUrl !== undefined) userUpdateData.image = data.avatarUrl
-    
-    if (Object.keys(userUpdateData).length > 0) {
-      await prisma.user.update({
-        where: { id: userId },
-        data: userUpdateData,
-      })
-    }
-
-    return NextResponse.json({ profile })
+    console.log('Profile updated successfully:', profile.id)
+    return NextResponse.json({ 
+      profile,
+      message: 'Profile berhasil diperbarui'
+    })
   } catch (error) {
     console.error('Update profile error:', error)
     if (error instanceof z.ZodError) {

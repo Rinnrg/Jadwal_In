@@ -5,9 +5,20 @@ import { useProfileStore } from "@/stores/profile.store"
 import { useActivityStore } from "@/stores/activity.store"
 import { useScheduleStore } from "@/stores/schedule.store"
 import { useSubjectsStore } from "@/stores/subjects.store"
+import { useKrsStore } from "@/stores/krs.store"
+import { useCourseworkStore } from "@/stores/coursework.store"
+import { useRemindersStore } from "@/stores/reminders.store"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog"
+import { Badge } from "@/components/ui/badge"
 import {
   Calendar,
   BookOpen,
@@ -30,10 +41,12 @@ import {
   Download,
   User,
   FileText,
+  ClipboardList,
+  FileText as FilesIcon,
 } from "lucide-react"
 import { useState, useEffect } from "react"
 import Link from "next/link"
-import { formatDistanceToNow } from "date-fns"
+import { formatDistanceToNow, format } from "date-fns"
 import { id as idLocale } from "date-fns/locale"
 
 export default function DashboardPage() {
@@ -41,8 +54,16 @@ export default function DashboardPage() {
   const { getProfile, profiles } = useProfileStore()
   const { getActivitiesByUser } = useActivityStore()
   const { getEventsByDay } = useScheduleStore()
-  const { getSubjectById } = useSubjectsStore()
+  const { getSubjectById, subjects } = useSubjectsStore()
+  const { getKrsByUser } = useKrsStore()
+  const { assignments, materials } = useCourseworkStore()
+  const { getActiveReminders } = useRemindersStore()
   const [currentTime, setCurrentTime] = useState(new Date())
+  const [showAssignments, setShowAssignments] = useState(true)
+  const [dialogOpen, setDialogOpen] = useState(false)
+  const [dialogType, setDialogType] = useState<"schedule" | "subjects" | "reminders" | "coursework">("schedule")
+  const [dialogData, setDialogData] = useState<any[]>([])
+  const [pressTimer, setPressTimer] = useState<NodeJS.Timeout | null>(null)
 
   useEffect(() => {
     const timer = setInterval(() => setCurrentTime(new Date()), 1000)
@@ -186,6 +207,15 @@ export default function DashboardPage() {
   const currentDayOfWeek = currentTime.getDay()
   const todayEvents = getEventsByDay(session.id, currentDayOfWeek)
   
+  // Get current term for KRS
+  const currentYear = new Date().getFullYear()
+  const currentMonth = new Date().getMonth()
+  const isOddSemester = currentMonth >= 8 || currentMonth <= 1
+  const currentTerm = `${currentYear}/${currentYear + 1}-${isOddSemester ? "Ganjil" : "Genap"}`
+  
+  // Get KRS items for current user and term
+  const userKrsItems = session ? getKrsByUser(session.id, currentTerm) : []
+  
   // Format time helper
   const formatTime = (utcMinutes: number) => {
     const hours = Math.floor(utcMinutes / 60)
@@ -278,6 +308,74 @@ export default function DashboardPage() {
     icon: getIconComponent(activity.icon),
     color: activity.color,
   }))
+
+  // Get active reminders count
+  const activeReminders = session ? getActiveReminders(session.id).filter(r => r.dueUTC > Date.now()) : []
+  const urgentReminders = activeReminders.filter(r => r.dueUTC < Date.now() + 24 * 60 * 60 * 1000) // within 24 hours
+
+  // Get assignments and materials
+  const allAssignments = assignments.filter(a => {
+    if (!a.dueUTC) return false
+    return a.dueUTC > Date.now() // Only show upcoming assignments
+  }).sort((a, b) => (a.dueUTC || 0) - (b.dueUTC || 0))
+
+  const allMaterials = materials.sort((a, b) => b.createdAt - a.createdAt)
+
+  // Handle long press
+  const handlePressStart = (type: "schedule" | "subjects" | "reminders" | "coursework") => {
+    const timer = setTimeout(() => {
+      handleOpenDialog(type)
+    }, 500) // 500ms hold
+    setPressTimer(timer)
+  }
+
+  const handlePressEnd = () => {
+    if (pressTimer) {
+      clearTimeout(pressTimer)
+      setPressTimer(null)
+    }
+  }
+
+  const handleOpenDialog = (type: "schedule" | "subjects" | "reminders" | "coursework") => {
+    setDialogType(type)
+    
+    switch (type) {
+      case "schedule":
+        setDialogData(todayEvents.map(event => ({
+          ...event,
+          subject: event.subjectId ? getSubjectById(event.subjectId) : null
+        })))
+        break
+      case "subjects":
+        // Get subjects from user's KRS
+        const krsSubjects = userKrsItems
+          .map(krsItem => getSubjectById(krsItem.subjectId))
+          .filter(Boolean)
+        setDialogData(krsSubjects)
+        break
+      case "reminders":
+        setDialogData(activeReminders.map(r => ({
+          ...r,
+          subject: r.relatedSubjectId ? getSubjectById(r.relatedSubjectId) : null
+        })))
+        break
+      case "coursework":
+        if (showAssignments) {
+          setDialogData(allAssignments.map(a => ({
+            ...a,
+            subject: getSubjectById(a.subjectId)
+          })))
+        } else {
+          setDialogData(allMaterials.map(m => ({
+            ...m,
+            subject: getSubjectById(m.subjectId)
+          })))
+        }
+        break
+    }
+    
+    setDialogOpen(true)
+  }
 
   return (
     <div className="space-y-6 animate-fade-in w-full max-w-none overflow-x-hidden">
@@ -435,8 +533,13 @@ export default function DashboardPage() {
 
       <div className={`grid gap-4 md:gap-6 grid-cols-2 w-full ${session.role === "mahasiswa" ? "lg:grid-cols-4" : "lg:grid-cols-3"}`}>
         <Card
-          className="card-interactive border-2 border-blue-200 dark:border-blue-800 hover:border-blue-400 dark:hover:border-blue-600 group w-full min-w-0"
+          className="card-interactive border-2 border-blue-200 dark:border-blue-800 hover:border-blue-400 dark:hover:border-blue-600 group w-full min-w-0 cursor-pointer select-none"
           style={{ animationDelay: "0.1s" }}
+          onMouseDown={() => handlePressStart("schedule")}
+          onMouseUp={handlePressEnd}
+          onMouseLeave={handlePressEnd}
+          onTouchStart={() => handlePressStart("schedule")}
+          onTouchEnd={handlePressEnd}
         >
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 md:pb-3 px-4 md:px-6 pt-4 md:pt-6">
             <CardTitle className="text-xs md:text-sm font-bold">Jadwal Hari Ini</CardTitle>
@@ -453,59 +556,108 @@ export default function DashboardPage() {
         </Card>
 
         <Card
-          className="card-interactive border-2 border-green-200 dark:border-green-800 hover:border-green-400 dark:hover:border-green-600 group w-full min-w-0"
+          className="card-interactive border-2 border-green-200 dark:border-green-800 hover:border-green-400 dark:hover:border-green-600 group w-full min-w-0 cursor-pointer select-none"
           style={{ animationDelay: "0.2s" }}
+          onMouseDown={() => handlePressStart("subjects")}
+          onMouseUp={handlePressEnd}
+          onMouseLeave={handlePressEnd}
+          onTouchStart={() => handlePressStart("subjects")}
+          onTouchEnd={handlePressEnd}
         >
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 md:pb-3 px-4 md:px-6 pt-4 md:pt-6">
             <CardTitle className="text-xs md:text-sm font-bold">Mata Kuliah</CardTitle>
             <BookOpen className="h-5 w-5 md:h-6 md:w-6 text-green-500 group-hover:scale-125 transition-transform duration-300" />
           </CardHeader>
           <CardContent className="px-4 md:px-6 pb-4 md:pb-6">
-            <div className="text-3xl md:text-4xl font-bold text-green-600 mb-1 md:mb-2">12</div>
-            <p className="text-xs md:text-sm text-muted-foreground">Total mata kuliah</p>
+            <div className="text-3xl md:text-4xl font-bold text-green-600 mb-1 md:mb-2">{userKrsItems.length}</div>
+            <p className="text-xs md:text-sm text-muted-foreground">Mata kuliah diambil</p>
             <div className="mt-2 md:mt-3 flex items-center text-[10px] md:text-xs text-green-600">
-              <Target className="h-3 w-3 mr-1" />8 aktif semester ini
+              <Target className="h-3 w-3 mr-1" />{userKrsItems.length === 0 ? 'Belum ada KRS' : `${userKrsItems.length} di KRS semester ini`}
             </div>
           </CardContent>
         </Card>
 
         <Card
-          className="card-interactive border-2 border-orange-200 dark:border-orange-800 hover:border-orange-400 dark:hover:border-orange-600 group w-full min-w-0"
+          className="card-interactive border-2 border-orange-200 dark:border-orange-800 hover:border-orange-400 dark:hover:border-orange-600 group w-full min-w-0 cursor-pointer select-none"
           style={{ animationDelay: "0.3s" }}
+          onMouseDown={() => handlePressStart("reminders")}
+          onMouseUp={handlePressEnd}
+          onMouseLeave={handlePressEnd}
+          onTouchStart={() => handlePressStart("reminders")}
+          onTouchEnd={handlePressEnd}
         >
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 md:pb-3 px-4 md:px-6 pt-4 md:pt-6">
             <CardTitle className="text-xs md:text-sm font-bold">Pengingat Aktif</CardTitle>
             <Clock className="h-5 w-5 md:h-6 md:w-6 text-orange-500 group-hover:scale-125 transition-transform duration-300" />
           </CardHeader>
           <CardContent className="px-4 md:px-6 pb-4 md:pb-6">
-            <div className="text-3xl md:text-4xl font-bold text-orange-600 mb-1 md:mb-2">5</div>
+            <div className="text-3xl md:text-4xl font-bold text-orange-600 mb-1 md:mb-2">{activeReminders.length}</div>
             <p className="text-xs md:text-sm text-muted-foreground">Pengingat mendatang</p>
             <div className="mt-2 md:mt-3 flex items-center text-[10px] md:text-xs text-orange-600">
-              <AlertCircle className="h-3 w-3 mr-1" />2 urgent
+              <AlertCircle className="h-3 w-3 mr-1" />{urgentReminders.length} urgent
             </div>
           </CardContent>
         </Card>
 
-        {/* IPK Card - Only show for mahasiswa */}
-        {session.role === "mahasiswa" && (
-          <Card
-            className="card-interactive border-2 border-purple-200 dark:border-purple-800 hover:border-purple-400 dark:hover:border-purple-600 group w-full min-w-0"
-            style={{ animationDelay: "0.4s" }}
-          >
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 md:pb-3 px-4 md:px-6 pt-4 md:pt-6">
-              <CardTitle className="text-xs md:text-sm font-bold">IPK</CardTitle>
-              <Award className="h-5 w-5 md:h-6 md:w-6 text-purple-500 group-hover:scale-125 transition-transform duration-300" />
-            </CardHeader>
-            <CardContent className="px-4 md:px-6 pb-4 md:pb-6">
-              <div className="text-3xl md:text-4xl font-bold text-purple-600 mb-1 md:mb-2">3.85</div>
-              <p className="text-xs md:text-sm text-muted-foreground">Indeks Prestasi Kumulatif</p>
-              <div className="mt-2 md:mt-3 flex items-center text-[10px] md:text-xs text-purple-600">
+        {/* Tugas/Materi Card - Show for all users */}
+        <Card
+          className="card-interactive border-2 border-purple-200 dark:border-purple-800 hover:border-purple-400 dark:hover:border-purple-600 group w-full min-w-0 cursor-pointer select-none"
+          style={{ animationDelay: "0.4s" }}
+          onMouseDown={() => handlePressStart("coursework")}
+          onMouseUp={handlePressEnd}
+          onMouseLeave={handlePressEnd}
+          onTouchStart={() => handlePressStart("coursework")}
+          onTouchEnd={handlePressEnd}
+        >
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 md:pb-3 px-4 md:px-6 pt-4 md:pt-6">
+            <CardTitle className="text-xs md:text-sm font-bold">
+              {showAssignments ? "Tugas" : "Materi"}
+            </CardTitle>
+            {showAssignments ? (
+              <ClipboardList className="h-5 w-5 md:h-6 md:w-6 text-purple-500 group-hover:scale-125 transition-transform duration-300" />
+            ) : (
+              <FilesIcon className="h-5 w-5 md:h-6 md:w-6 text-purple-500 group-hover:scale-125 transition-transform duration-300" />
+            )}
+          </CardHeader>
+          <CardContent className="px-4 md:px-6 pb-4 md:pb-6">
+            <div className="text-3xl md:text-4xl font-bold text-purple-600 mb-1 md:mb-2">
+              {showAssignments ? allAssignments.length : allMaterials.length}
+            </div>
+            <p className="text-xs md:text-sm text-muted-foreground">
+              {showAssignments ? "Tugas mendatang" : "Materi tersedia"}
+            </p>
+            <div className="mt-2 md:mt-3 flex items-center justify-between">
+              <div className="flex items-center text-[10px] md:text-xs text-purple-600">
                 <Activity className="h-3 w-3 mr-1" />
-                Excellent performance
+                {showAssignments 
+                  ? allAssignments.length === 0 ? "Tidak ada tugas" : `${allAssignments.length} belum selesai`
+                  : allMaterials.length === 0 ? "Tidak ada materi" : `${allMaterials.length} total materi`
+                }
               </div>
-            </CardContent>
-          </Card>
-        )}
+              <Button
+                variant="outline"
+                size="sm"
+                className="h-6 px-2 text-[10px] md:text-xs border-purple-300 hover:bg-purple-50 dark:hover:bg-purple-900/20 transition-colors"
+                onClick={(e) => {
+                  e.stopPropagation()
+                  setShowAssignments(!showAssignments)
+                }}
+              >
+                {showAssignments ? (
+                  <>
+                    <FilesIcon className="h-3 w-3 mr-1" />
+                    Materi
+                  </>
+                ) : (
+                  <>
+                    <ClipboardList className="h-3 w-3 mr-1" />
+                    Tugas
+                  </>
+                )}
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
       </div>
 
       <div className="grid gap-4 md:gap-6 grid-cols-1 lg:grid-cols-3 w-full">
@@ -546,29 +698,31 @@ export default function DashboardPage() {
             </CardTitle>
             <CardDescription className="text-[10px] md:text-xs lg:text-sm">Aktivitas terbaru Anda</CardDescription>
           </CardHeader>
-          <CardContent className="space-y-1.5 md:space-y-3 px-3 md:px-6 pb-3 md:pb-6 max-h-[280px] md:max-h-none overflow-y-auto">
-            {recentActivities.length === 0 ? (
-              <div className="text-center py-4 md:py-6">
-                <p className="text-xs md:text-sm text-muted-foreground">Belum ada aktivitas.</p>
-                <p className="text-[10px] md:text-xs text-muted-foreground mt-1">
-                  Mulai menambahkan jadwal, KRS, atau pengingat untuk melihat aktivitas Anda di sini.
-                </p>
-              </div>
-            ) : (
-              recentActivities.slice(0, 5).map((activity, index) => (
-                <div
-                  key={index}
-                  className="flex items-start space-x-2 md:space-x-3 p-1.5 md:p-2 lg:p-3 rounded-lg hover:bg-muted/50 transition-all duration-200 animate-slide-in-left"
-                  style={{ animationDelay: `${index * 0.1}s` }}
-                >
-                  <activity.icon className={`h-3.5 w-3.5 md:h-4 md:w-4 lg:h-5 lg:w-5 mt-0.5 flex-shrink-0 ${activity.color}`} />
-                  <div className="flex-1 min-w-0">
-                    <p className="text-xs md:text-sm font-medium truncate">{activity.title}</p>
-                    <p className="text-[10px] md:text-xs text-muted-foreground">{activity.time}</p>
-                  </div>
+          <CardContent className="px-3 md:px-6 pb-3 md:pb-6">
+            <div className="space-y-1.5 md:space-y-3 max-h-[280px] overflow-y-auto scrollbar-hide">
+              {recentActivities.length === 0 ? (
+                <div className="text-center py-4 md:py-6">
+                  <p className="text-xs md:text-sm text-muted-foreground">Belum ada aktivitas.</p>
+                  <p className="text-[10px] md:text-xs text-muted-foreground mt-1">
+                    Mulai menambahkan jadwal, KRS, atau pengingat untuk melihat aktivitas Anda di sini.
+                  </p>
                 </div>
-              ))
-            )}
+              ) : (
+                recentActivities.slice(0, 5).map((activity, index) => (
+                  <div
+                    key={index}
+                    className="flex items-start space-x-2 md:space-x-3 p-1.5 md:p-2 lg:p-3 rounded-lg hover:bg-muted/50 transition-all duration-200 animate-slide-in-left"
+                    style={{ animationDelay: `${index * 0.1}s` }}
+                  >
+                    <activity.icon className={`h-3.5 w-3.5 md:h-4 md:w-4 lg:h-5 lg:w-5 mt-0.5 flex-shrink-0 ${activity.color}`} />
+                    <div className="flex-1 min-w-0">
+                      <p className="text-xs md:text-sm font-medium truncate">{activity.title}</p>
+                      <p className="text-[10px] md:text-xs text-muted-foreground">{activity.time}</p>
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
           </CardContent>
         </Card>
 
@@ -622,6 +776,219 @@ export default function DashboardPage() {
           </CardContent>
         </Card>
       </div>
+
+      {/* Detail Dialog */}
+      <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+        <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              {dialogType === "schedule" && <Calendar className="h-5 w-5 text-blue-500" />}
+              {dialogType === "subjects" && <BookOpen className="h-5 w-5 text-green-500" />}
+              {dialogType === "reminders" && <Clock className="h-5 w-5 text-orange-500" />}
+              {dialogType === "coursework" && (showAssignments ? 
+                <ClipboardList className="h-5 w-5 text-purple-500" /> : 
+                <FilesIcon className="h-5 w-5 text-purple-500" />
+              )}
+              <span>
+                {dialogType === "schedule" && "Jadwal Hari Ini"}
+                {dialogType === "subjects" && "Daftar Mata Kuliah"}
+                {dialogType === "reminders" && "Daftar Pengingat"}
+                {dialogType === "coursework" && (showAssignments ? "Daftar Tugas" : "Daftar Materi")}
+              </span>
+            </DialogTitle>
+            <DialogDescription>
+              {dialogType === "schedule" && `${dialogData.length} jadwal tersedia hari ini`}
+              {dialogType === "subjects" && `${dialogData.length} mata kuliah di KRS Anda`}
+              {dialogType === "reminders" && `${dialogData.length} pengingat aktif`}
+              {dialogType === "coursework" && showAssignments && `${dialogData.length} tugas mendatang`}
+              {dialogType === "coursework" && !showAssignments && `${dialogData.length} materi tersedia`}
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-3 mt-4">
+            {dialogData.length === 0 ? (
+              <div className="text-center py-8">
+                <p className="text-sm text-muted-foreground">
+                  {dialogType === "schedule" && "Tidak ada jadwal hari ini"}
+                  {dialogType === "subjects" && "Belum ada mata kuliah di KRS"}
+                  {dialogType === "reminders" && "Tidak ada pengingat aktif"}
+                  {dialogType === "coursework" && showAssignments && "Tidak ada tugas"}
+                  {dialogType === "coursework" && !showAssignments && "Tidak ada materi"}
+                </p>
+              </div>
+            ) : (
+              dialogData.map((item, index) => {
+                if (dialogType === "schedule") {
+                  const eventColors = getEventColorClasses(item.color || item.subject?.color)
+                  return (
+                    <Link key={item.id} href="/jadwal">
+                      <div className={`p-4 rounded-lg border ${eventColors.border} ${eventColors.bg} hover:shadow-md transition-all cursor-pointer`}>
+                        <div className="flex items-start justify-between">
+                          <div className="flex-1">
+                            <h4 className="font-semibold text-sm mb-1">{item.subject?.nama || "Event"}</h4>
+                            <div className="flex flex-col gap-1 text-xs text-muted-foreground">
+                              <span className="flex items-center gap-1">
+                                <Clock className="h-3 w-3" />
+                                {formatTime(item.startUTC)} - {formatTime(item.endUTC)}
+                              </span>
+                              {item.location && (
+                                <span className="flex items-center gap-1">
+                                  <Target className="h-3 w-3" />
+                                  {item.location}
+                                </span>
+                              )}
+                            </div>
+                          </div>
+                          <div className={`w-3 h-3 rounded-full ${eventColors.dot}`} />
+                        </div>
+                      </div>
+                    </Link>
+                  )
+                }
+
+                if (dialogType === "subjects") {
+                  const colorClass = item.color ? `bg-${item.color}-50 border-${item.color}-200 dark:bg-${item.color}-950/20 dark:border-${item.color}-800` : ""
+                  return (
+                    <Link key={item.id} href="/krs">
+                      <div className={`p-4 rounded-lg border hover:shadow-md transition-all cursor-pointer ${colorClass || "bg-muted/50"}`}>
+                        <div className="flex items-start justify-between">
+                          <div className="flex-1">
+                            <div className="flex items-center gap-2 mb-1">
+                              <h4 className="font-semibold text-sm">{item.nama}</h4>
+                              <Badge variant="outline" className="text-xs">{item.kode}</Badge>
+                            </div>
+                            <div className="flex flex-wrap gap-2 text-xs text-muted-foreground">
+                              <span>{item.sks} SKS</span>
+                              <span>•</span>
+                              <span>Semester {item.semester}</span>
+                              {item.kelas && (
+                                <>
+                                  <span>•</span>
+                                  <span>Kelas {item.kelas}</span>
+                                </>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </Link>
+                  )
+                }
+
+                if (dialogType === "reminders") {
+                  const dueDate = new Date(item.dueUTC)
+                  const isUrgent = item.dueUTC < Date.now() + 24 * 60 * 60 * 1000
+                  return (
+                    <Link key={item.id} href="/reminders">
+                      <div className={`p-4 rounded-lg border hover:shadow-md transition-all cursor-pointer ${
+                        isUrgent 
+                          ? "bg-red-50 border-red-200 dark:bg-red-950/20 dark:border-red-800" 
+                          : "bg-orange-50 border-orange-200 dark:bg-orange-950/20 dark:border-orange-800"
+                      }`}>
+                        <div className="flex items-start justify-between">
+                          <div className="flex-1">
+                            <div className="flex items-center gap-2 mb-1">
+                              <h4 className="font-semibold text-sm">{item.title}</h4>
+                              {isUrgent && (
+                                <Badge variant="destructive" className="text-xs">Urgent</Badge>
+                              )}
+                            </div>
+                            <div className="flex flex-col gap-1 text-xs text-muted-foreground">
+                              <span className="flex items-center gap-1">
+                                <Clock className="h-3 w-3" />
+                                {format(dueDate, "dd MMM yyyy HH:mm", { locale: idLocale })}
+                              </span>
+                              {item.subject && (
+                                <span className="flex items-center gap-1">
+                                  <BookOpen className="h-3 w-3" />
+                                  {item.subject.nama}
+                                </span>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </Link>
+                  )
+                }
+
+                if (dialogType === "coursework") {
+                  if (showAssignments) {
+                    const dueDate = item.dueUTC ? new Date(item.dueUTC) : null
+                    const isUrgent = dueDate && item.dueUTC < Date.now() + 3 * 24 * 60 * 60 * 1000 // 3 days
+                    return (
+                      <Link key={item.id} href="/asynchronous">
+                        <div className={`p-4 rounded-lg border hover:shadow-md transition-all cursor-pointer ${
+                          isUrgent 
+                            ? "bg-red-50 border-red-200 dark:bg-red-950/20 dark:border-red-800" 
+                            : "bg-purple-50 border-purple-200 dark:bg-purple-950/20 dark:border-purple-800"
+                        }`}>
+                          <div className="flex items-start justify-between">
+                            <div className="flex-1">
+                              <div className="flex items-center gap-2 mb-1">
+                                <h4 className="font-semibold text-sm">{item.title}</h4>
+                                {isUrgent && (
+                                  <Badge variant="destructive" className="text-xs">Deadline Soon</Badge>
+                                )}
+                              </div>
+                              <div className="flex flex-col gap-1 text-xs text-muted-foreground">
+                                {item.subject && (
+                                  <span className="flex items-center gap-1">
+                                    <BookOpen className="h-3 w-3" />
+                                    {item.subject.nama}
+                                  </span>
+                                )}
+                                {dueDate && (
+                                  <span className="flex items-center gap-1">
+                                    <Clock className="h-3 w-3" />
+                                    Deadline: {format(dueDate, "dd MMM yyyy HH:mm", { locale: idLocale })}
+                                  </span>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      </Link>
+                    )
+                  } else {
+                    const createdDate = new Date(item.createdAt)
+                    return (
+                      <Link key={item.id} href="/asynchronous">
+                        <div className="p-4 rounded-lg border bg-purple-50 border-purple-200 dark:bg-purple-950/20 dark:border-purple-800 hover:shadow-md transition-all cursor-pointer">
+                          <div className="flex items-start justify-between">
+                            <div className="flex-1">
+                              <div className="flex items-center gap-2 mb-1">
+                                <h4 className="font-semibold text-sm">{item.title}</h4>
+                                {item.createdAt > Date.now() - 7 * 24 * 60 * 60 * 1000 && (
+                                  <Badge variant="outline" className="text-xs bg-green-50 text-green-700 border-green-300">Baru</Badge>
+                                )}
+                              </div>
+                              <div className="flex flex-col gap-1 text-xs text-muted-foreground">
+                                {item.subject && (
+                                  <span className="flex items-center gap-1">
+                                    <BookOpen className="h-3 w-3" />
+                                    {item.subject.nama}
+                                  </span>
+                                )}
+                                <span className="flex items-center gap-1">
+                                  <Clock className="h-3 w-3" />
+                                  {format(createdDate, "dd MMM yyyy", { locale: idLocale })}
+                                </span>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      </Link>
+                    )
+                  }
+                }
+
+                return null
+              })
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }

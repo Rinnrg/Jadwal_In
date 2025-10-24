@@ -28,6 +28,8 @@ import {
 } from "lucide-react"
 import { useState } from "react"
 import { motion, AnimatePresence } from "framer-motion"
+import { useNotificationStore } from "@/stores/notification.store"
+import { NotificationBadge } from "@/components/ui/NotificationBadge"
 
 const iconMap = {
   home: Home,
@@ -52,10 +54,24 @@ export function Sidebar() {
   const { session } = useSessionStore()
   const { isActiveRoute } = useNavigation()
   const pathname = usePathname()
+  const { getBadgeCount, hasUnread } = useNotificationStore()
 
   if (!session) return null
 
   const menuItems = getMenuItems(session.role)
+
+  // Helper function to get badge count for menu item
+  const getMenuBadgeCount = (path: string): number => {
+    if (!session) return 0
+    
+    if (path.includes("/krs")) return getBadgeCount("krs", session.id)
+    if (path.includes("/jadwal")) return getBadgeCount("jadwal", session.id)
+    if (path.includes("/asynchronous")) return getBadgeCount("asynchronous", session.id)
+    if (path.includes("/khs")) return getBadgeCount("khs", session.id)
+    if (path.includes("/reminders")) return getBadgeCount("reminder", session.id)
+    
+    return 0
+  }
 
   const toggleDropdown = (path: string) => {
     setOpenDropdowns(prev => 
@@ -140,6 +156,7 @@ export function Sidebar() {
                 const isActive = isActiveRoute(item.path)
                 const isDropdownOpen = openDropdowns.includes(item.path)
                 const hasDropdownActive = isDropdownActive(item)
+                const badgeCount = getMenuBadgeCount(item.path)
 
                 return (
                   <motion.div
@@ -159,12 +176,15 @@ export function Sidebar() {
                               : "text-foreground hover:bg-muted"
                           )}
                         >
-                          <Icon
-                            className={cn(
-                              "h-5 w-5 mr-3 transition-colors",
-                              hasDropdownActive ? "text-blue-600 dark:text-blue-400" : "text-gray-500 dark:text-gray-400 group-hover:text-blue-600 dark:group-hover:text-blue-400"
-                            )}
-                          />
+                          <div className="relative">
+                            <Icon
+                              className={cn(
+                                "h-5 w-5 mr-3 transition-colors",
+                                hasDropdownActive ? "text-blue-600 dark:text-blue-400" : "text-gray-500 dark:text-gray-400 group-hover:text-blue-600 dark:group-hover:text-blue-400"
+                              )}
+                            />
+                            {badgeCount > 0 && <NotificationBadge count={badgeCount} />}
+                          </div>
                           {item.title}
                           <ChevronDown
                             className={cn(
@@ -185,6 +205,7 @@ export function Sidebar() {
                               {item.children.map((child) => {
                                 const ChildIcon = iconMap[child.icon as keyof typeof iconMap] || Home
                                 const isChildActive = isActiveRoute(child.path)
+                                const childBadgeCount = getMenuBadgeCount(child.path)
 
                                 return (
                                   <Link
@@ -198,12 +219,15 @@ export function Sidebar() {
                                     )}
                                     onClick={() => setDrawerOpen(false)}
                                   >
-                                    <ChildIcon
-                                      className={cn(
-                                        "h-4 w-4 mr-3 transition-colors",
-                                        isChildActive ? "text-blue-600 dark:text-blue-400" : "text-gray-500 dark:text-gray-400 group-hover:text-blue-600 dark:group-hover:text-blue-400"
-                                      )}
-                                    />
+                                    <div className="relative">
+                                      <ChildIcon
+                                        className={cn(
+                                          "h-4 w-4 mr-3 transition-colors",
+                                          isChildActive ? "text-blue-600 dark:text-blue-400" : "text-gray-500 dark:text-gray-400 group-hover:text-blue-600 dark:group-hover:text-blue-400"
+                                        )}
+                                      />
+                                      {childBadgeCount > 0 && <NotificationBadge count={childBadgeCount} />}
+                                    </div>
                                     {child.title}
                                     {isChildActive && (
                                       <div className="ml-auto">
@@ -228,12 +252,15 @@ export function Sidebar() {
                         )}
                         onClick={() => setDrawerOpen(false)}
                       >
-                        <Icon
-                          className={cn(
-                            "h-5 w-5 mr-3 transition-colors",
-                            isActive ? "text-blue-600 dark:text-blue-400" : "text-gray-500 dark:text-gray-400 group-hover:text-blue-600 dark:group-hover:text-blue-400"
-                          )}
-                        />
+                        <div className="relative">
+                          <Icon
+                            className={cn(
+                              "h-5 w-5 mr-3 transition-colors",
+                              isActive ? "text-blue-600 dark:text-blue-400" : "text-gray-500 dark:text-gray-400 group-hover:text-blue-600 dark:group-hover:text-blue-400"
+                            )}
+                          />
+                          {badgeCount > 0 && <NotificationBadge count={badgeCount} />}
+                        </div>
                         {item.title}
                         {isActive && (
                           <div className="ml-auto">
@@ -293,6 +320,7 @@ export function Sidebar() {
               const isActive = isActiveRoute(item.path)
               const isDropdownOpen = openDropdowns.includes(item.path)
               const hasDropdownActive = isDropdownActive(item)
+              const badgeCount = getMenuBadgeCount(item.path)
 
               return (
                 <div key={item.path}>
@@ -307,12 +335,15 @@ export function Sidebar() {
                             : "text-gray-700 dark:text-gray-300 hover:bg-gray-50/80 dark:hover:bg-gray-800/50 hover:text-gray-900 dark:hover:text-white hover:shadow-sm hover:scale-[1.02]",
                         )}
                       >
-                        <Icon
-                          className={cn(
-                            "h-5 w-5 flex-shrink-0 transition-all duration-300",
-                            hasDropdownActive ? "text-blue-600 dark:text-blue-400 scale-110" : "text-gray-500 dark:text-gray-400 group-hover/item:text-blue-600 dark:group-hover/item:text-blue-400 group-hover/item:scale-105",
-                          )}
-                        />
+                        <div className="relative">
+                          <Icon
+                            className={cn(
+                              "h-5 w-5 flex-shrink-0 transition-all duration-300",
+                              hasDropdownActive ? "text-blue-600 dark:text-blue-400 scale-110" : "text-gray-500 dark:text-gray-400 group-hover/item:text-blue-600 dark:group-hover/item:text-blue-400 group-hover/item:scale-105",
+                            )}
+                          />
+                          {badgeCount > 0 && <NotificationBadge count={badgeCount} />}
+                        </div>
 
                         <span
                           className={cn(
@@ -356,6 +387,7 @@ export function Sidebar() {
                             {item.children.map((child) => {
                               const ChildIcon = iconMap[child.icon as keyof typeof iconMap] || Home
                               const isChildActive = isActiveRoute(child.path)
+                              const childBadgeCount = getMenuBadgeCount(child.path)
 
                               return (
                                 <Link
@@ -368,12 +400,15 @@ export function Sidebar() {
                                       : "text-gray-600 dark:text-gray-400 hover:bg-gray-50/60 dark:hover:bg-gray-800/30 hover:text-gray-900 dark:hover:text-white hover:shadow-sm hover:scale-[1.02]",
                                   )}
                                 >
-                                  <ChildIcon
-                                    className={cn(
-                                      "h-4 w-4 flex-shrink-0 transition-all duration-300",
-                                      isChildActive ? "text-blue-600 dark:text-blue-400 scale-110" : "text-gray-500 dark:text-gray-400 group-hover/child:text-blue-600 dark:group-hover/child:text-blue-400 group-hover/child:scale-105",
-                                    )}
-                                  />
+                                  <div className="relative">
+                                    <ChildIcon
+                                      className={cn(
+                                        "h-4 w-4 flex-shrink-0 transition-all duration-300",
+                                        isChildActive ? "text-blue-600 dark:text-blue-400 scale-110" : "text-gray-500 dark:text-gray-400 group-hover/child:text-blue-600 dark:group-hover/child:text-blue-400 group-hover/child:scale-105",
+                                      )}
+                                    />
+                                    {childBadgeCount > 0 && <NotificationBadge count={childBadgeCount} />}
+                                  </div>
 
                                   <span className="ml-3 transition-all duration-300 truncate">
                                     {child.title}
@@ -405,12 +440,15 @@ export function Sidebar() {
                           : "text-gray-700 dark:text-gray-300 hover:bg-gray-50/80 dark:hover:bg-gray-800/50 hover:text-gray-900 dark:hover:text-white hover:shadow-sm hover:scale-[1.02]",
                       )}
                     >
-                      <Icon
-                        className={cn(
-                          "h-5 w-5 flex-shrink-0 transition-all duration-300",
-                          isActive ? "text-blue-600 dark:text-blue-400 scale-110" : "text-gray-500 dark:text-gray-400 group-hover/item:text-blue-600 dark:group-hover/item:text-blue-400 group-hover/item:scale-105",
-                        )}
-                      />
+                      <div className="relative">
+                        <Icon
+                          className={cn(
+                            "h-5 w-5 flex-shrink-0 transition-all duration-300",
+                            isActive ? "text-blue-600 dark:text-blue-400 scale-110" : "text-gray-500 dark:text-gray-400 group-hover/item:text-blue-600 dark:group-hover/item:text-blue-400 group-hover/item:scale-105",
+                          )}
+                        />
+                        {badgeCount > 0 && <NotificationBadge count={badgeCount} />}
+                      </div>
 
                       <span
                         className={cn(

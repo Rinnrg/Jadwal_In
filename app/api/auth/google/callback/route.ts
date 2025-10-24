@@ -9,6 +9,31 @@ const prisma = new PrismaClient()
 export const dynamic = 'force-dynamic'
 export const runtime = 'nodejs'
 
+// Helper function to extract angkatan from NIM
+function extractAngkatan(nim: string | null): number {
+  if (!nim) return new Date().getFullYear()
+  
+  // Try to extract first 2 or 4 digits as year
+  const firstTwoDigits = nim.substring(0, 2)
+  const firstFourDigits = nim.substring(0, 4)
+  
+  // If NIM starts with 4 digits (2020, 2021, etc.)
+  if (nim.length >= 4 && firstFourDigits >= '2000' && firstFourDigits <= '2099') {
+    return parseInt(firstFourDigits)
+  }
+  
+  // If NIM starts with 2 digits (20, 21, 22, etc.)
+  if (nim.length >= 2) {
+    const year = parseInt(firstTwoDigits)
+    // Assume 20xx for years 00-99
+    if (year >= 0 && year <= 99) {
+      return 2000 + year
+    }
+  }
+  
+  return new Date().getFullYear()
+}
+
 export async function GET(request: NextRequest) {
   try {
     console.log('🔵 Google Callback Started')
@@ -49,11 +74,35 @@ export async function GET(request: NextRequest) {
     console.log('🔍 Finding user in database...')
     let user = await prisma.user.findUnique({
       where: { email: googleUser.email },
+      include: { profile: true },
     })
 
     if (!user) {
       console.log('➕ Creating new user...')
-      // Create new user
+      
+      // Extract NIM from email if it's from student domain
+      // Format 1: NIM@mhs.unesa.ac.id (e.g., 22050974001@mhs.unesa.ac.id)
+      // Format 2: name.NIM@mhs.unesa.ac.id (e.g., muhammadhamdan.22034@mhs.unesa.ac.id)
+      let extractedNim: string | null = null
+      const emailPrefix = googleUser.email.split('@')[0]
+      
+      // Check if email prefix contains a dot (format 2)
+      if (emailPrefix.includes('.')) {
+        const parts = emailPrefix.split('.')
+        const lastPart = parts[parts.length - 1]
+        // Check if the last part after dot is numeric
+        if (/^\d+$/.test(lastPart)) {
+          extractedNim = lastPart
+          console.log('✅ NIM extracted from email (format 2):', extractedNim)
+        }
+      } 
+      // Check if email prefix is numeric (format 1)
+      else if (/^\d+$/.test(emailPrefix)) {
+        extractedNim = emailPrefix
+        console.log('✅ NIM extracted from email (format 1):', extractedNim)
+      }
+      
+      // Create new user with profile
       user = await prisma.user.create({
         data: {
           email: googleUser.email,
@@ -61,22 +110,139 @@ export async function GET(request: NextRequest) {
           role: 'mahasiswa', // Default role
           googleId: googleUser.googleId,
           image: googleUser.picture,
+          profile: {
+            create: {
+              nim: extractedNim,
+              angkatan: extractAngkatan(extractedNim),
+              kelas: 'A', // Default class, can be updated later
+              prodi: null,
+              bio: null,
+            }
+          }
         },
+        include: {
+          profile: true,
+        }
       })
-      console.log('✅ User created:', user.id)
+      console.log('✅ User created with profile:', user.id, 'NIM:', extractedNim)
     } else if (!user.googleId) {
       console.log('🔄 Updating existing user with Google ID...')
-      // Update existing user with Google ID
+      
+      // Check if user has profile
+      const existingProfile = await prisma.profile.findUnique({
+        where: { userId: user.id }
+      })
+      
+      // Extract NIM from email if not in profile
+      let extractedNim: string | null = null
+      if (!existingProfile || !existingProfile.nim) {
+        const emailPrefix = googleUser.email.split('@')[0]
+        
+        // Check if email prefix contains a dot (format: name.NIM@domain)
+        if (emailPrefix.includes('.')) {
+          const parts = emailPrefix.split('.')
+          const lastPart = parts[parts.length - 1]
+          if (/^\d+$/.test(lastPart)) {
+            extractedNim = lastPart
+            console.log('✅ NIM extracted from email (format 2):', extractedNim)
+          }
+        } 
+        // Check if email prefix is numeric (format: NIM@domain)
+        else if (/^\d+$/.test(emailPrefix)) {
+          extractedNim = emailPrefix
+          console.log('✅ NIM extracted from email (format 1):', extractedNim)
+        }
+      }
+      
+      // Update existing user with Google ID and create/update profile
       user = await prisma.user.update({
         where: { id: user.id },
         data: {
           googleId: googleUser.googleId,
           image: googleUser.picture || user.image,
+          profile: existingProfile ? (
+            extractedNim && !existingProfile.nim ? {
+              update: {
+                nim: extractedNim,
+                angkatan: extractAngkatan(extractedNim),
+              }
+            } : undefined
+          ) : {
+            create: {
+              nim: extractedNim,
+              angkatan: extractAngkatan(extractedNim),
+              kelas: 'A',
+              prodi: null,
+              bio: null,
+            }
+          }
         },
+        include: {
+          profile: true,
+        }
       })
       console.log('✅ User updated:', user.id)
     } else {
       console.log('✅ User found:', user.id)
+      
+      // Update image if Google has newer one
+      if (googleUser.picture && user.image !== googleUser.picture) {
+        console.log('🖼️ Updating user image from Google...')
+        user = await prisma.user.update({
+          where: { id: user.id },
+          data: { image: googleUser.picture },
+          include: { profile: true },
+        })
+      }
+      
+      // Check if user has profile, if not create one
+      if (!user.profile) {
+        console.log('⚠️ User has no profile, creating...')
+        const emailPrefix = googleUser.email.split('@')[0]
+        let extractedNim: string | null = null
+        
+        // Check if email prefix contains a dot (format: name.NIM@domain)
+        if (emailPrefix.includes('.')) {
+          const parts = emailPrefix.split('.')
+          const lastPart = parts[parts.length - 1]
+          if (/^\d+$/.test(lastPart)) {
+            extractedNim = lastPart
+            console.log('✅ NIM extracted from email (format 2):', extractedNim)
+          }
+        } 
+        // Check if email prefix is numeric (format: NIM@domain)
+        else if (/^\d+$/.test(emailPrefix)) {
+          extractedNim = emailPrefix
+          console.log('✅ NIM extracted from email (format 1):', extractedNim)
+        }
+        
+        await prisma.profile.create({
+          data: {
+            userId: user.id,
+            nim: extractedNim,
+            angkatan: extractAngkatan(extractedNim),
+            kelas: 'A',
+            prodi: null,
+            bio: null,
+          }
+        })
+        
+        // Reload user with profile
+        user = await prisma.user.findUnique({
+          where: { id: user.id },
+          include: { profile: true },
+        }) as any
+        
+        console.log('✅ Profile created for existing user')
+      }
+    }
+
+    // Ensure user exists before creating session
+    if (!user) {
+      console.log('❌ User is null after all operations')
+      return NextResponse.redirect(
+        new URL('/login?error=user_creation_failed', request.url)
+      )
     }
 
     // Create session token

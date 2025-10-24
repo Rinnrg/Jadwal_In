@@ -27,6 +27,16 @@ export function UserMenu() {
   const profile = getProfile(session.id)
   // Use session.image as primary source (synced from profile), fallback to profile
   const avatarUrl = session.image || profile?.avatarUrl
+  
+  // Enhanced debug logging
+  console.log('=== UserMenu Avatar Debug ===')
+  console.log('session.id:', session.id)
+  console.log('session.image:', session.image ? session.image.substring(0, 100) + '...' : 'null')
+  console.log('profile?.avatarUrl:', profile?.avatarUrl ? profile.avatarUrl.substring(0, 100) + '...' : 'null')
+  console.log('Final avatarUrl:', avatarUrl ? avatarUrl.substring(0, 100) + '...' : 'null')
+  console.log('Is base64?', avatarUrl?.startsWith('data:'))
+  console.log('Is http?', avatarUrl?.startsWith('http'))
+  console.log('============================')
 
   const handleLogout = async () => {
     const confirmed = await confirmAction("Keluar dari Sistem", "Apakah Anda yakin ingin keluar?", "Ya, Keluar")
@@ -86,8 +96,8 @@ export function UserMenu() {
   return (
     <DropdownMenu modal={false}>
       <DropdownMenuTrigger className="relative flex items-center space-x-2 h-9 px-2 rounded-lg hover:bg-accent transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2">
-        <Avatar className="h-7 w-7" key={avatarUrl}>
-          <AvatarImage src={avatarUrl || "/placeholder.svg"} alt={session.name} />
+        <Avatar className="h-7 w-7">
+          <AvatarImage src={avatarUrl} alt={session.name} />
           <AvatarFallback className="text-xs bg-gradient-to-br from-blue-500 to-blue-600 text-white">
             {session.name
               .split(" ")
@@ -110,8 +120,8 @@ export function UserMenu() {
         {/* Profile Header */}
         <DropdownMenuLabel className="p-4">
           <div className="flex items-center space-x-3">
-            <Avatar className="h-10 w-10" key={avatarUrl}>
-              <AvatarImage src={avatarUrl || "/placeholder.svg"} alt={session.name} />
+            <Avatar className="h-10 w-10">
+              <AvatarImage src={avatarUrl} alt={session.name} />
               <AvatarFallback className="text-sm bg-gradient-to-br from-blue-500 to-blue-600 text-white">
                 {session.name
                   .split(" ")

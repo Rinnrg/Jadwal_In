@@ -61,7 +61,7 @@ model User {
   name          String
   password      String?   // Optional, digunakan untuk super admin
   role          UserRole
-  image         String?
+  image         String?   @db.Text  // Changed to Text to support large base64 images
   emailVerified DateTime?
   googleId      String?   @unique // Google OAuth ID
   
@@ -97,7 +97,7 @@ model Profile {
   prodi     String?
   bio       String?  @db.Text
   website   String?
-  avatarUrl String?
+  avatarUrl String?  @db.Text  // Changed to Text to support large base64 images
   
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt

@@ -1,10 +1,11 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { useSessionStore } from "@/stores/session.store"
 import { useSubjectsStore } from "@/stores/subjects.store"
 import { useGradesStore } from "@/stores/grades.store"
 import { useProfileStore } from "@/stores/profile.store"
+import { useNotificationStore } from "@/stores/notification.store"
 import { canAccessKHS } from "@/lib/rbac"
 import { generateTranscriptPDF } from "@/lib/pdf-transcript"
 import { Button } from "@/components/ui/button"
@@ -20,8 +21,16 @@ export default function KhsPage() {
   const { subjects } = useSubjectsStore()
   const { getGradesByUser, calculateGPA, calculateSemesterGPA, grades: allGrades } = useGradesStore()
   const { getProfile } = useProfileStore()
+  const { clearBadge } = useNotificationStore()
 
   const [selectedTerm, setSelectedTerm] = useState("Semua Semester")
+
+  // Clear KHS notification badge when user opens this page
+  useEffect(() => {
+    if (session?.id) {
+      clearBadge("khs", session.id)
+    }
+  }, [session?.id, clearBadge])
 
   // Get all unique semesters from user's grades
   const userGrades = getGradesByUser(session?.id || "")
@@ -168,34 +177,30 @@ export default function KhsPage() {
         </CardHeader>
       </Card>
 
-      {/* Term Selection */}
-      <Card>
-        <CardHeader className="px-3 md:px-6 pt-3 md:pt-6 pb-2 md:pb-4">
-          <CardTitle className="text-sm md:text-base">Filter Semester</CardTitle>
-          <CardDescription className="text-[10px] md:text-xs">Pilih semester untuk melihat hasil studi spesifik</CardDescription>
-        </CardHeader>
-        <CardContent className="px-3 md:px-6 pb-3 md:pb-6">
-          <Select value={selectedTerm} onValueChange={setSelectedTerm}>
-            <SelectTrigger className="w-full max-w-xs text-xs md:text-sm h-8 md:h-10">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              {availableSemesters.map((term) => (
-                <SelectItem key={term} value={term} className="text-xs md:text-sm">
-                  {term}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </CardContent>
-      </Card>
-
       {/* Grades Table */}
       {grades.length === 0 ? (
         <Card>
           <CardHeader className="px-3 md:px-6 pt-3 md:pt-6 pb-2 md:pb-4">
-            <CardTitle className="text-sm md:text-base">Hasil Studi</CardTitle>
-            <CardDescription className="text-[10px] md:text-xs">Nilai mata kuliah yang telah Anda ambil</CardDescription>
+            <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
+              <div className="flex-1">
+                <CardTitle className="text-sm md:text-base">Hasil Studi</CardTitle>
+                <CardDescription className="text-[10px] md:text-xs mt-1">Nilai mata kuliah yang telah Anda ambil</CardDescription>
+              </div>
+              <div className="w-full sm:w-auto sm:min-w-[200px]">
+                <Select value={selectedTerm} onValueChange={setSelectedTerm}>
+                  <SelectTrigger className="w-full text-xs md:text-sm h-8 md:h-10">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {availableSemesters.map((term) => (
+                      <SelectItem key={term} value={term} className="text-xs md:text-sm">
+                        {term}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
           </CardHeader>
           <CardContent className="px-3 md:px-6 pb-3 md:pb-6">
             <div className="text-center py-6 md:py-8">
@@ -214,11 +219,31 @@ export default function KhsPage() {
             .map(([term, termGrades]) => (
               <Card key={term}>
                 <CardHeader className="px-3 md:px-6 pt-3 md:pt-6 pb-2 md:pb-4">
-                  <CardTitle className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 text-sm md:text-base">
-                    <span>Semester {term}</span>
-                    <Badge variant="outline" className="text-xs w-fit">IPS: {calculateSemesterGPA(session.id, term, subjects).toFixed(2)}</Badge>
-                  </CardTitle>
-                  <CardDescription className="text-[10px] md:text-xs">{termGrades.length} mata kuliah</CardDescription>
+                  <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
+                    <div className="flex-1">
+                      <CardTitle className="flex flex-col sm:flex-row sm:items-center gap-2 text-sm md:text-base">
+                        <span>Semester {term}</span>
+                        <Badge variant="outline" className="text-xs w-fit">IPS: {calculateSemesterGPA(session.id, term, subjects).toFixed(2)}</Badge>
+                      </CardTitle>
+                      <CardDescription className="text-[10px] md:text-xs mt-1">{termGrades.length} mata kuliah</CardDescription>
+                    </div>
+                    {term === Object.keys(gradesBySemester).sort((a, b) => b.localeCompare(a))[0] && (
+                      <div className="w-full sm:w-auto sm:min-w-[200px]">
+                        <Select value={selectedTerm} onValueChange={setSelectedTerm}>
+                          <SelectTrigger className="w-full text-xs md:text-sm h-8 md:h-10">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {availableSemesters.map((term) => (
+                              <SelectItem key={term} value={term} className="text-xs md:text-sm">
+                                {term}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    )}
+                  </div>
                 </CardHeader>
                 <CardContent className="px-3 md:px-6 pb-3 md:pb-6">
                   <div className="rounded-md border max-h-[300px] md:max-h-[400px] overflow-auto">
@@ -273,10 +298,28 @@ export default function KhsPage() {
         // Single semester view
         <Card>
           <CardHeader className="px-3 md:px-6 pt-3 md:pt-6 pb-2 md:pb-4">
-            <CardTitle className="text-sm md:text-base">Hasil Studi - {selectedTerm}</CardTitle>
-            <CardDescription className="text-[10px] md:text-xs">
-              {grades.length} mata kuliah dengan IPS {semesterGPA.toFixed(2)}
-            </CardDescription>
+            <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
+              <div className="flex-1">
+                <CardTitle className="text-sm md:text-base">Hasil Studi - {selectedTerm}</CardTitle>
+                <CardDescription className="text-[10px] md:text-xs mt-1">
+                  {grades.length} mata kuliah dengan IPS {semesterGPA.toFixed(2)}
+                </CardDescription>
+              </div>
+              <div className="w-full sm:w-auto sm:min-w-[200px]">
+                <Select value={selectedTerm} onValueChange={setSelectedTerm}>
+                  <SelectTrigger className="w-full text-xs md:text-sm h-8 md:h-10">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {availableSemesters.map((term) => (
+                      <SelectItem key={term} value={term} className="text-xs md:text-sm">
+                        {term}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
           </CardHeader>
           <CardContent className="px-3 md:px-6 pb-3 md:pb-6">
             <div className="rounded-md border max-h-[300px] md:max-h-[500px] overflow-auto">

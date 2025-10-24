@@ -90,13 +90,10 @@ export function AvatarUploader({ currentAvatar, userName, onAvatarChange, disabl
       <div className="relative group">
         <Avatar className={`h-24 w-24 transition-all duration-300 shadow-lg ${
           isUploading ? "opacity-50" : "hover:scale-110 hover:shadow-xl"
-        }`} key={displayAvatar}>
+        }`}>
           <AvatarImage 
-            src={displayAvatar || "/placeholder.svg"} 
+            src={displayAvatar} 
             alt={userName}
-            onError={(e) => {
-              console.error('Avatar image failed to load:', displayAvatar?.substring(0, 50))
-            }}
           />
           <AvatarFallback className="text-lg">
             {userName

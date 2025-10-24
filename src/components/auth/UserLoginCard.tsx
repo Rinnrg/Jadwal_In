@@ -7,7 +7,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { useSearchParams, useRouter } from 'next/navigation'
-import { Loader2, Mail, Lock, Eye, EyeOff } from 'lucide-react'
+import { Loader2, Mail, Lock, Eye, EyeOff, CheckCircle2, XCircle } from 'lucide-react'
 import Image from 'next/image'
 import { useSessionStore } from '@/stores/session.store'
 
@@ -40,6 +40,7 @@ export function UserLoginCard() {
   const [password, setPassword] = useState('')
   const [showPassword, setShowPassword] = useState(false)
   const [loginError, setLoginError] = useState('')
+  const [buttonState, setButtonState] = useState<'idle' | 'loading' | 'success' | 'error'>('idle')
   
   const searchParams = useSearchParams()
   const router = useRouter()
@@ -50,6 +51,7 @@ export function UserLoginCard() {
   const handleEmailLogin = async (e: React.FormEvent) => {
     e.preventDefault()
     setIsLoading(true)
+    setButtonState('loading')
     setLoginError('')
 
     try {
@@ -65,10 +67,19 @@ export function UserLoginCard() {
 
       if (!response.ok) {
         setLoginError(data.error || 'Gagal login. Silakan coba lagi.')
+        setButtonState('error')
         setIsLoading(false)
+        
+        // Reset button state after animation
+        setTimeout(() => {
+          setButtonState('idle')
+        }, 2000)
         return
       }
 
+      // Success state
+      setButtonState('success')
+      
       // Set session in store
       if (data.user) {
         setSession({
@@ -80,12 +91,20 @@ export function UserLoginCard() {
         })
       }
 
-      // Redirect to dashboard or callback URL
-      window.location.href = callbackUrl
+      // Wait a bit to show success animation before redirect
+      setTimeout(() => {
+        window.location.href = callbackUrl
+      }, 800)
     } catch (error) {
       console.error('Login error:', error)
       setLoginError('Gagal login. Silakan coba lagi.')
+      setButtonState('error')
       setIsLoading(false)
+      
+      // Reset button state after animation
+      setTimeout(() => {
+        setButtonState('idle')
+      }, 2000)
     }
   }
 
@@ -112,28 +131,26 @@ export function UserLoginCard() {
   const errorMessage = getErrorMessage(error) || loginError
   return (
     <Card className="w-full max-w-[440px] mx-auto border-0 shadow-2xl bg-card/95 backdrop-blur-xl animate-fade-in overflow-hidden">
-      <CardContent className="p-6 sm:p-8 space-y-5">
+      <CardContent className="p-5 sm:p-6 space-y-4">
         {/* Logo and Title Section */}
-        <div className="text-center space-y-3 animate-slide-up">
-          <div className="flex items-center justify-center gap-3">
+        <div className="text-center space-y-2 animate-slide-up">
+          <div className="flex items-center justify-center gap-2.5">
             <Image 
               src="/logo jadwal in.svg" 
               alt="Jadwal-In Logo" 
-              width={48} 
-              height={48}
-              className="w-12 h-12"
+              width={40} 
+              height={40}
+              className="w-10 h-10"
               priority
             />
-            <h1 className="text-3xl font-bold text-blue-600">
+            <h1 className="text-2xl font-bold text-blue-600">
               Jadwal_In
             </h1>
           </div>
           
-          <div className="space-y-1">
-            <p className="text-sm text-muted-foreground">
-              Masuk ke akun Anda untuk mengakses jadwal dan KRS
-            </p>
-          </div>
+          <p className="text-xs text-muted-foreground">
+            Masuk ke akun Anda untuk mengakses jadwal dan KRS
+          </p>
         </div>
 
         {/* Error Alert */}
@@ -144,8 +161,8 @@ export function UserLoginCard() {
         )}
 
         {/* Login Form */}
-        <form onSubmit={handleEmailLogin} className="space-y-4">
-          <div className="space-y-2">
+        <form onSubmit={handleEmailLogin} className="space-y-3">
+          <div className="space-y-1.5">
             <Label htmlFor="email" className="text-sm font-medium">
               Email
             </Label>
@@ -164,7 +181,7 @@ export function UserLoginCard() {
             </div>
           </div>
 
-          <div className="space-y-2">
+          <div className="space-y-1.5">
             <Label htmlFor="password" className="text-sm font-medium">
               Password
             </Label>
@@ -198,12 +215,28 @@ export function UserLoginCard() {
           <Button
             type="submit"
             disabled={isLoading}
-            className="w-full h-10 text-base font-medium bg-blue-600 hover:bg-blue-700 text-white"
+            className={`w-full h-10 text-base font-medium text-white transition-all duration-300 ${
+              buttonState === 'success' 
+                ? 'bg-green-600 hover:bg-green-600 scale-105' 
+                : buttonState === 'error'
+                ? 'bg-red-600 hover:bg-red-600 animate-shake'
+                : 'bg-blue-600 hover:bg-blue-700'
+            }`}
           >
-            {isLoading ? (
+            {buttonState === 'loading' ? (
               <div className="flex items-center gap-2">
                 <Loader2 className="h-4 w-4 animate-spin" />
                 <span>Masuk...</span>
+              </div>
+            ) : buttonState === 'success' ? (
+              <div className="flex items-center gap-2 animate-scale-in">
+                <CheckCircle2 className="h-5 w-5" />
+                <span>Berhasil!</span>
+              </div>
+            ) : buttonState === 'error' ? (
+              <div className="flex items-center gap-2">
+                <XCircle className="h-5 w-5" />
+                <span>Gagal Masuk</span>
               </div>
             ) : (
               'Masuk'
@@ -211,7 +244,7 @@ export function UserLoginCard() {
           </Button>
 
           {/* Divider */}
-          <div className="relative py-2">
+          <div className="relative py-1.5">
             <div className="absolute inset-0 flex items-center">
               <span className="w-full border-t border-border/50" />
             </div>
@@ -245,7 +278,7 @@ export function UserLoginCard() {
         </form>
 
         {/* Footer Links */}
-        <div className="text-center pt-1">
+        <div className="text-center pt-0.5">
           <p className="text-xs text-muted-foreground leading-relaxed">
             Dengan masuk, Anda menyetujui{' '}
             <a href="/terms" className="text-primary hover:underline font-medium transition-colors">
