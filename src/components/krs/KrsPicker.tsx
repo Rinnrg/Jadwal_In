@@ -29,7 +29,7 @@ export function KrsPicker({ userId, term }: KrsPickerProps) {
   const { session } = useSessionStore()
   const [searchTerm, setSearchTerm] = useState("")
   const [openKelas, setOpenKelas] = useState<string | null>(null)
-  const [addingOffering, setAddingOffering] = useState<string | null>(null) // Track which offering is being added
+  const [addingOffering, setAddingOffering] = useState<string | null>(null)
 
   const profile = getProfile(userId)
   
@@ -40,6 +40,9 @@ export function KrsPicker({ userId, term }: KrsPickerProps) {
 
   // Get user's current KRS items - reactive to changes
   const userKrsItems = useMemo(() => getKrsByUser(userId, term), [getKrsByUser, userId, term, krsItems])
+  
+  // DEBUG: Log saat krsItems berubah
+  console.log('[KrsPicker] krsItems count:', krsItems.length, 'userKrsItems:', userKrsItems.length)
 
   const availableOfferings = useMemo(() => {
     // Get ALL offerings for angkatan (tidak filter by kelas, mahasiswa bebas pilih kelas mana saja)
@@ -56,6 +59,16 @@ export function KrsPicker({ userId, term }: KrsPickerProps) {
         // Ini memastikan UI selalu sinkron dengan data terbaru
         const isSubjectAlreadyInKrs = isSubjectInKrs(userId, offering.subjectId, term)
         const isThisOfferingInKrs = isOfferingInKrs(userId, offering.id)
+        
+        // DEBUG log untuk mata kuliah tertentu
+        if (subject.kode === 'MPB001') {
+          console.log('[KrsPicker] MPB001 check:', {
+            kelas: offering.kelas,
+            isSubjectInKrs: isSubjectAlreadyInKrs,
+            isOfferingInKrs: isThisOfferingInKrs,
+            krsItemsCount: krsItems.length
+          })
+        }
         
         // Check if this exact offering is already taken (same class)
         const isAlreadyEnrolled = isThisOfferingInKrs
