@@ -29,6 +29,7 @@ export function KrsPicker({ userId, term }: KrsPickerProps) {
   const { session } = useSessionStore()
   const [searchTerm, setSearchTerm] = useState("")
   const [openKelas, setOpenKelas] = useState<string | null>(null)
+  const [addingOffering, setAddingOffering] = useState<string | null>(null) // Track which offering is being added
 
   const profile = getProfile(userId)
   
@@ -96,13 +97,30 @@ export function KrsPicker({ userId, term }: KrsPickerProps) {
       .map(([kelas, offerings]) => ({ kelas, offerings }))
   }, [availableOfferings])
 
-  const handleAddOffering = (offering: any) => {
+  const handleAddOffering = async (offering: any) => {
+    // Prevent multiple rapid clicks
+    if (addingOffering === offering.id) return
+    
+    setAddingOffering(offering.id)
+    
     try {
       const subject = getSubjectById(offering.subjectId)
+      
+      // Double check: pastikan subject belum ada di KRS
+      const userKrsItems = getKrsByUser(userId, term)
+      const isDuplicate = userKrsItems.some(item => item.subjectId === offering.subjectId)
+      
+      if (isDuplicate) {
+        showError(`${subject?.nama} sudah ada di KRS Anda`)
+        return
+      }
+      
       addKrsItem(userId, offering.subjectId, term, offering.id, subject?.nama, subject?.sks)
       showSuccess(`${subject?.nama} (Kelas ${offering.kelas}) berhasil ditambahkan ke KRS`)
     } catch (error) {
       showError("Gagal menambahkan mata kuliah ke KRS")
+    } finally {
+      setAddingOffering(null)
     }
   }
 
@@ -235,10 +253,11 @@ export function KrsPicker({ userId, term }: KrsPickerProps) {
                                 <Button 
                                   size="sm" 
                                   onClick={() => handleAddOffering(offering)}
+                                  disabled={addingOffering === offering.id}
                                   className="h-8 px-3 flex-shrink-0"
                                 >
                                   <Plus className="h-4 w-4 mr-1" />
-                                  Ambil
+                                  {addingOffering === offering.id ? "..." : "Ambil"}
                                 </Button>
                               </div>
                             </div>
@@ -326,10 +345,11 @@ export function KrsPicker({ userId, term }: KrsPickerProps) {
                                     <Button 
                                       size="sm" 
                                       onClick={() => handleAddOffering(offering)}
+                                      disabled={addingOffering === offering.id}
                                       className="h-9 px-4 flex-shrink-0"
                                     >
                                       <Plus className="h-4 w-4 mr-1" />
-                                      Ambil
+                                      {addingOffering === offering.id ? "..." : "Ambil"}
                                     </Button>
                                   </div>
                                 </CardContent>
