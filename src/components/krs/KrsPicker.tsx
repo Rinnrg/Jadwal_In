@@ -62,6 +62,20 @@ export function KrsPicker({ userId, term }: KrsPickerProps) {
         
         // DEBUG log untuk mata kuliah tertentu
         if (subject.kode === 'MPB001') {
+          // Log offering details
+          console.log('[KrsPicker] MPB001 Offering Details:', {
+            kelas: offering.kelas,
+            offeringId: offering.id,
+            subjectId: offering.subjectId,
+          })
+          
+          // Log all KRS items for this user
+          const userKrs = userKrsItems.filter(item => item.subjectId === offering.subjectId)
+          console.log('[KrsPicker] MPB001 in KRS:', userKrs.map(item => ({
+            offeringId: item.offeringId,
+            subjectId: item.subjectId,
+          })))
+          
           console.log('[KrsPicker] MPB001 check:', {
             kelas: offering.kelas,
             isSubjectInKrs: isSubjectAlreadyInKrs,
@@ -130,6 +144,14 @@ export function KrsPicker({ userId, term }: KrsPickerProps) {
     
     const subject = getSubjectById(offering.subjectId)
     
+    // DEBUG: Log offering details sebelum add
+    console.log('[handleAddOffering] Adding:', {
+      offeringId: offering.id,
+      subjectId: offering.subjectId,
+      subjectName: subject?.nama,
+      kelas: offering.kelas,
+    })
+    
     // CRITICAL: Check real-time dari store, bukan dari cached Set
     // Ini mencegah race condition dan double submission
     const isAlreadyTaken = isSubjectInKrs(userId, offering.subjectId, term)
@@ -156,6 +178,7 @@ export function KrsPicker({ userId, term }: KrsPickerProps) {
         return
       }
       
+      console.log('[handleAddOffering] Calling addKrsItem with offeringId:', offering.id)
       addKrsItem(userId, offering.subjectId, term, offering.id, subject?.nama, subject?.sks)
       showSuccess(`${subject?.nama} (Kelas ${offering.kelas}) berhasil ditambahkan ke KRS`)
     } catch (error) {

@@ -24,13 +24,24 @@ export const useKrsStore = create<KrsState>()(
     (set, get) => ({
       krsItems: [],
       addKrsItem: (userId, subjectId, term, offeringId, subjectName, sks) => {
+        // DEBUG: Log what we receive
+        console.log('[KRS Store] addKrsItem called with:', {
+          userId,
+          subjectId,
+          term,
+          offeringId,
+          subjectName,
+          sks
+        })
+        
         // Validasi: Cek apakah subject sudah ada di KRS user untuk term yang sama
         const existingKrs = get().krsItems.find(
           (item) => item.userId === userId && item.subjectId === subjectId && item.term === term
         )
         
         if (existingKrs) {
-          console.warn(`Subject ${subjectId} sudah ada di KRS user ${userId} untuk term ${term}`)
+          console.warn(`[KRS Store] REJECTED: Subject ${subjectId} sudah ada di KRS user ${userId} untuk term ${term}`)
+          console.log('[KRS Store] Existing item:', existingKrs)
           return // Tidak tambahkan jika sudah ada
         }
         
@@ -42,6 +53,9 @@ export const useKrsStore = create<KrsState>()(
           term,
           createdAt: Date.now(),
         }
+        
+        console.log('[KRS Store] Adding new item:', newItem)
+        
         set((state) => ({
           krsItems: [...state.krsItems, newItem],
         }))
@@ -103,7 +117,19 @@ export const useKrsStore = create<KrsState>()(
         )
       },
       isOfferingInKrs: (userId, offeringId) => {
-        return get().krsItems.some((item) => item.userId === userId && item.offeringId === offeringId)
+        const result = get().krsItems.some((item) => item.userId === userId && item.offeringId === offeringId)
+        
+        // DEBUG for MPB001 offerings
+        if (offeringId && offeringId.includes('offering')) {
+          const userItems = get().krsItems.filter(item => item.userId === userId)
+          console.log('[KRS Store] isOfferingInKrs check:', {
+            offeringId,
+            result,
+            userKrsOfferingIds: userItems.map(item => item.offeringId),
+          })
+        }
+        
+        return result
       },
       getTotalSks: (userId, term, subjects) => {
         const userKrs = get().getKrsByUser(userId, term)
