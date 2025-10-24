@@ -18,9 +18,9 @@ export function useNotificationManager() {
   const { session } = useSessionStore()
   const { updateBadge, clearBadge } = useNotificationStore()
   const { getActiveReminders } = useRemindersStore()
-  const { getUserEnrollments } = useKrsStore()
-  const { getStudentGrades } = useGradesStore()
-  const { getScheduleByUser } = useScheduleStore()
+  const { getKrsByUser } = useKrsStore()
+  const { getGradesByUser } = useGradesStore()
+  const { getEventsByUser } = useScheduleStore()
   const { assignments, materials } = useCourseworkStore()
 
   const userId = session?.id
@@ -45,34 +45,30 @@ export function useNotificationManager() {
     if (!userId) return
 
     try {
-      const enrollments = getUserEnrollments(userId)
-      // Count pending enrollments as new KRS items
-      const pendingEnrollments = enrollments.filter(
-        (enrollment) => enrollment.status === "pending"
-      )
-      
-      updateBadge("krs", userId, pendingEnrollments.length)
+      const krsItems = getKrsByUser(userId)
+      // Count all KRS items as new (in real app, track viewed items)
+      updateBadge("krs", userId, krsItems.length)
     } catch (error) {
       // If there's an error, clear the badge
       clearBadge("krs", userId)
     }
-  }, [userId, getUserEnrollments, updateBadge, clearBadge])
+  }, [userId, getKrsByUser, updateBadge, clearBadge])
 
   // Check for new grades in KHS
   const checkKHS = useCallback(() => {
     if (!userId) return
 
     try {
-      const grades = getStudentGrades(userId)
+      const grades = getGradesByUser(userId)
       // Count grades as "new" if they exist
       // In a real app, you'd track when the user last viewed their grades
-      const newGradesCount = grades.filter(grade => grade.finalGrade).length
+      const newGradesCount = grades.filter((grade: any) => grade.nilaiHuruf).length
       
       updateBadge("khs", userId, newGradesCount)
     } catch (error) {
       clearBadge("khs", userId)
     }
-  }, [userId, getStudentGrades, updateBadge, clearBadge])
+  }, [userId, getGradesByUser, updateBadge, clearBadge])
 
   // Check for new assignments and materials (asynchronous learning)
   const checkAsynchronous = useCallback(() => {
@@ -82,7 +78,7 @@ export function useNotificationManager() {
       // Count new assignments and materials
       const userAssignments = assignments.filter(a => {
         // Check if this assignment is for the user's enrolled courses
-        return a.dueUTC > nowUTC() // Upcoming assignments
+        return a.dueUTC && a.dueUTC > nowUTC() // Upcoming assignments
       })
       
       const userMaterials = materials.filter(m => {
@@ -102,14 +98,14 @@ export function useNotificationManager() {
     if (!userId) return
 
     try {
-      const schedule = getScheduleByUser(userId)
+      const schedule = getEventsByUser(userId)
       // In a real scenario, you'd track recently synced schedules
       // For now, we'll just show a count if there are schedules
       updateBadge("jadwal", userId, schedule.length > 0 ? 1 : 0)
     } catch (error) {
       clearBadge("jadwal", userId)
     }
-  }, [userId, getScheduleByUser, updateBadge, clearBadge])
+  }, [userId, getEventsByUser, updateBadge, clearBadge])
 
   // Initial check and set up intervals
   useEffect(() => {

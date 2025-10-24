@@ -68,7 +68,8 @@ export function AttendanceTab({ subjectId, canManage, userRole }: AttendanceTabP
 
   useEffect(() => {
     if (canManage && enrolledStudents.length > 0) {
-      initializeAttendanceSessions(subjectId, enrolledStudents)
+      const validStudents = enrolledStudents.filter((s): s is { id: string; name: string; nim: string } => s !== null)
+      initializeAttendanceSessions(subjectId, validStudents)
     }
   }, [subjectId, enrolledStudents, canManage, initializeAttendanceSessions])
 
@@ -224,11 +225,19 @@ export function AttendanceTab({ subjectId, canManage, userRole }: AttendanceTabP
                     <div>
                       <CardTitle className="text-lg flex items-center gap-2">
                         <Calendar className="h-5 w-5" />
-                        Pertemuan {session.meetingNumber} - {fmtDate(session.dateUTC)} {/* Show meeting number */}
+                        Pertemuan {session.meetingNumber} - {fmtDate(session.dateUTC)}
+                        {session.sessionType === "UTS" && (
+                          <Badge variant="default" className="bg-blue-600">UTS</Badge>
+                        )}
+                        {session.sessionType === "UAS" && (
+                          <Badge variant="default" className="bg-purple-600">UAS</Badge>
+                        )}
                       </CardTitle>
                       <CardDescription>
                         {stats.hadirCount} hadir, {stats.alfaCount} alfa, {stats.izinCount} izin dari{" "}
-                        {stats.totalStudents} mahasiswa {/* Updated stats display */}
+                        {stats.totalStudents} mahasiswa
+                        {session.sessionType === "UTS" && " • Ujian Tengah Semester"}
+                        {session.sessionType === "UAS" && " • Ujian Akhir Semester"}
                       </CardDescription>
                     </div>
                     <div className="flex items-center gap-2">

@@ -176,7 +176,7 @@ export function ChangePasswordCard({ onSuccess }: ChangePasswordCardProps) {
           </div>
 
           <div className="flex justify-end pt-2">
-            <Button type="submit" disabled={isSubmitting} className="cursor-pointer">
+            <Button type="submit" disabled={isSubmitting} className="cursor-pointer w-full sm:w-auto">
               {isSubmitting ? (
                 <>
                   <Loader2 className="h-4 w-4 mr-2 animate-spin" />

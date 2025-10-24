@@ -213,8 +213,12 @@ export default function DashboardPage() {
   const isOddSemester = currentMonth >= 8 || currentMonth <= 1
   const currentTerm = `${currentYear}/${currentYear + 1}-${isOddSemester ? "Ganjil" : "Genap"}`
   
-  // Get KRS items for current user and term
+  // Get KRS items for current user and term (for mahasiswa)
+  // Get taught subjects for dosen/kaprodi
   const userKrsItems = session ? getKrsByUser(session.id, currentTerm) : []
+  const taughtSubjects = session && (session.role === "dosen" || session.role === "kaprodi")
+    ? subjects.filter(s => s.pengampuIds?.includes(session.id))
+    : []
   
   // Format time helper
   const formatTime = (utcMinutes: number) => {
@@ -314,12 +318,21 @@ export default function DashboardPage() {
   const urgentReminders = activeReminders.filter(r => r.dueUTC < Date.now() + 24 * 60 * 60 * 1000) // within 24 hours
 
   // Get assignments and materials
+  // For dosen/kaprodi: only show from their taught subjects
+  // For mahasiswa: show from their KRS subjects
+  const relevantSubjectIds = session?.role === "mahasiswa" 
+    ? userKrsItems.map(item => item.subjectId)
+    : taughtSubjects.map(s => s.id)
+    
   const allAssignments = assignments.filter(a => {
     if (!a.dueUTC) return false
+    if (!relevantSubjectIds.includes(a.subjectId)) return false
     return a.dueUTC > Date.now() // Only show upcoming assignments
   }).sort((a, b) => (a.dueUTC || 0) - (b.dueUTC || 0))
 
-  const allMaterials = materials.sort((a, b) => b.createdAt - a.createdAt)
+  const allMaterials = materials
+    .filter(m => relevantSubjectIds.includes(m.subjectId))
+    .sort((a, b) => b.createdAt - a.createdAt)
 
   // Handle long press
   const handlePressStart = (type: "schedule" | "subjects" | "reminders" | "coursework") => {
@@ -347,11 +360,24 @@ export default function DashboardPage() {
         })))
         break
       case "subjects":
-        // Get subjects from user's KRS
-        const krsSubjects = userKrsItems
-          .map(krsItem => getSubjectById(krsItem.subjectId))
-          .filter(Boolean)
-        setDialogData(krsSubjects)
+        // Get subjects from user's KRS (mahasiswa) or taught subjects (dosen/kaprodi)
+        if (session?.role === "mahasiswa") {
+          const krsSubjects = userKrsItems
+            .map(krsItem => {
+              const subject = getSubjectById(krsItem.subjectId)
+              if (!subject) return null
+              return {
+                ...subject,
+                krsId: krsItem.id,
+                term: krsItem.term,
+                offeringId: krsItem.offeringId
+              }
+            })
+            .filter(Boolean)
+          setDialogData(krsSubjects)
+        } else {
+          setDialogData(taughtSubjects)
+        }
         break
       case "reminders":
         setDialogData(activeReminders.map(r => ({
@@ -542,15 +568,21 @@ export default function DashboardPage() {
           onTouchEnd={handlePressEnd}
         >
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 md:pb-3 px-4 md:px-6 pt-4 md:pt-6">
-            <CardTitle className="text-xs md:text-sm font-bold">Jadwal Hari Ini</CardTitle>
+            <CardTitle className="text-xs md:text-sm font-bold">
+              {session.role === "mahasiswa" ? "Jadwal Hari Ini" : "Jadwal Mengajar"}
+            </CardTitle>
             <Calendar className="h-5 w-5 md:h-6 md:w-6 text-blue-500 group-hover:scale-125 transition-transform duration-300" />
           </CardHeader>
           <CardContent className="px-4 md:px-6 pb-4 md:pb-6">
             <div className="text-3xl md:text-4xl font-bold text-blue-600 mb-1 md:mb-2">{todayEvents.length}</div>
-            <p className="text-xs md:text-sm text-muted-foreground">{todayEvents.length === 1 ? 'Kelas tersedia' : 'Kelas tersedia'}</p>
+            <p className="text-xs md:text-sm text-muted-foreground">
+              {session.role === "mahasiswa" ? 'Kelas tersedia' : 'Kelas hari ini'}
+            </p>
             <div className="mt-2 md:mt-3 flex items-center text-[10px] md:text-xs text-blue-600">
               <Target className="h-3 w-3 mr-1" />
-              {todayEvents.length === 0 ? 'Tidak ada kelas' : `${todayEvents.length} jadwal aktif`}
+              {todayEvents.length === 0 
+                ? (session.role === "mahasiswa" ? 'Tidak ada kelas' : 'Tidak ada mengajar')
+                : `${todayEvents.length} jadwal aktif`}
             </div>
           </CardContent>
         </Card>
@@ -565,14 +597,23 @@ export default function DashboardPage() {
           onTouchEnd={handlePressEnd}
         >
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 md:pb-3 px-4 md:px-6 pt-4 md:pt-6">
-            <CardTitle className="text-xs md:text-sm font-bold">Mata Kuliah</CardTitle>
+            <CardTitle className="text-xs md:text-sm font-bold">
+              {session.role === "mahasiswa" ? "Mata Kuliah" : "Mata Kuliah Diampu"}
+            </CardTitle>
             <BookOpen className="h-5 w-5 md:h-6 md:w-6 text-green-500 group-hover:scale-125 transition-transform duration-300" />
           </CardHeader>
           <CardContent className="px-4 md:px-6 pb-4 md:pb-6">
-            <div className="text-3xl md:text-4xl font-bold text-green-600 mb-1 md:mb-2">{userKrsItems.length}</div>
-            <p className="text-xs md:text-sm text-muted-foreground">Mata kuliah diambil</p>
+            <div className="text-3xl md:text-4xl font-bold text-green-600 mb-1 md:mb-2">
+              {session.role === "mahasiswa" ? userKrsItems.length : taughtSubjects.length}
+            </div>
+            <p className="text-xs md:text-sm text-muted-foreground">
+              {session.role === "mahasiswa" ? 'Mata kuliah diambil' : 'Mata kuliah diampu'}
+            </p>
             <div className="mt-2 md:mt-3 flex items-center text-[10px] md:text-xs text-green-600">
-              <Target className="h-3 w-3 mr-1" />{userKrsItems.length === 0 ? 'Belum ada KRS' : `${userKrsItems.length} di KRS semester ini`}
+              <Target className="h-3 w-3 mr-1" />
+              {session.role === "mahasiswa" 
+                ? (userKrsItems.length === 0 ? 'Belum ada KRS' : `${userKrsItems.length} di KRS semester ini`)
+                : (taughtSubjects.length === 0 ? 'Belum mengampu' : `${taughtSubjects.length} mata kuliah aktif`)}
             </div>
           </CardContent>
         </Card>
@@ -798,7 +839,8 @@ export default function DashboardPage() {
             </DialogTitle>
             <DialogDescription>
               {dialogType === "schedule" && `${dialogData.length} jadwal tersedia hari ini`}
-              {dialogType === "subjects" && `${dialogData.length} mata kuliah di KRS Anda`}
+              {dialogType === "subjects" && session?.role === "mahasiswa" && `${dialogData.length} mata kuliah di KRS Anda`}
+              {dialogType === "subjects" && (session?.role === "dosen" || session?.role === "kaprodi") && `${dialogData.length} mata kuliah yang diampu`}
               {dialogType === "reminders" && `${dialogData.length} pengingat aktif`}
               {dialogType === "coursework" && showAssignments && `${dialogData.length} tugas mendatang`}
               {dialogType === "coursework" && !showAssignments && `${dialogData.length} materi tersedia`}
@@ -810,7 +852,8 @@ export default function DashboardPage() {
               <div className="text-center py-8">
                 <p className="text-sm text-muted-foreground">
                   {dialogType === "schedule" && "Tidak ada jadwal hari ini"}
-                  {dialogType === "subjects" && "Belum ada mata kuliah di KRS"}
+                  {dialogType === "subjects" && session?.role === "mahasiswa" && "Belum ada mata kuliah di KRS"}
+                  {dialogType === "subjects" && (session?.role === "dosen" || session?.role === "kaprodi") && "Belum mengampu mata kuliah"}
                   {dialogType === "reminders" && "Tidak ada pengingat aktif"}
                   {dialogType === "coursework" && showAssignments && "Tidak ada tugas"}
                   {dialogType === "coursework" && !showAssignments && "Tidak ada materi"}
@@ -849,7 +892,7 @@ export default function DashboardPage() {
                 if (dialogType === "subjects") {
                   const colorClass = item.color ? `bg-${item.color}-50 border-${item.color}-200 dark:bg-${item.color}-950/20 dark:border-${item.color}-800` : ""
                   return (
-                    <Link key={item.id} href="/krs">
+                    <Link key={item.krsId || item.id} href="/krs">
                       <div className={`p-4 rounded-lg border hover:shadow-md transition-all cursor-pointer ${colorClass || "bg-muted/50"}`}>
                         <div className="flex items-start justify-between">
                           <div className="flex-1">
@@ -859,12 +902,16 @@ export default function DashboardPage() {
                             </div>
                             <div className="flex flex-wrap gap-2 text-xs text-muted-foreground">
                               <span>{item.sks} SKS</span>
-                              <span>•</span>
-                              <span>Semester {item.semester}</span>
-                              {item.kelas && (
+                              {item.semester && (
                                 <>
                                   <span>•</span>
-                                  <span>Kelas {item.kelas}</span>
+                                  <span>Semester {item.semester}</span>
+                                </>
+                              )}
+                              {item.term && (
+                                <>
+                                  <span>•</span>
+                                  <span>{item.term}</span>
                                 </>
                               )}
                             </div>

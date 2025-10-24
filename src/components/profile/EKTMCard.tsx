@@ -93,16 +93,22 @@ export function EKTMCard({ name, nim, fakultas, programStudi, avatarUrl }: EKTMC
       ctx.fillStyle = '#ffffff'
       ctx.fillRect(0, 0, cardWidth, cardHeight)
 
-      // Load and draw card template (desain E-KTM.svg)
+      // Load and draw main background (BG_E-KTM.svg)
+      try {
+        const bgImage = await loadImage('/BG_E-KTM.svg')
+        ctx.drawImage(bgImage, 0, 0, cardWidth, cardHeight)
+        console.log('✅ Successfully loaded BG_E-KTM.svg for background')
+      } catch (e) {
+        console.warn('Could not load BG_E-KTM.svg, using fallback background')
+      }
+
+      // Load and draw card template/design overlay (desain E-KTM.svg)
       try {
         const cardTemplate = await loadImage('/desain E-KTM.svg')
         ctx.drawImage(cardTemplate, 0, 0, cardWidth, cardHeight)
         console.log('✅ Successfully loaded desain E-KTM.svg for card template')
       } catch (e) {
-        console.warn('Could not load desain E-KTM.svg, using fallback background')
-        // Fallback: solid white background
-        ctx.fillStyle = '#ffffff'
-        ctx.fillRect(0, 0, cardWidth, cardHeight)
+        console.warn('Could not load desain E-KTM.svg')
       }
 
       // Draw logo (top right) - exact position from CSS

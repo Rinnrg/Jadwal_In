@@ -39,14 +39,14 @@ export default function ProfilePage() {
 
       {/* Dialog Change Password */}
       <Dialog open={showChangePassword} onOpenChange={setShowChangePassword}>
-        <DialogContent className="sm:max-w-md">
+        <DialogContent className="w-[95vw] max-w-[425px] gap-4">
           <ChangePasswordCard onSuccess={() => setShowChangePassword(false)} />
         </DialogContent>
       </Dialog>
 
       {/* Dialog Set Password */}
       <Dialog open={showSetPassword} onOpenChange={setShowSetPassword}>
-        <DialogContent className="sm:max-w-md">
+        <DialogContent className="w-[95vw] max-w-[425px] gap-4">
           <SetPasswordCard onSuccess={() => setShowSetPassword(false)} />
         </DialogContent>
       </Dialog>

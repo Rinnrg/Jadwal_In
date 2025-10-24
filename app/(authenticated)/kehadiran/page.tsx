@@ -168,7 +168,7 @@ export default function KehadiranPage() {
   }
 
   return (
-    <div className="space-y-4 md:space-y-6 px-2 md:px-4">
+    <div className="space-y-4 md:space-y-6">
       <div className="space-y-1 md:space-y-2">
         <h1 className="text-xl md:text-2xl lg:text-3xl font-bold tracking-tight text-balance">Data Kehadiran Mahasiswa</h1>
         <p className="text-muted-foreground text-pretty text-xs md:text-sm">
@@ -177,8 +177,9 @@ export default function KehadiranPage() {
         </p>
       </div>
 
-      <div className="hidden md:flex gap-3 md:gap-4 overflow-x-auto pb-2 snap-x snap-mandatory">
-        <Card className="min-w-[180px] md:min-w-[220px] snap-start">
+      {/* Statistics Cards - Responsive Grid */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4">
+        <Card>
           <CardContent className="p-3 md:p-4 lg:p-6">
             <div className="flex items-center space-x-2">
               <BookOpen className="h-4 w-4 md:h-5 md:w-5 text-primary shrink-0" />
@@ -191,7 +192,7 @@ export default function KehadiranPage() {
             </div>
           </CardContent>
         </Card>
-        <Card className="min-w-[180px] md:min-w-[220px] snap-start">
+        <Card>
           <CardContent className="p-3 md:p-4 lg:p-6">
             <div className="flex items-center space-x-2">
               <Users className="h-4 w-4 md:h-5 md:w-5 text-primary shrink-0" />
@@ -202,7 +203,7 @@ export default function KehadiranPage() {
             </div>
           </CardContent>
         </Card>
-        <Card className="min-w-[180px] md:min-w-[220px] snap-start">
+        <Card>
           <CardContent className="p-3 md:p-4 lg:p-6">
             <div className="flex items-center space-x-2">
               <CheckCircle className="h-4 w-4 md:h-5 md:w-5 text-green-500 shrink-0" />
@@ -213,7 +214,7 @@ export default function KehadiranPage() {
             </div>
           </CardContent>
         </Card>
-        <Card className="min-w-[180px] md:min-w-[220px] snap-start">
+        <Card>
           <CardContent className="p-3 md:p-4 lg:p-6">
             <div className="flex items-center space-x-2">
               <TrendingUp className="h-4 w-4 md:h-5 md:w-5 text-primary shrink-0" />
@@ -323,9 +324,9 @@ export default function KehadiranPage() {
               </div>
             </div>
           </CardHeader>
-          <CardContent className="px-3 md:px-6 pb-3 md:pb-6">
+          <CardContent className="px-0 md:px-6 pb-3 md:pb-6">
             {filteredStudents.length === 0 ? (
-              <div className="text-center py-6 md:py-8">
+              <div className="text-center py-6 md:py-8 px-3">
                 <Users className="h-10 w-10 md:h-12 md:w-12 text-muted-foreground mx-auto mb-3 md:mb-4" />
                 <h3 className="text-base md:text-lg font-semibold mb-1 md:mb-2">Tidak Ada Mahasiswa</h3>
                 <p className="text-muted-foreground text-xs md:text-sm">
@@ -335,58 +336,112 @@ export default function KehadiranPage() {
                 </p>
               </div>
             ) : (
-              <div className="rounded-md border max-h-[400px] md:max-h-[600px] overflow-auto">
-                <Table>
-                  <TableHeader className="sticky top-0 bg-muted/50 z-10">
-                    <TableRow>
-                      <TableHead className="font-semibold text-xs md:text-sm">NIM</TableHead>
-                      <TableHead className="font-semibold text-xs md:text-sm">Nama Mahasiswa</TableHead>
-                      <TableHead className="font-semibold text-xs md:text-sm">Status Saat Ini</TableHead>
-                      <TableHead className="font-semibold text-xs md:text-sm">Kehadiran Hari Ini</TableHead>
-                      <TableHead className="font-semibold text-xs md:text-sm">Persentase Kehadiran</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {filteredStudents.map((student, index) => (
-                      <TableRow key={student.id} className={index % 2 === 0 ? "bg-card" : "bg-background"}>
-                        <TableCell className="font-mono font-medium text-xs md:text-sm">{student.nim}</TableCell>
-                        <TableCell className="font-medium text-xs md:text-sm">{student.name}</TableCell>
-                        <TableCell>
-                          <Badge variant="secondary" className={`${getAttendanceBadgeColor(student.currentAttendance!)} text-xs`}>
+              <>
+                {/* Desktop Table View */}
+                <div className="hidden md:block rounded-md border max-h-[600px] overflow-auto">
+                  <Table>
+                    <TableHeader className="sticky top-0 bg-muted/50 z-10">
+                      <TableRow>
+                        <TableHead className="font-semibold">NIM</TableHead>
+                        <TableHead className="font-semibold">Nama Mahasiswa</TableHead>
+                        <TableHead className="font-semibold">Status Saat Ini</TableHead>
+                        <TableHead className="font-semibold">Kehadiran Hari Ini</TableHead>
+                        <TableHead className="font-semibold">Persentase Kehadiran</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {filteredStudents.map((student, index) => (
+                        <TableRow key={student.id} className={index % 2 === 0 ? "bg-card" : "bg-background"}>
+                          <TableCell className="font-mono font-medium">{student.nim}</TableCell>
+                          <TableCell className="font-medium">{student.name}</TableCell>
+                          <TableCell>
+                            <Badge variant="secondary" className={`${getAttendanceBadgeColor(student.currentAttendance!)} text-xs`}>
+                              {attendanceOptions.find(opt => opt.value === student.currentAttendance)?.label}
+                            </Badge>
+                          </TableCell>
+                          <TableCell>
+                            <Select
+                              value={attendanceData[student.id] || student.currentAttendance || ""}
+                              onValueChange={(value) => handleAttendanceChange(student.id, value)}
+                            >
+                              <SelectTrigger className="w-32">
+                                <SelectValue placeholder="Pilih status" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                {attendanceOptions.map((option) => (
+                                  <SelectItem key={option.value} value={option.value}>
+                                    <div className="flex items-center gap-2">
+                                      <option.icon className="h-4 w-4" />
+                                      {option.label}
+                                    </div>
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          </TableCell>
+                          <TableCell>
+                            <div className="flex items-center gap-2">
+                              <div className="text-sm font-medium">{student.attendancePercentage}%</div>
+                              <Progress value={student.attendancePercentage} className="w-16 h-2" />
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </div>
+
+                {/* Mobile Card View */}
+                <div className="md:hidden space-y-3 px-3">
+                  {filteredStudents.map((student) => (
+                    <Card key={student.id} className="overflow-hidden">
+                      <CardContent className="p-4">
+                        <div className="flex items-start justify-between mb-3">
+                          <div className="flex-1 min-w-0">
+                            <p className="font-medium text-sm truncate">{student.name}</p>
+                            <p className="text-xs text-muted-foreground font-mono">{student.nim}</p>
+                          </div>
+                          <Badge variant="secondary" className={`${getAttendanceBadgeColor(student.currentAttendance!)} text-xs ml-2`}>
                             {attendanceOptions.find(opt => opt.value === student.currentAttendance)?.label}
                           </Badge>
-                        </TableCell>
-                        <TableCell>
-                          <Select
-                            value={attendanceData[student.id] || student.currentAttendance || ""}
-                            onValueChange={(value) => handleAttendanceChange(student.id, value)}
-                          >
-                            <SelectTrigger className="w-28 md:w-32 text-xs md:text-sm h-8 md:h-10">
-                              <SelectValue placeholder="Pilih status" />
-                            </SelectTrigger>
-                            <SelectContent>
-                              {attendanceOptions.map((option) => (
-                                <SelectItem key={option.value} value={option.value} className="text-xs md:text-sm">
-                                  <div className="flex items-center gap-1.5 md:gap-2">
-                                    <option.icon className="h-3.5 w-3.5 md:h-4 md:w-4" />
-                                    {option.label}
-                                  </div>
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                        </TableCell>
-                        <TableCell>
-                          <div className="flex items-center gap-1.5 md:gap-2">
-                            <div className="text-xs md:text-sm font-medium">{student.attendancePercentage}%</div>
-                            <Progress value={student.attendancePercentage} className="w-12 md:w-16 h-1.5 md:h-2" />
+                        </div>
+                        
+                        <div className="space-y-3">
+                          <div>
+                            <Label className="text-xs text-muted-foreground">Kehadiran Hari Ini</Label>
+                            <Select
+                              value={attendanceData[student.id] || student.currentAttendance || ""}
+                              onValueChange={(value) => handleAttendanceChange(student.id, value)}
+                            >
+                              <SelectTrigger className="w-full mt-1 h-9 text-xs">
+                                <SelectValue placeholder="Pilih status" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                {attendanceOptions.map((option) => (
+                                  <SelectItem key={option.value} value={option.value} className="text-xs">
+                                    <div className="flex items-center gap-2">
+                                      <option.icon className="h-3.5 w-3.5" />
+                                      {option.label}
+                                    </div>
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
                           </div>
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </div>
+                          
+                          <div>
+                            <Label className="text-xs text-muted-foreground">Persentase Kehadiran</Label>
+                            <div className="flex items-center gap-2 mt-1">
+                              <Progress value={student.attendancePercentage} className="flex-1 h-2" />
+                              <span className="text-xs font-medium min-w-[40px] text-right">{student.attendancePercentage}%</span>
+                            </div>
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+              </>
             )}
           </CardContent>
         </Card>

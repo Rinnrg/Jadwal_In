@@ -132,10 +132,11 @@ export const AttendanceSessionSchema = z.object({
   subjectId: z.string(),
   dateUTC: z.number(),
   meetingNumber: z.number().min(1).max(16), // Added meeting number field
+  sessionType: z.enum(["regular", "UTS", "UAS"]).default("regular").optional(), // Added session type
   records: z.array(
     z.object({
       studentUserId: z.string(),
-      status: z.enum(["hadir", "alfa", "izin"]).default("alfa"), // Changed from boolean to status enum
+      status: z.enum(["hadir", "alfa", "izin", "sakit"]).default("alfa"), // Added sakit status
     }),
   ),
 })

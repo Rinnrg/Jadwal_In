@@ -55,6 +55,9 @@ export function KrsPicker({ userId, term }: KrsPickerProps) {
       // Don't show if this specific offering is already taken
       if (enrolledOfferingIds.has(offering.id)) return false
 
+      // Don't show if subject is already taken in another class
+      if (enrolledSubjectIds.has(offering.subjectId)) return false
+
       // Check capacity if set
       if (offering.capacity) {
         const enrollmentCount = getKrsByOffering(offering.id).length
@@ -73,11 +76,7 @@ export function KrsPicker({ userId, term }: KrsPickerProps) {
       }
 
       return true
-    }).map(offering => ({
-      ...offering,
-      // Mark if subject is already taken in another class
-      subjectAlreadyTaken: enrolledSubjectIds.has(offering.subjectId)
-    }))
+    })
   }, [userAngkatan, getOfferingsForStudent, getSubjectById, userId, term, getKrsByOffering, getKrsByUser, searchTerm, krsItems])
 
   // Group offerings by kelas
@@ -99,13 +98,6 @@ export function KrsPicker({ userId, term }: KrsPickerProps) {
 
   const handleAddOffering = (offering: any) => {
     try {
-      // Check if subject is already taken in another class
-      if (offering.subjectAlreadyTaken) {
-        const subject = getSubjectById(offering.subjectId)
-        showError(`Anda sudah mengambil "${subject?.nama}" di kelas lain. Tidak bisa mengambil mata kuliah yang sama dua kali.`)
-        return
-      }
-
       const subject = getSubjectById(offering.subjectId)
       addKrsItem(userId, offering.subjectId, term, offering.id, subject?.nama, subject?.sks)
       showSuccess(`${subject?.nama} (Kelas ${offering.kelas}) berhasil ditambahkan ke KRS`)
@@ -215,12 +207,11 @@ export function KrsPicker({ userId, term }: KrsPickerProps) {
                           if (!subject) return null
 
                           const enrollmentInfo = getEnrollmentInfo(offering)
-                          const isAlreadyTaken = (offering as any).subjectAlreadyTaken
 
                           return (
                             <div 
                               key={offering.id} 
-                              className={`p-4 transition-colors ${isAlreadyTaken ? 'bg-muted/50 opacity-60' : 'hover:bg-muted/30'}`}
+                              className="p-4 transition-colors hover:bg-muted/30"
                             >
                               <div className="flex items-start justify-between gap-3">
                                 <div className="flex-1 min-w-0">
@@ -231,11 +222,6 @@ export function KrsPicker({ userId, term }: KrsPickerProps) {
                                     <Badge variant="secondary" className="text-xs">
                                       {subject.sks} SKS
                                     </Badge>
-                                    {isAlreadyTaken && (
-                                      <Badge variant="outline" className="text-xs border-orange-300 text-orange-700 bg-orange-50 dark:bg-orange-950/20">
-                                        Sudah diambil di kelas lain
-                                      </Badge>
-                                    )}
                                     {subject.prodi && (
                                       <span className="text-xs text-muted-foreground">{subject.prodi}</span>
                                     )}
@@ -250,8 +236,6 @@ export function KrsPicker({ userId, term }: KrsPickerProps) {
                                   size="sm" 
                                   onClick={() => handleAddOffering(offering)}
                                   className="h-8 px-3 flex-shrink-0"
-                                  variant={isAlreadyTaken ? "outline" : "default"}
-                                  disabled={isAlreadyTaken}
                                 >
                                   <Plus className="h-4 w-4 mr-1" />
                                   Ambil
@@ -310,12 +294,11 @@ export function KrsPicker({ userId, term }: KrsPickerProps) {
                             if (!subject) return null
 
                             const enrollmentInfo = getEnrollmentInfo(offering)
-                            const isAlreadyTaken = (offering as any).subjectAlreadyTaken
 
                             return (
                               <Card 
                                 key={offering.id} 
-                                className={`transition-colors ${isAlreadyTaken ? 'opacity-60 border-muted' : 'hover:border-primary/50'}`}
+                                className="transition-colors hover:border-primary/50"
                               >
                                 <CardContent className="p-4">
                                   <div className="flex items-start justify-between gap-4">
@@ -330,11 +313,6 @@ export function KrsPicker({ userId, term }: KrsPickerProps) {
                                         <Badge variant="secondary" className="text-xs">
                                           {subject.sks} SKS
                                         </Badge>
-                                        {isAlreadyTaken && (
-                                          <Badge variant="outline" className="text-xs border-orange-300 text-orange-700 bg-orange-50 dark:bg-orange-950/20">
-                                            Sudah diambil di kelas lain
-                                          </Badge>
-                                        )}
                                         {subject.prodi && (
                                           <span className="text-xs text-muted-foreground">{subject.prodi}</span>
                                         )}
@@ -349,8 +327,6 @@ export function KrsPicker({ userId, term }: KrsPickerProps) {
                                       size="sm" 
                                       onClick={() => handleAddOffering(offering)}
                                       className="h-9 px-4 flex-shrink-0"
-                                      variant={isAlreadyTaken ? "outline" : "default"}
-                                      disabled={isAlreadyTaken}
                                     >
                                       <Plus className="h-4 w-4 mr-1" />
                                       Ambil

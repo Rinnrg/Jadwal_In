@@ -22,6 +22,8 @@ import { useKrsStore } from "@/stores/krs.store"
 import { useUIStore } from "@/stores/ui.store"
 import { useRemindersStore } from "@/stores/reminders.store"
 import { useNotificationStore } from "@/stores/notification.store"
+import { useProfileStore } from "@/stores/profile.store"
+import { useUsersStore } from "@/stores/users.store"
 import type { ScheduleEvent } from "@/data/schema"
 import { ScheduleGrid } from "@/components/schedule/ScheduleGrid"
 import { ScheduleForm } from "@/components/schedule/ScheduleForm"
@@ -42,6 +44,8 @@ export default function JadwalPage() {
   const { showNowLine, showLegend, setShowNowLine, setShowLegend } = useUIStore()
   const { addReminder } = useRemindersStore()
   const { clearBadge } = useNotificationStore()
+  const { getProfile, profiles } = useProfileStore()
+  const { getUserById } = useUsersStore()
 
   const [viewMode, setViewMode] = useState<ViewMode>("simple")
   const [searchTerm, setSearchTerm] = useState("")
@@ -54,7 +58,15 @@ export default function JadwalPage() {
 
   const userEvents = session ? getEventsByUser(session.id) : []
   const userKrsItems = session ? getKrsByUser(session.id) : []
-  const hasKrsItems = userKrsItems.length > 0
+  
+  // For dosen/kaprodi: check if they have taught subjects with status "aktif"
+  const taughtSubjects = session && (session.role === "dosen" || session.role === "kaprodi")
+    ? subjects.filter(s => s.status === "aktif" && s.pengampuIds?.includes(session.id))
+    : []
+    
+  const hasKrsItems = session?.role === "mahasiswa" 
+    ? userKrsItems.length > 0 
+    : taughtSubjects.length > 0
 
   // Clear jadwal notification badge when user opens this page
   useEffect(() => {
@@ -65,7 +77,11 @@ export default function JadwalPage() {
 
   const handleAddEvent = (day?: number, hour?: number) => {
     if (!hasKrsItems) {
-      showError("Anda belum mengambil mata kuliah di KRS. Silakan ambil KRS terlebih dahulu.")
+      if (session?.role === "mahasiswa") {
+        showError("Anda belum mengambil mata kuliah di KRS. Silakan ambil KRS terlebih dahulu.")
+      } else {
+        showError("Anda belum mengampu mata kuliah yang aktif. Silakan tambahkan mata kuliah di halaman Mata Kuliah.")
+      }
       return
     }
     setDefaultDay(day)
@@ -265,10 +281,24 @@ export default function JadwalPage() {
     const endTime = new Date(event.endUTC)
     const dayName = Object.keys(dayMap).find(key => dayMap[key] === event.dayOfWeek) || "Unknown"
     
+    // Get lecturer names from pengampuIds
+    let lecturerNames = "-"
+    if (subject && subject.pengampuIds && subject.pengampuIds.length > 0) {
+      const lecturers = subject.pengampuIds
+        .map(id => getUserById(id))
+        .filter((user): user is NonNullable<typeof user> => Boolean(user))
+        .map(user => user.name || "")
+        .filter(name => name.length > 0)
+      
+      if (lecturers.length > 0) {
+        lecturerNames = lecturers.join(", ")
+      }
+    }
+    
     return {
       ...event,
       subject: subject?.nama || "Mata Kuliah Tidak Diketahui",
-      lecturer: "-", // Will be filled from pengampu data later if needed
+      lecturer: lecturerNames,
       code: subject?.kode || "-",
       time: `${startTime.toLocaleTimeString("id-ID", { hour: "2-digit", minute: "2-digit" })} - ${endTime.toLocaleTimeString("id-ID", { hour: "2-digit", minute: "2-digit" })}`,
       day: dayName,
@@ -522,10 +552,12 @@ export default function JadwalPage() {
               </svg>
               <div className="flex-1">
                 <p className="text-sm font-medium text-blue-800 dark:text-blue-200">
-                  Ambil KRS Terlebih Dahulu
+                  {session?.role === "mahasiswa" ? "Ambil KRS Terlebih Dahulu" : "Tambah Mata Kuliah Terlebih Dahulu"}
                 </p>
                 <p className="text-xs text-blue-700 dark:text-blue-300 mt-1">
-                  Untuk menambahkan jadwal mata kuliah, silakan ambil KRS terlebih dahulu di halaman KRS. Anda masih dapat menambahkan jadwal pribadi.
+                  {session?.role === "mahasiswa" 
+                    ? "Untuk menambahkan jadwal mata kuliah, silakan ambil KRS terlebih dahulu di halaman KRS. Anda masih dapat menambahkan jadwal pribadi."
+                    : "Untuk menambahkan jadwal mengajar, silakan tambahkan mata kuliah yang Anda ampu dengan status aktif di halaman Mata Kuliah."}
                 </p>
               </div>
             </div>

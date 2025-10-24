@@ -77,7 +77,8 @@ export function AssignmentTab({ subjectId, canManage, userRole }: AssignmentTabP
   // Get submissions for current user (if student) or all submissions (if lecturer)
   const getAssignmentSubmissions = (assignmentId: string) => {
     if (userRole === "mahasiswa" && session) {
-      return getSubmissionByStudent(assignmentId, session.id)
+      const submission = getSubmissionByStudent(assignmentId, session.id)
+      return Array.isArray(submission) ? submission[0] : submission
     }
     return getSubmissionsByAssignment(assignmentId)
   }
@@ -107,6 +108,10 @@ export function AssignmentTab({ subjectId, canManage, userRole }: AssignmentTabP
           title: formData.title,
           description: formData.description || undefined,
           dueUTC,
+          attachments: [],
+          allowedFileTypes: [],
+          maxFileSize: 10 * 1024 * 1024, // 10MB
+          maxFiles: 5,
         })
         showSuccess("Tugas berhasil ditambahkan")
       }
@@ -240,7 +245,7 @@ export function AssignmentTab({ subjectId, canManage, userRole }: AssignmentTabP
       case "submitted":
         return <Badge variant="default">Dikumpulkan</Badge>
       case "graded":
-        return <Badge variant="success">Dinilai</Badge>
+        return <Badge variant="default">Dinilai</Badge>
       default:
         return <Badge variant="outline">Unknown</Badge>
     }
@@ -344,7 +349,17 @@ export function AssignmentTab({ subjectId, canManage, userRole }: AssignmentTabP
                 <CardHeader>
                   <div className="flex items-start justify-between">
                     <div className="space-y-1">
-                      <CardTitle className="text-lg">{assignment.title}</CardTitle>
+                      <CardTitle className="text-lg flex items-center gap-2">
+                        {assignment.title}
+                        {(assignment.title.toLowerCase().includes("uts") || 
+                          assignment.title.toLowerCase().includes("ujian tengah")) && (
+                          <Badge variant="default" className="bg-blue-600">UTS</Badge>
+                        )}
+                        {(assignment.title.toLowerCase().includes("uas") || 
+                          assignment.title.toLowerCase().includes("ujian akhir")) && (
+                          <Badge variant="default" className="bg-purple-600">UAS</Badge>
+                        )}
+                      </CardTitle>
                       {assignment.description && <CardDescription>{assignment.description}</CardDescription>}
                     </div>
                     <div className="flex items-center gap-2">
@@ -398,7 +413,7 @@ export function AssignmentTab({ subjectId, canManage, userRole }: AssignmentTabP
                           className="gap-2"
                         >
                           <Upload className="h-4 w-4" />
-                          {submission?.status === "submitted" || submission?.status === "graded"
+                          {(submission && !Array.isArray(submission) && (submission.status === "submitted" || submission.status === "graded"))
                             ? "Lihat Submission"
                             : "Kumpulkan Tugas"}
                         </Button>
@@ -431,20 +446,20 @@ export function AssignmentTab({ subjectId, canManage, userRole }: AssignmentTabP
         <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>
-              {selectedSubmission?.status === "submitted" || selectedSubmission?.status === "graded" 
+              {selectedSubmission && !Array.isArray(selectedSubmission) && (selectedSubmission.status === "submitted" || selectedSubmission.status === "graded")
                 ? "Lihat Submission" 
                 : "Kumpulkan Tugas"
               }
             </DialogTitle>
             <DialogDescription>
-              {selectedSubmission?.status === "submitted" || selectedSubmission?.status === "graded" 
+              {selectedSubmission && !Array.isArray(selectedSubmission) && (selectedSubmission.status === "submitted" || selectedSubmission.status === "graded")
                 ? "Detail submission dan hasil penilaian" 
                 : "Upload file atau tambahkan link untuk tugas Anda"
               }
             </DialogDescription>
           </DialogHeader>
 
-          {selectedSubmission && selectedAssignment && (
+          {selectedSubmission && selectedAssignment && !Array.isArray(selectedSubmission) && (
             <AssignmentSubmission
               assignment={selectedAssignment}
               submission={selectedSubmission}
