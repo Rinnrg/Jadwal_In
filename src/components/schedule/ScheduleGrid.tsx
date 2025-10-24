@@ -7,9 +7,9 @@ import { useUIStore } from "@/stores/ui.store"
 import type { ScheduleEvent } from "@/data/schema"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
-import { MoreHorizontal, Edit, Trash2, Copy, MapPin, ExternalLink } from "lucide-react"
-import { confirmAction, showSuccess } from "@/lib/alerts"
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator, DropdownMenuLabel, DropdownMenuSub, DropdownMenuSubContent, DropdownMenuSubTrigger } from "@/components/ui/dropdown-menu"
+import { MoreHorizontal, Edit, Trash2, Copy, MapPin, ExternalLink, MoveHorizontal, Clock, Calendar } from "lucide-react"
+import { confirmAction, showSuccess, showError } from "@/lib/alerts"
 import { fmt24, nowUTC } from "@/lib/time"
 import { cn } from "@/lib/utils"
 import { ActivityLogger } from "@/lib/activity-logger"
@@ -24,10 +24,10 @@ const dayNames = ["Minggu", "Senin", "Selasa", "Rabu", "Kamis", "Jumat", "Sabtu"
 const hours = Array.from({ length: 15 }, (_, i) => i + 7) // 7 AM to 9 PM
 
 export function ScheduleGrid({ userId, onEditEvent, onAddEvent }: ScheduleGridProps) {
-  const { getEventsByDay, deleteEvent, duplicateEvent } = useScheduleStore()
+  const { getEventsByDay, deleteEvent, duplicateEvent, rescheduleEvent, getConflicts } = useScheduleStore()
   const { subjects } = useSubjectsStore()
   const { showNowLine } = useUIStore()
-  const [selectedDay, setSelectedDay] = useState<number | null>(null)
+  const [selectedDay, setSelectedDay] = useState<number>(new Date().getDay())
 
   const currentTime = nowUTC()
   const currentDay = new Date().getDay()
@@ -56,6 +56,24 @@ export function ScheduleGrid({ userId, onEditEvent, onAddEvent }: ScheduleGridPr
   const handleDuplicateEvent = (event: ScheduleEvent, targetDay: number) => {
     duplicateEvent(event.id, targetDay)
     showSuccess(`Jadwal berhasil diduplikasi ke ${dayNames[targetDay]}`)
+  }
+
+  const handleMoveEvent = (event: ScheduleEvent, targetDay: number) => {
+    // Check for conflicts at the new day/time
+    const conflicts = getConflicts(userId, targetDay, event.startUTC, event.endUTC, event.id)
+    
+    if (conflicts.length > 0) {
+      showError(`Terdapat konflik jadwal di ${dayNames[targetDay]}`)
+      return
+    }
+
+    rescheduleEvent(event.id, targetDay, event.startUTC, event.endUTC)
+    showSuccess(`Jadwal berhasil dipindahkan ke ${dayNames[targetDay]}`)
+    
+    // Log activity
+    const subject = event.subjectId ? subjects.find((s) => s.id === event.subjectId) : null
+    const eventName = subject ? `${subject.kode} - ${subject.nama}` : "Jadwal Pribadi"
+    ActivityLogger.scheduleUpdated(userId, eventName)
   }
 
   const getEventPosition = (event: ScheduleEvent) => {
@@ -114,6 +132,24 @@ export function ScheduleGrid({ userId, onEditEvent, onAddEvent }: ScheduleGridPr
                     <Edit className="mr-2 h-4 w-4" />
                     Edit
                   </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuSub>
+                    <DropdownMenuSubTrigger>
+                      <MoveHorizontal className="mr-2 h-4 w-4" />
+                      Pindahkan ke
+                    </DropdownMenuSubTrigger>
+                    <DropdownMenuSubContent>
+                      {dayNames.map((day, index) => (
+                        <DropdownMenuItem
+                          key={index}
+                          onClick={() => handleMoveEvent(event, index)}
+                          disabled={index === event.dayOfWeek}
+                        >
+                          {day}
+                        </DropdownMenuItem>
+                      ))}
+                    </DropdownMenuSubContent>
+                  </DropdownMenuSub>
                   <DropdownMenuItem
                     onClick={() => {
                       const targetDay = (event.dayOfWeek + 1) % 7
@@ -123,6 +159,7 @@ export function ScheduleGrid({ userId, onEditEvent, onAddEvent }: ScheduleGridPr
                     <Copy className="mr-2 h-4 w-4" />
                     Duplikasi
                   </DropdownMenuItem>
+                  <DropdownMenuSeparator />
                   <DropdownMenuItem onClick={() => handleDeleteEvent(event)} className="text-destructive">
                     <Trash2 className="mr-2 h-4 w-4" />
                     Hapus
@@ -160,11 +197,137 @@ export function ScheduleGrid({ userId, onEditEvent, onAddEvent }: ScheduleGridPr
   }
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Jadwal Mingguan</CardTitle>
-      </CardHeader>
-      <CardContent>
+    <div className="w-full">
+      {/* Mobile: Single day view with tabs */}
+      <div className="md:hidden w-full">
+        {/* Day selector - Wrap buttons */}
+        <div className="sticky top-0 z-10 bg-background border-b border-border">
+          <div className="flex gap-1.5 flex-wrap px-3 py-2">
+            {dayNames.map((day, index) => (
+              <Button
+                key={day}
+                variant={selectedDay === index ? "default" : "outline"}
+                size="sm"
+                onClick={() => setSelectedDay(index)}
+                className={cn(
+                  "capitalize text-xs h-8 px-2",
+                  index === currentDay && selectedDay !== index && "ring-1 ring-primary/30"
+                )}
+              >
+                {day}
+              </Button>
+            ))}
+          </div>
+        </div>
+
+        {/* Single day schedule */}
+        <div className="w-full">
+          {/* Day header */}
+          <div className="px-3 py-3 border-b border-border">
+            <h3 className="text-base font-bold">{dayNames[selectedDay]}</h3>
+            <p className="text-xs text-muted-foreground mt-0.5">
+              {new Date().toLocaleDateString('id-ID', { 
+                day: 'numeric', 
+                month: 'long'
+              })}
+            </p>
+          </div>
+
+          {/* Schedule list */}
+          <div className="divide-y divide-border">
+            {hours.map((hour) => {
+              const hourEvents = getEventsByDay(userId, selectedDay).filter((event) => {
+                const eventStartHour = Math.floor(event.startUTC / (1000 * 60 * 60)) % 24
+                return eventStartHour === hour
+              })
+
+              return (
+                <div
+                  key={hour}
+                  className={cn(
+                    "flex min-h-[60px]",
+                    hourEvents.length > 0 ? "bg-primary/5" : "hover:bg-muted/30 active:bg-muted/50"
+                  )}
+                  onClick={() => hourEvents.length === 0 && onAddEvent?.(selectedDay, hour)}
+                >
+                  {/* Time label */}
+                  <div className="flex-shrink-0 w-14 flex items-start justify-end pr-3 pt-3 border-r border-border">
+                    <span className="text-xs font-medium text-muted-foreground">
+                      {hour.toString().padStart(2, "0")}:00
+                    </span>
+                  </div>
+
+                  {/* Event or empty slot */}
+                  <div className="flex-1 min-w-0 px-3 py-2">
+                    {hourEvents.length > 0 ? (
+                      <div className="space-y-2">
+                        {hourEvents.map((event) => {
+                          const subject = event.subjectId ? subjects.find((s) => s.id === event.subjectId) : null
+                          const color = subject?.color || event.color || "#3b82f6"
+
+                          return (
+                            <div
+                              key={event.id}
+                              className="rounded-lg p-2.5 border cursor-pointer active:scale-[0.98] transition-transform"
+                              style={{
+                                backgroundColor: color + "15",
+                                borderColor: color + "40",
+                              } as React.CSSProperties}
+                              onClick={(e) => {
+                                e.stopPropagation()
+                                onEditEvent?.(event)
+                              }}
+                            >
+                              <div className="flex items-start justify-between gap-2 mb-1.5">
+                                <div className="flex-1 min-w-0">
+                                  <h4 className="font-semibold text-sm leading-tight truncate" style={{ color } as React.CSSProperties}>
+                                    {subject ? subject.nama : "Jadwal Pribadi"}
+                                  </h4>
+                                  {subject && (
+                                    <p className="text-xs text-muted-foreground mt-0.5">{subject.kode}</p>
+                                  )}
+                                </div>
+                              </div>
+                              <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted-foreground">
+                                <div className="flex items-center gap-1">
+                                  <Clock className="h-3 w-3 flex-shrink-0" />
+                                  <span className="text-[11px]">{fmt24(event.startUTC)} - {fmt24(event.endUTC)}</span>
+                                </div>
+                                {event.location && (
+                                  <div className="flex items-center gap-1 min-w-0">
+                                    <MapPin className="h-3 w-3 flex-shrink-0" />
+                                    <span className="text-[11px] truncate">{event.location}</span>
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+                          )
+                        })}
+                      </div>
+                    ) : (
+                      <div className="flex items-center h-full min-h-[44px] text-xs text-muted-foreground/40">
+                        Kosong
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )
+            })}
+          </div>
+
+          {/* Empty state */}
+          {getEventsByDay(userId, selectedDay).length === 0 && (
+            <div className="px-3 py-8 text-center">
+              <Calendar className="h-10 w-10 mx-auto text-muted-foreground/20 mb-2" />
+              <p className="text-sm text-muted-foreground">Tidak ada jadwal</p>
+              <p className="text-xs text-muted-foreground/60 mt-1">Tap slot waktu untuk menambah</p>
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Desktop: Full week grid */}
+      <div className="hidden md:block">
         <div className="grid grid-cols-8 gap-1 mb-4">
           <div className="text-sm font-medium text-center py-2">Jam</div>
           {dayNames.map((day, index) => (
@@ -208,7 +371,17 @@ export function ScheduleGrid({ userId, onEditEvent, onAddEvent }: ScheduleGridPr
             )
           })}
         </div>
-      </CardContent>
-    </Card>
+      </div>
+
+      <style jsx global>{`
+        .scrollbar-hide {
+          -ms-overflow-style: none;
+          scrollbar-width: none;
+        }
+        .scrollbar-hide::-webkit-scrollbar {
+          display: none;
+        }
+      `}</style>
+    </div>
   )
 }

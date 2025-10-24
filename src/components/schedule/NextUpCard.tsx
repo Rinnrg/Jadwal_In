@@ -42,16 +42,16 @@ export function NextUpCard({ userId }: NextUpCardProps) {
 
   if (!nextEvent) {
     return (
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Clock className="h-5 w-5" />
+      <Card className="w-full">
+        <CardHeader className="px-4 md:px-6 py-4 md:py-6">
+          <CardTitle className="flex items-center gap-2 text-base md:text-lg">
+            <Clock className="h-4 w-4 md:h-5 md:w-5" />
             Jadwal Berikutnya
           </CardTitle>
-          <CardDescription>Tidak ada jadwal mendatang</CardDescription>
+          <CardDescription className="text-xs md:text-sm">Tidak ada jadwal mendatang</CardDescription>
         </CardHeader>
-        <CardContent>
-          <p className="text-muted-foreground text-center py-4">Anda tidak memiliki jadwal dalam 7 hari ke depan.</p>
+        <CardContent className="px-4 md:px-6 pb-4 md:pb-6">
+          <p className="text-muted-foreground text-center py-4 text-xs md:text-sm">Anda tidak memiliki jadwal dalam 7 hari ke depan.</p>
         </CardContent>
       </Card>
     )
@@ -60,27 +60,27 @@ export function NextUpCard({ userId }: NextUpCardProps) {
   const subject = nextEvent.subjectId ? subjects.find((s) => s.id === nextEvent.subjectId) : null
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <Clock className="h-5 w-5" />
+    <Card className="w-full">
+      <CardHeader className="px-4 md:px-6 py-4 md:py-6">
+        <CardTitle className="flex items-center gap-2 text-base md:text-lg">
+          <Clock className="h-4 w-4 md:h-5 md:w-5" />
           Jadwal Berikutnya
         </CardTitle>
-        <CardDescription>
+        <CardDescription className="text-xs md:text-sm">
           {dayNames[nextEvent.dayOfWeek]}, {fmt24(nextEvent.startUTC)} - {fmt24(nextEvent.endUTC)}
         </CardDescription>
       </CardHeader>
-      <CardContent className="space-y-4">
+      <CardContent className="space-y-4 px-4 md:px-6 pb-4 md:pb-6">
         <div className="flex items-start gap-3">
           {subject && (
-            <div className="w-4 h-4 rounded-full mt-1 flex-shrink-0" style={{ backgroundColor: subject.color }} />
+            <div className="w-3 h-3 md:w-4 md:h-4 rounded-full mt-1 flex-shrink-0" style={{ backgroundColor: subject.color }} />
           )}
           <div className="flex-1 min-w-0">
-            <h3 className="font-medium truncate">{subject ? `${subject.kode} - ${subject.nama}` : "Jadwal Pribadi"}</h3>
+            <h3 className="font-medium truncate text-sm md:text-base">{subject ? `${subject.kode} - ${subject.nama}` : "Jadwal Pribadi"}</h3>
             {nextEvent.location && (
-              <div className="flex items-center gap-1 text-sm text-muted-foreground mt-1">
-                <MapPin className="h-3 w-3" />
-                {nextEvent.location}
+              <div className="flex items-center gap-1 text-xs md:text-sm text-muted-foreground mt-1">
+                <MapPin className="h-3 w-3 flex-shrink-0" />
+                <span className="truncate">{nextEvent.location}</span>
               </div>
             )}
             {nextEvent.joinUrl && (
@@ -88,37 +88,37 @@ export function NextUpCard({ userId }: NextUpCardProps) {
                 href={nextEvent.joinUrl}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="inline-flex items-center gap-1 text-sm text-primary hover:underline mt-1"
+                className="inline-flex items-center gap-1 text-xs md:text-sm text-primary hover:underline mt-1"
               >
-                <ExternalLink className="h-3 w-3" />
+                <ExternalLink className="h-3 w-3 flex-shrink-0" />
                 Join Meeting
               </a>
             )}
           </div>
         </div>
 
-        <div className="grid grid-cols-4 gap-2 text-center">
-          <div className="bg-muted rounded-lg p-2">
-            <div className="text-lg font-bold">{days}</div>
-            <div className="text-xs text-muted-foreground">Hari</div>
+        <div className="grid grid-cols-4 gap-1.5 md:gap-2 text-center">
+          <div className="bg-muted rounded-lg p-1.5 md:p-2">
+            <div className="text-base md:text-lg font-bold">{days}</div>
+            <div className="text-[10px] md:text-xs text-muted-foreground">Hari</div>
           </div>
-          <div className="bg-muted rounded-lg p-2">
-            <div className="text-lg font-bold">{hours}</div>
-            <div className="text-xs text-muted-foreground">Jam</div>
+          <div className="bg-muted rounded-lg p-1.5 md:p-2">
+            <div className="text-base md:text-lg font-bold">{hours}</div>
+            <div className="text-[10px] md:text-xs text-muted-foreground">Jam</div>
           </div>
-          <div className="bg-muted rounded-lg p-2">
-            <div className="text-lg font-bold">{minutes}</div>
-            <div className="text-xs text-muted-foreground">Menit</div>
+          <div className="bg-muted rounded-lg p-1.5 md:p-2">
+            <div className="text-base md:text-lg font-bold">{minutes}</div>
+            <div className="text-[10px] md:text-xs text-muted-foreground">Menit</div>
           </div>
-          <div className="bg-muted rounded-lg p-2">
-            <div className="text-lg font-bold">{seconds}</div>
-            <div className="text-xs text-muted-foreground">Detik</div>
+          <div className="bg-muted rounded-lg p-1.5 md:p-2">
+            <div className="text-base md:text-lg font-bold">{seconds}</div>
+            <div className="text-[10px] md:text-xs text-muted-foreground">Detik</div>
           </div>
         </div>
 
         {nextEvent.notes && (
-          <div className="p-3 bg-muted rounded-lg">
-            <p className="text-sm">{nextEvent.notes}</p>
+          <div className="p-2.5 md:p-3 bg-muted rounded-lg">
+            <p className="text-xs md:text-sm break-words">{nextEvent.notes}</p>
           </div>
         )}
       </CardContent>

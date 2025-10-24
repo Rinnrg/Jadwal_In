@@ -8,12 +8,13 @@ import { useProfileStore } from "@/stores/profile.store"
 import { canAccessKRS } from "@/lib/rbac"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { Badge } from "@/components/ui/badge"
+import { Progress } from "@/components/ui/progress"
 import { SksCounter } from "@/components/krs/SksCounter"
 import { KrsPicker } from "@/components/krs/KrsPicker"
 import { KrsTable } from "@/components/krs/KrsTable"
-import { Trash2, Download, Loader2 } from "lucide-react"
-import { confirmAction, showSuccess } from "@/lib/alerts"
-import { ActivityLogger } from "@/lib/activity-logger"
+import { Loader2 } from "lucide-react"
+import { showSuccess } from "@/lib/alerts"
 
 export default function KrsPage() {
   const { session } = useSessionStore()
@@ -59,86 +60,50 @@ export default function KrsPage() {
     )
   }
 
-  const handleClearKrs = async () => {
-    const confirmed = await confirmAction(
-      "Hapus Semua KRS",
-      `Apakah Anda yakin ingin menghapus semua mata kuliah dari KRS?`,
-      "Ya, Hapus Semua",
-    )
-
-    if (confirmed) {
-      clearKrsByUserAndTerm(session.id, currentTerm)
-      showSuccess("Semua mata kuliah berhasil dihapus dari KRS")
-      
-      // Log activity
-      ActivityLogger.krsCleared(session.id)
-    }
-  }
-
-  const handleExportKrs = () => {
-    // Simple CSV export
-    const krsItems = useKrsStore.getState().getKrsByUser(session.id, currentTerm)
-    const krsWithSubjects = krsItems
-      .map((item) => {
-        const subject = subjects.find((s) => s.id === item.subjectId)
-        return subject ? { ...item, subject } : null
-      })
-      .filter(Boolean)
-
-    const csvContent = [
-      ["Kode", "Nama", "SKS", "Semester", "Program Studi"].join(","),
-      ...krsWithSubjects.map((item) =>
-        [
-          item!.subject.kode,
-          `"${item!.subject.nama}"`,
-          item!.subject.sks,
-          item!.subject.semester,
-          `"${item!.subject.prodi || ""}"`,
-        ].join(","),
-      ),
-    ].join("\n")
-
-    const blob = new Blob([csvContent], { type: "text/csv" })
-    const url = URL.createObjectURL(blob)
-    const a = document.createElement("a")
-    a.href = url
-    a.download = `KRS-${currentTerm.replace(/\//g, "-")}.csv`
-    a.click()
-    URL.revokeObjectURL(url)
-
-    showSuccess("KRS berhasil diekspor")
-  }
-
   const handleScheduleSuggestion = (subjectId: string) => {
     // This will be implemented when we build the schedule system
     showSuccess("Fitur saran jadwal akan tersedia di sistem jadwal")
   }
 
   return (
-    <div className="space-y-4 md:space-y-6 px-2 md:px-4">
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+    <div className="space-y-4 md:space-y-6 px-0 md:px-4">
+      {/* Header Section - Kompak di Mobile */}
+      <div className="px-3 md:px-0">
         <div>
-          <h1 className="text-xl md:text-2xl lg:text-3xl font-bold tracking-tight">KRS (Kartu Rencana Studi)</h1>
-          <p className="text-muted-foreground text-sm md:text-base">Kelola mata kuliah yang akan Anda ambil</p>
-        </div>
-        <div className="flex items-center space-x-2">
-          <Button variant="outline" onClick={handleExportKrs} disabled={totalSks === 0} className="text-xs md:text-sm">
-            <Download className="h-3.5 w-3.5 md:h-4 md:w-4 mr-1.5 md:mr-2" />
-            Export CSV
-          </Button>
-          <Button variant="outline" onClick={handleClearKrs} disabled={totalSks === 0} className="text-xs md:text-sm">
-            <Trash2 className="h-3.5 w-3.5 md:h-4 md:w-4 mr-1.5 md:mr-2" />
-            Hapus Semua
-          </Button>
+          <h1 className="text-lg md:text-2xl lg:text-3xl font-bold tracking-tight">KRS (Kartu Rencana Studi)</h1>
+          <p className="text-muted-foreground text-xs md:text-base">Kelola mata kuliah yang akan Anda ambil</p>
         </div>
       </div>
 
+      {/* SKS Counter - Sticky di Top pada Mobile */}
+      <div className="md:hidden sticky top-0 z-20 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-y px-3 py-2">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div>
+              <div className="text-2xl font-bold">{totalSks}</div>
+              <div className="text-xs text-muted-foreground">Total SKS</div>
+            </div>
+            <div className="h-10 w-px bg-border" />
+            <div className="flex-1">
+              <Progress value={Math.min((totalSks / 24) * 100, 100)} className="h-2" />
+              <div className="text-xs text-muted-foreground mt-1">{totalSks}/24 SKS</div>
+            </div>
+          </div>
+          <Badge variant={totalSks > 24 ? "destructive" : totalSks < 12 ? "secondary" : "default"} className="ml-2">
+            {totalSks > 24 ? "Over" : totalSks < 12 ? "Min" : "OK"}
+          </Badge>
+        </div>
+      </div>
+
+      {/* Main Content */}
       <div className="grid gap-4 md:gap-6 lg:grid-cols-3">
         <div className="lg:col-span-2 space-y-4 md:space-y-6">
           <KrsPicker userId={session.id} term={currentTerm} />
           <KrsTable userId={session.id} term={currentTerm} onScheduleSuggestion={handleScheduleSuggestion} />
         </div>
-        <div>
+        
+        {/* SKS Counter - Desktop Only */}
+        <div className="hidden md:block">
           <SksCounter totalSks={totalSks} />
         </div>
       </div>
