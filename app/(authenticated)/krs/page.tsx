@@ -11,10 +11,10 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Progress } from "@/components/ui/progress"
+import { Skeleton } from "@/components/ui/skeleton"
 import { SksCounter } from "@/components/krs/SksCounter"
 import { KrsPicker } from "@/components/krs/KrsPicker"
 import { KrsTable } from "@/components/krs/KrsTable"
-import { Loader2 } from "lucide-react"
 import { showSuccess } from "@/lib/alerts"
 
 export default function KrsPage() {
@@ -54,17 +54,51 @@ export default function KrsPage() {
   const profile = getProfile(session.id)
   const totalSks = getTotalSks(session.id, currentTerm, subjects)
 
-  // Show loading state
+  // Show loading state with skeleton
   if (subjectsLoading || offeringsLoading) {
     return (
-      <div className="min-h-[60vh] flex items-center justify-center">
-        <Card className="glass-effect border-2 border-primary/20 p-8 text-center">
-          <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center mx-auto mb-4">
-            <Loader2 className="h-8 w-8 text-primary animate-spin" />
+      <div className="space-y-4 md:space-y-6 px-0 md:px-4">
+        {/* Header Skeleton */}
+        <div className="px-3 md:px-0">
+          <Skeleton className="h-8 w-64 mb-2" />
+          <Skeleton className="h-4 w-48" />
+        </div>
+
+        {/* Mobile SKS Counter Skeleton */}
+        <div className="md:hidden sticky top-0 z-20 bg-background/95 backdrop-blur border-y px-3 py-2">
+          <div className="flex items-center justify-between">
+            <Skeleton className="h-12 w-24" />
+            <Skeleton className="h-2 w-32" />
+            <Skeleton className="h-6 w-12" />
           </div>
-          <h2 className="text-2xl font-bold mb-2">Memuat Data KRS</h2>
-          <p className="text-muted-foreground">Mohon tunggu sebentar...</p>
-        </Card>
+        </div>
+
+        {/* Main Content Skeleton */}
+        <div className="grid gap-4 md:gap-6 lg:grid-cols-3">
+          <div className="lg:col-span-2 space-y-4 md:space-y-6 px-3 md:px-0">
+            {/* KRS Picker Skeleton */}
+            <div className="space-y-3">
+              <Skeleton className="h-6 w-48" />
+              <Skeleton className="h-10 w-full" />
+              <div className="space-y-3">
+                {[1, 2, 3].map((i) => (
+                  <Skeleton key={i} className="h-32 w-full" />
+                ))}
+              </div>
+            </div>
+            
+            {/* KRS Table Skeleton */}
+            <div className="space-y-3">
+              <Skeleton className="h-6 w-32" />
+              <Skeleton className="h-48 w-full" />
+            </div>
+          </div>
+          
+          {/* SKS Counter Skeleton - Desktop */}
+          <div className="hidden md:block">
+            <Skeleton className="h-64 w-full" />
+          </div>
+        </div>
       </div>
     )
   }
