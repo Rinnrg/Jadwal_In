@@ -30,7 +30,7 @@ export const useKrsStore = create<KrsState>()(
         )
         
         if (existingKrs) {
-          console.warn(`Subject ${subjectId} sudah ada di KRS user ${userId} untuk term ${term}`)
+          console.warn(`[KRS] Subject ${subjectId} sudah ada di KRS user ${userId} untuk term ${term}`)
           return // Tidak tambahkan jika sudah ada
         }
         
@@ -42,6 +42,7 @@ export const useKrsStore = create<KrsState>()(
           term,
           createdAt: Date.now(),
         }
+        
         set((state) => ({
           krsItems: [...state.krsItems, newItem],
         }))
