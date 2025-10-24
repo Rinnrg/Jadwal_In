@@ -211,6 +211,7 @@ export function KrsTable({ userId, term, onScheduleSuggestion }: KrsTableProps) 
       const slotDay = item.offering?.slotDay ?? item.subject?.slotDay
       const slotStartUTC = item.offering?.slotStartUTC ?? item.subject?.slotStartUTC
       const slotEndUTC = item.offering?.slotEndUTC ?? item.subject?.slotEndUTC
+      const location = item.offering?.location ?? item.subject?.location
 
       // Validate all required fields are present and not null
       if (
@@ -238,6 +239,7 @@ export function KrsTable({ userId, term, onScheduleSuggestion }: KrsTableProps) 
         dayOfWeek: slotDay,
         startUTC: slotStartUTC,
         endUTC: slotEndUTC,
+        location: location || undefined,
         color: uniqueColor,
       })
 
