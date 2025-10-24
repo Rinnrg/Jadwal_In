@@ -122,7 +122,7 @@ export function KrsTable({ userId, term, onScheduleSuggestion }: KrsTableProps) 
     const slotDay = offering?.slotDay ?? subject?.slotDay
     const slotStartUTC = offering?.slotStartUTC ?? subject?.slotStartUTC
     const slotEndUTC = offering?.slotEndUTC ?? subject?.slotEndUTC
-    const location = offering?.location ?? subject?.location
+    const location = offering?.slotRuang ?? subject?.slotRuang
 
     if (slotDay === undefined || !slotStartUTC || !slotEndUTC) {
       showError("Data jadwal tidak tersedia untuk mata kuliah ini")
@@ -211,7 +211,7 @@ export function KrsTable({ userId, term, onScheduleSuggestion }: KrsTableProps) 
       const slotDay = item.offering?.slotDay ?? item.subject?.slotDay
       const slotStartUTC = item.offering?.slotStartUTC ?? item.subject?.slotStartUTC
       const slotEndUTC = item.offering?.slotEndUTC ?? item.subject?.slotEndUTC
-      const location = item.offering?.location ?? item.subject?.location
+      const location = item.offering?.slotRuang ?? item.subject?.slotRuang
 
       // Validate all required fields are present and not null
       if (

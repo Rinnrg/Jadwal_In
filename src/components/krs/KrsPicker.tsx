@@ -13,7 +13,7 @@ import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible"
-import { Search, Plus, Users, ChevronDown, BookOpen } from "lucide-react"
+import { Search, Plus, Users, ChevronDown, BookOpen, AlertCircle } from "lucide-react"
 import { showSuccess, showError } from "@/lib/alerts"
 
 interface KrsPickerProps {
@@ -38,51 +38,56 @@ export function KrsPicker({ userId, term }: KrsPickerProps) {
   const userAngkatan = profile?.angkatan || studentInfo.angkatan
   const userKelas = profile?.kelas?.trim() || studentInfo.kelas
 
+  // Get user's current KRS items - reactive to changes
+  const userKrsItems = useMemo(() => getKrsByUser(userId, term), [getKrsByUser, userId, term, krsItems])
+  const enrolledSubjectIds = useMemo(() => new Set(userKrsItems.map(item => item.subjectId)), [userKrsItems])
+
   const availableOfferings = useMemo(() => {
     // Get ALL offerings for angkatan (tidak filter by kelas, mahasiswa bebas pilih kelas mana saja)
     const offerings = getOfferingsForStudent(userAngkatan)
 
-    // Get all KRS items for this user to check for duplicate subjects
-    const userKrsItems = getKrsByUser(userId, term)
-    const enrolledOfferingIds = new Set(userKrsItems.map(item => item.offeringId).filter(Boolean))
-    const enrolledSubjectIds = new Set(userKrsItems.map(item => item.subjectId))
+    return offerings
+      .map((offering) => {
+        const subject = getSubjectById(offering.subjectId)
 
-    return offerings.filter((offering) => {
-      const subject = getSubjectById(offering.subjectId)
+        // Only show if subject exists and is active
+        if (!subject || subject.status !== "aktif") return null
 
-      // Only show if subject exists and is active
-      if (!subject || subject.status !== "aktif") return false
+        // Check if subject is already taken (in any class)
+        const isSubjectTaken = enrolledSubjectIds.has(offering.subjectId)
 
-      // Don't show if this specific offering is already taken
-      if (enrolledOfferingIds.has(offering.id)) return false
+        // Check capacity if set
+        let isFull = false
+        if (offering.capacity) {
+          const enrollmentCount = getKrsByOffering(offering.id).length
+          isFull = enrollmentCount >= offering.capacity
+        }
 
-      // Don't show if subject is already taken in another class
-      if (enrolledSubjectIds.has(offering.subjectId)) return false
+        // Search filter
+        if (searchTerm) {
+          const search = searchTerm.toLowerCase()
+          const matchesSearch = (
+            subject.kode.toLowerCase().includes(search) ||
+            subject.nama.toLowerCase().includes(search) ||
+            offering.kelas.toLowerCase().includes(search) ||
+            offering.angkatan.toString().includes(search)
+          )
+          if (!matchesSearch) return null
+        }
 
-      // Check capacity if set
-      if (offering.capacity) {
-        const enrollmentCount = getKrsByOffering(offering.id).length
-        if (enrollmentCount >= offering.capacity) return false
-      }
-
-      // Search filter
-      if (searchTerm) {
-        const search = searchTerm.toLowerCase()
-        return (
-          subject.kode.toLowerCase().includes(search) ||
-          subject.nama.toLowerCase().includes(search) ||
-          offering.kelas.toLowerCase().includes(search) ||
-          offering.angkatan.toString().includes(search)
-        )
-      }
-
-      return true
-    })
-  }, [userAngkatan, getOfferingsForStudent, getSubjectById, userId, term, getKrsByOffering, getKrsByUser, searchTerm, krsItems])
+        return {
+          ...offering,
+          isSubjectTaken,
+          isFull
+        }
+      })
+      .filter((offering): offering is NonNullable<typeof offering> => offering !== null)
+  }, [userAngkatan, getOfferingsForStudent, getSubjectById, getKrsByOffering, searchTerm, enrolledSubjectIds])
 
   // Group offerings by kelas
   const groupedOfferings = useMemo(() => {
     const groups = availableOfferings.reduce((acc, offering) => {
+      if (!offering) return acc
       const kelas = offering.kelas.trim()
       if (!acc[kelas]) {
         acc[kelas] = []
@@ -101,14 +106,26 @@ export function KrsPicker({ userId, term }: KrsPickerProps) {
     // Prevent multiple rapid clicks
     if (addingOffering === offering.id) return
     
+    // Check if subject is already taken
+    if (offering.isSubjectTaken) {
+      const subject = getSubjectById(offering.subjectId)
+      showError(`${subject?.nama} sudah diambil di kelas lain`)
+      return
+    }
+
+    // Check if class is full
+    if (offering.isFull) {
+      showError("Kelas sudah penuh")
+      return
+    }
+    
     setAddingOffering(offering.id)
     
     try {
       const subject = getSubjectById(offering.subjectId)
       
-      // Double check: pastikan subject belum ada di KRS
-      const userKrsItems = getKrsByUser(userId, term)
-      const isDuplicate = userKrsItems.some(item => item.subjectId === offering.subjectId)
+      // Triple check: pastikan subject belum ada di KRS (untuk race condition)
+      const isDuplicate = enrolledSubjectIds.has(offering.subjectId)
       
       if (isDuplicate) {
         showError(`${subject?.nama} sudah ada di KRS Anda`)
@@ -225,11 +242,16 @@ export function KrsPicker({ userId, term }: KrsPickerProps) {
                           if (!subject) return null
 
                           const enrollmentInfo = getEnrollmentInfo(offering)
+                          const isDisabled = offering.isSubjectTaken || offering.isFull || addingOffering === offering.id
 
                           return (
                             <div 
                               key={offering.id} 
-                              className="p-4 transition-colors hover:bg-muted/30"
+                              className={`p-4 transition-colors ${
+                                offering.isSubjectTaken 
+                                  ? 'bg-orange-50 dark:bg-orange-950/20 border-l-4 border-orange-500' 
+                                  : 'hover:bg-muted/30'
+                              }`}
                             >
                               <div className="flex items-start justify-between gap-3">
                                 <div className="flex-1 min-w-0">
@@ -249,12 +271,23 @@ export function KrsPicker({ userId, term }: KrsPickerProps) {
                                       </div>
                                     )}
                                   </div>
+                                  {offering.isSubjectTaken && (
+                                    <p className="text-xs text-orange-600 dark:text-orange-400 mt-2 font-medium">
+                                      ⚠️ Sudah diambil di kelas lain
+                                    </p>
+                                  )}
+                                  {offering.isFull && !offering.isSubjectTaken && (
+                                    <p className="text-xs text-red-600 dark:text-red-400 mt-2 font-medium">
+                                      ⚠️ Kelas penuh
+                                    </p>
+                                  )}
                                 </div>
                                 <Button 
                                   size="sm" 
                                   onClick={() => handleAddOffering(offering)}
-                                  disabled={addingOffering === offering.id}
+                                  disabled={isDisabled}
                                   className="h-8 px-3 flex-shrink-0"
+                                  variant={offering.isSubjectTaken ? "outline" : "default"}
                                 >
                                   <Plus className="h-4 w-4 mr-1" />
                                   {addingOffering === offering.id ? "..." : "Ambil"}
@@ -313,11 +346,16 @@ export function KrsPicker({ userId, term }: KrsPickerProps) {
                             if (!subject) return null
 
                             const enrollmentInfo = getEnrollmentInfo(offering)
+                            const isDisabled = offering.isSubjectTaken || offering.isFull || addingOffering === offering.id
 
                             return (
                               <Card 
                                 key={offering.id} 
-                                className="transition-colors hover:border-primary/50"
+                                className={`transition-colors ${
+                                  offering.isSubjectTaken 
+                                    ? 'border-orange-500 bg-orange-50 dark:bg-orange-950/20' 
+                                    : 'hover:border-primary/50'
+                                }`}
                               >
                                 <CardContent className="p-4">
                                   <div className="flex items-start justify-between gap-4">
@@ -341,12 +379,23 @@ export function KrsPicker({ userId, term }: KrsPickerProps) {
                                           </div>
                                         )}
                                       </div>
+                                      {offering.isSubjectTaken && (
+                                        <p className="text-sm text-orange-600 dark:text-orange-400 mt-2 font-medium flex items-center gap-1">
+                                          ⚠️ Mata kuliah ini sudah diambil di kelas lain
+                                        </p>
+                                      )}
+                                      {offering.isFull && !offering.isSubjectTaken && (
+                                        <p className="text-sm text-red-600 dark:text-red-400 mt-2 font-medium flex items-center gap-1">
+                                          ⚠️ Kelas sudah penuh
+                                        </p>
+                                      )}
                                     </div>
                                     <Button 
                                       size="sm" 
                                       onClick={() => handleAddOffering(offering)}
-                                      disabled={addingOffering === offering.id}
+                                      disabled={isDisabled}
                                       className="h-9 px-4 flex-shrink-0"
+                                      variant={offering.isSubjectTaken || offering.isFull ? "outline" : "default"}
                                     >
                                       <Plus className="h-4 w-4 mr-1" />
                                       {addingOffering === offering.id ? "..." : "Ambil"}

@@ -222,6 +222,7 @@ export const CourseOfferingSchema = z.object({
   slotDay: z.number().min(0).max(6).optional().nullable(),
   slotStartUTC: z.number().optional().nullable(),
   slotEndUTC: z.number().optional().nullable(),
+  slotRuang: z.string().optional().nullable(),
   status: z.enum(["buka", "tutup"]).default("buka"),
   // Optional fields from API response
   subject: z.object({
