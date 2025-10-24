@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useMemo } from "react"
 import { Calendar, Clock, MapPin, User, Plus, Search, Grid3x3, List, Download, Upload, Printer, Trash2, Command, Bell } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -45,7 +45,7 @@ export default function JadwalPage() {
   const { addReminder } = useRemindersStore()
   const { clearBadge } = useNotificationStore()
   const { getProfile, profiles } = useProfileStore()
-  const { getUserById, fetchUsers, users } = useUsersStore()
+  const { getUserById, fetchUsers, users, isLoading: isLoadingUsers } = useUsersStore()
 
   const [viewMode, setViewMode] = useState<ViewMode>("simple")
   const [searchTerm, setSearchTerm] = useState("")
@@ -55,11 +55,14 @@ export default function JadwalPage() {
   const [defaultDay, setDefaultDay] = useState<number | undefined>()
   const [showImportDialog, setShowImportDialog] = useState(false)
   const [importFile, setImportFile] = useState<File | null>(null)
+  const [hasFetchedUsers, setHasFetchedUsers] = useState(false)
 
   // Fetch users on mount to ensure lecturer data is available
   useEffect(() => {
-    fetchUsers()
-  }, [])
+    if (!hasFetchedUsers) {
+      fetchUsers().finally(() => setHasFetchedUsers(true))
+    }
+  }, [hasFetchedUsers, fetchUsers])
 
   const userEvents = session ? getEventsByUser(session.id) : []
   const userKrsItems = session ? getKrsByUser(session.id) : []
@@ -280,40 +283,42 @@ export default function JadwalPage() {
     "Sabtu": 6,
   }
 
-  const eventsWithDetails = userEvents.map((event) => {
-    const subject = subjects.find((s) => s.id === event.subjectId)
-    const startTime = new Date(event.startUTC)
-    const endTime = new Date(event.endUTC)
-    const dayName = Object.keys(dayMap).find(key => dayMap[key] === event.dayOfWeek) || "Unknown"
-    
-    // Get lecturer names from pengampuIds
-    let lecturerNames = "-"
-    if (subject && subject.pengampuIds && subject.pengampuIds.length > 0) {
-      const lecturers = subject.pengampuIds
-        .map(id => getUserById(id))
-        .filter((user): user is NonNullable<typeof user> => Boolean(user))
-        .map(user => user.name || "")
-        .filter(name => name.length > 0)
+  const eventsWithDetails = useMemo(() => {
+    return userEvents.map((event) => {
+      const subject = subjects.find((s) => s.id === event.subjectId)
+      const startTime = new Date(event.startUTC)
+      const endTime = new Date(event.endUTC)
+      const dayName = Object.keys(dayMap).find(key => dayMap[key] === event.dayOfWeek) || "Unknown"
       
-      if (lecturers.length > 0) {
-        lecturerNames = lecturers.join(", ")
+      // Get lecturer names from pengampuIds
+      let lecturerNames = "-"
+      if (subject && subject.pengampuIds && subject.pengampuIds.length > 0) {
+        const lecturers = subject.pengampuIds
+          .map(id => getUserById(id))
+          .filter((user): user is NonNullable<typeof user> => Boolean(user))
+          .map(user => user.name || "")
+          .filter(name => name.length > 0)
+        
+        if (lecturers.length > 0) {
+          lecturerNames = lecturers.join(", ")
+        }
       }
-    }
-    
-    // Get location from event or fallback to subject's slotRuang
-    const location = event.location || subject?.slotRuang || "-"
-    
-    return {
-      ...event,
-      subject: subject?.nama || "Mata Kuliah Tidak Diketahui",
-      lecturer: lecturerNames,
-      code: subject?.kode || "-",
-      time: `${startTime.toLocaleTimeString("id-ID", { hour: "2-digit", minute: "2-digit" })} - ${endTime.toLocaleTimeString("id-ID", { hour: "2-digit", minute: "2-digit" })}`,
-      day: dayName,
-      room: location,
-      type: "lecture" as const, // Default type
-    }
-  })
+      
+      // Get location from event or fallback to subject's slotRuang
+      const location = event.location || subject?.slotRuang || "-"
+      
+      return {
+        ...event,
+        subject: subject?.nama || "Mata Kuliah Tidak Diketahui",
+        lecturer: lecturerNames,
+        code: subject?.kode || "-",
+        time: `${startTime.toLocaleTimeString("id-ID", { hour: "2-digit", minute: "2-digit" })} - ${endTime.toLocaleTimeString("id-ID", { hour: "2-digit", minute: "2-digit" })}`,
+        day: dayName,
+        room: location,
+        type: "lecture" as const, // Default type
+      }
+    })
+  }, [userEvents, subjects, users, getUserById])
 
   const filteredSchedule = eventsWithDetails.filter((item) => {
     const matchesSearch =
