@@ -24,7 +24,7 @@ interface KrsPickerProps {
 export function KrsPicker({ userId, term }: KrsPickerProps) {
   const { getSubjectById } = useSubjectsStore()
   const { getOfferingsForStudent } = useOfferingsStore()
-  const { addKrsItem, isOfferingInKrs, getKrsByOffering, getKrsByUser, krsItems } = useKrsStore()
+  const { addKrsItem, isOfferingInKrs, getKrsByOffering, getKrsByUser, isSubjectInKrs, krsItems } = useKrsStore()
   const { getProfile } = useProfileStore()
   const { session } = useSessionStore()
   const [searchTerm, setSearchTerm] = useState("")
@@ -40,8 +40,6 @@ export function KrsPicker({ userId, term }: KrsPickerProps) {
 
   // Get user's current KRS items - reactive to changes
   const userKrsItems = useMemo(() => getKrsByUser(userId, term), [getKrsByUser, userId, term, krsItems])
-  const enrolledOfferingIds = useMemo(() => new Set(userKrsItems.map(item => item.offeringId).filter(Boolean)), [userKrsItems])
-  const enrolledSubjectIds = useMemo(() => new Set(userKrsItems.map(item => item.subjectId)), [userKrsItems])
 
   const availableOfferings = useMemo(() => {
     // Get ALL offerings for angkatan (tidak filter by kelas, mahasiswa bebas pilih kelas mana saja)
@@ -54,11 +52,17 @@ export function KrsPicker({ userId, term }: KrsPickerProps) {
         // Only show if subject exists and is active
         if (!subject || subject.status !== "aktif") return null
 
+        // CRITICAL: Use real-time check from store, bukan dari cached Set
+        // Ini memastikan UI selalu sinkron dengan data terbaru
+        const isSubjectAlreadyInKrs = isSubjectInKrs(userId, offering.subjectId, term)
+        const isThisOfferingInKrs = isOfferingInKrs(userId, offering.id)
+        
         // Check if this exact offering is already taken (same class)
-        const isAlreadyEnrolled = enrolledOfferingIds.has(offering.id)
+        const isAlreadyEnrolled = isThisOfferingInKrs
         
         // Check if subject is already taken in ANOTHER class
-        const isSubjectTakenInOtherClass = enrolledSubjectIds.has(offering.subjectId) && !isAlreadyEnrolled
+        // Jika subject sudah ada di KRS tapi bukan offering ini, berarti diambil di kelas lain
+        const isSubjectTakenInOtherClass = isSubjectAlreadyInKrs && !isThisOfferingInKrs
 
         // Check capacity if set
         let isFull = false
@@ -87,7 +91,7 @@ export function KrsPicker({ userId, term }: KrsPickerProps) {
         }
       })
       .filter((offering): offering is NonNullable<typeof offering> => offering !== null)
-  }, [userAngkatan, getOfferingsForStudent, getSubjectById, getKrsByOffering, searchTerm, enrolledOfferingIds, enrolledSubjectIds])
+  }, [userAngkatan, getOfferingsForStudent, getSubjectById, getKrsByOffering, searchTerm, isSubjectInKrs, isOfferingInKrs, userId, term, krsItems])
 
   // Group offerings by kelas
   const groupedOfferings = useMemo(() => {
@@ -111,17 +115,15 @@ export function KrsPicker({ userId, term }: KrsPickerProps) {
     // Prevent multiple rapid clicks
     if (addingOffering === offering.id) return
     
-    // Check if already enrolled in this class
-    if (offering.isAlreadyEnrolled) {
-      const subject = getSubjectById(offering.subjectId)
-      showError(`${subject?.nama} sudah diambil di kelas ini`)
-      return
-    }
+    const subject = getSubjectById(offering.subjectId)
     
-    // Check if subject is already taken in another class
-    if (offering.isSubjectTakenInOtherClass) {
-      const subject = getSubjectById(offering.subjectId)
-      showError(`${subject?.nama} sudah diambil di kelas lain`)
+    // CRITICAL: Check real-time dari store, bukan dari cached Set
+    // Ini mencegah race condition dan double submission
+    const isAlreadyTaken = isSubjectInKrs(userId, offering.subjectId, term)
+    
+    if (isAlreadyTaken) {
+      showError(`${subject?.nama} sudah ada di KRS Anda`)
+      setAddingOffering(null)
       return
     }
 
@@ -134,12 +136,9 @@ export function KrsPicker({ userId, term }: KrsPickerProps) {
     setAddingOffering(offering.id)
     
     try {
-      const subject = getSubjectById(offering.subjectId)
-      
-      // Triple check: pastikan subject belum ada di KRS (untuk race condition)
-      const isDuplicate = enrolledSubjectIds.has(offering.subjectId)
-      
-      if (isDuplicate) {
+      // Final check sebelum add (double safety)
+      const finalCheck = isSubjectInKrs(userId, offering.subjectId, term)
+      if (finalCheck) {
         showError(`${subject?.nama} sudah ada di KRS Anda`)
         return
       }
