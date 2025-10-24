@@ -40,9 +40,6 @@ export function KrsPicker({ userId, term }: KrsPickerProps) {
 
   // Get user's current KRS items - reactive to changes
   const userKrsItems = useMemo(() => getKrsByUser(userId, term), [getKrsByUser, userId, term, krsItems])
-  
-  // DEBUG: Log saat krsItems berubah
-  console.log('[KrsPicker] krsItems count:', krsItems.length, 'userKrsItems:', userKrsItems.length)
 
   const availableOfferings = useMemo(() => {
     // Get ALL offerings for angkatan (tidak filter by kelas, mahasiswa bebas pilih kelas mana saja)
@@ -60,36 +57,25 @@ export function KrsPicker({ userId, term }: KrsPickerProps) {
         const isSubjectAlreadyInKrs = isSubjectInKrs(userId, offering.subjectId, term)
         const isThisOfferingInKrs = isOfferingInKrs(userId, offering.id)
         
-        // DEBUG log untuk mata kuliah tertentu
-        if (subject.kode === 'MPB001') {
-          // Log offering details
-          console.log('[KrsPicker] MPB001 Offering Details:', {
-            kelas: offering.kelas,
-            offeringId: offering.id,
-            subjectId: offering.subjectId,
-          })
-          
-          // Log all KRS items for this user
-          const userKrs = userKrsItems.filter(item => item.subjectId === offering.subjectId)
-          console.log('[KrsPicker] MPB001 in KRS:', userKrs.map(item => ({
-            offeringId: item.offeringId,
-            subjectId: item.subjectId,
-          })))
-          
-          console.log('[KrsPicker] MPB001 check:', {
-            kelas: offering.kelas,
-            isSubjectInKrs: isSubjectAlreadyInKrs,
-            isOfferingInKrs: isThisOfferingInKrs,
-            krsItemsCount: krsItems.length
-          })
-        }
-        
         // Check if this exact offering is already taken (same class)
         const isAlreadyEnrolled = isThisOfferingInKrs
         
         // Check if subject is already taken in ANOTHER class
         // Jika subject sudah ada di KRS tapi bukan offering ini, berarti diambil di kelas lain
         const isSubjectTakenInOtherClass = isSubjectAlreadyInKrs && !isThisOfferingInKrs
+        
+        // Get the class name where this subject was already taken
+        let takenInClass = ''
+        if (isSubjectTakenInOtherClass) {
+          const existingKrsItem = userKrsItems.find(item => item.subjectId === offering.subjectId)
+          if (existingKrsItem?.offeringId) {
+            // Find the offering to get the class name
+            const existingOffering = getOfferingsForStudent(userAngkatan).find(
+              o => o.id === existingKrsItem.offeringId
+            )
+            takenInClass = existingOffering?.kelas || ''
+          }
+        }
 
         // Check capacity if set
         let isFull = false
@@ -114,6 +100,7 @@ export function KrsPicker({ userId, term }: KrsPickerProps) {
           ...offering,
           isAlreadyEnrolled,        // Sudah diambil di kelas ini (hijau)
           isSubjectTakenInOtherClass, // Sudah diambil di kelas lain (oranye, disabled)
+          takenInClass,             // Nama kelas yang sudah diambil
           isFull
         }
       })
@@ -144,14 +131,6 @@ export function KrsPicker({ userId, term }: KrsPickerProps) {
     
     const subject = getSubjectById(offering.subjectId)
     
-    // DEBUG: Log offering details sebelum add
-    console.log('[handleAddOffering] Adding:', {
-      offeringId: offering.id,
-      subjectId: offering.subjectId,
-      subjectName: subject?.nama,
-      kelas: offering.kelas,
-    })
-    
     // CRITICAL: Check real-time dari store, bukan dari cached Set
     // Ini mencegah race condition dan double submission
     const isAlreadyTaken = isSubjectInKrs(userId, offering.subjectId, term)
@@ -178,7 +157,6 @@ export function KrsPicker({ userId, term }: KrsPickerProps) {
         return
       }
       
-      console.log('[handleAddOffering] Calling addKrsItem with offeringId:', offering.id)
       addKrsItem(userId, offering.subjectId, term, offering.id, subject?.nama, subject?.sks)
       showSuccess(`${subject?.nama} (Kelas ${offering.kelas}) berhasil ditambahkan ke KRS`)
     } catch (error) {
@@ -327,7 +305,7 @@ export function KrsPicker({ userId, term }: KrsPickerProps) {
                                   )}
                                   {offering.isSubjectTakenInOtherClass && (
                                     <p className="text-xs text-orange-600 dark:text-orange-400 mt-2 font-medium">
-                                      ⚠️ Mata kuliah sudah diambil di kelas lain
+                                      ⚠️ Mata kuliah sudah diambil di Kelas {offering.takenInClass}
                                     </p>
                                   )}
                                   {offering.isFull && !offering.isAlreadyEnrolled && !offering.isSubjectTakenInOtherClass && (
@@ -442,7 +420,7 @@ export function KrsPicker({ userId, term }: KrsPickerProps) {
                                       )}
                                       {offering.isSubjectTakenInOtherClass && (
                                         <p className="text-sm text-orange-600 dark:text-orange-400 mt-2 font-medium flex items-center gap-1">
-                                          ⚠️ Mata kuliah sudah diambil di kelas lain
+                                          ⚠️ Mata kuliah sudah diambil di Kelas {offering.takenInClass}
                                         </p>
                                       )}
                                       {offering.isFull && !offering.isAlreadyEnrolled && !offering.isSubjectTakenInOtherClass && (
