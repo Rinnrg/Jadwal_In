@@ -123,6 +123,12 @@ export function KrsPicker({ userId, term }: KrsPickerProps) {
       kelas: o.kelas,
       status: o.status
     })))
+    console.log('---')
+    console.log('Grouped by Kelas:', groupedOfferings.map(g => ({
+      kelas: g.kelas,
+      count: g.offerings.length,
+      subjects: g.offerings.map(o => getSubjectById(o.subjectId)?.nama)
+    })))
     console.groupEnd()
   }
 
