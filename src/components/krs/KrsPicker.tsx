@@ -40,6 +40,7 @@ export function KrsPicker({ userId, term }: KrsPickerProps) {
 
   // Get user's current KRS items - reactive to changes
   const userKrsItems = useMemo(() => getKrsByUser(userId, term), [getKrsByUser, userId, term, krsItems])
+  const enrolledOfferingIds = useMemo(() => new Set(userKrsItems.map(item => item.offeringId).filter(Boolean)), [userKrsItems])
   const enrolledSubjectIds = useMemo(() => new Set(userKrsItems.map(item => item.subjectId)), [userKrsItems])
 
   const availableOfferings = useMemo(() => {
@@ -53,8 +54,11 @@ export function KrsPicker({ userId, term }: KrsPickerProps) {
         // Only show if subject exists and is active
         if (!subject || subject.status !== "aktif") return null
 
-        // Check if subject is already taken (in any class)
-        const isSubjectTaken = enrolledSubjectIds.has(offering.subjectId)
+        // Check if this exact offering is already taken (same class)
+        const isAlreadyEnrolled = enrolledOfferingIds.has(offering.id)
+        
+        // Check if subject is already taken in ANOTHER class
+        const isSubjectTakenInOtherClass = enrolledSubjectIds.has(offering.subjectId) && !isAlreadyEnrolled
 
         // Check capacity if set
         let isFull = false
@@ -77,12 +81,13 @@ export function KrsPicker({ userId, term }: KrsPickerProps) {
 
         return {
           ...offering,
-          isSubjectTaken,
+          isAlreadyEnrolled,        // Sudah diambil di kelas ini (hijau)
+          isSubjectTakenInOtherClass, // Sudah diambil di kelas lain (oranye, disabled)
           isFull
         }
       })
       .filter((offering): offering is NonNullable<typeof offering> => offering !== null)
-  }, [userAngkatan, getOfferingsForStudent, getSubjectById, getKrsByOffering, searchTerm, enrolledSubjectIds])
+  }, [userAngkatan, getOfferingsForStudent, getSubjectById, getKrsByOffering, searchTerm, enrolledOfferingIds, enrolledSubjectIds])
 
   // Group offerings by kelas
   const groupedOfferings = useMemo(() => {
@@ -106,8 +111,15 @@ export function KrsPicker({ userId, term }: KrsPickerProps) {
     // Prevent multiple rapid clicks
     if (addingOffering === offering.id) return
     
-    // Check if subject is already taken
-    if (offering.isSubjectTaken) {
+    // Check if already enrolled in this class
+    if (offering.isAlreadyEnrolled) {
+      const subject = getSubjectById(offering.subjectId)
+      showError(`${subject?.nama} sudah diambil di kelas ini`)
+      return
+    }
+    
+    // Check if subject is already taken in another class
+    if (offering.isSubjectTakenInOtherClass) {
       const subject = getSubjectById(offering.subjectId)
       showError(`${subject?.nama} sudah diambil di kelas lain`)
       return
@@ -242,15 +254,17 @@ export function KrsPicker({ userId, term }: KrsPickerProps) {
                           if (!subject) return null
 
                           const enrollmentInfo = getEnrollmentInfo(offering)
-                          const isDisabled = offering.isSubjectTaken || offering.isFull || addingOffering === offering.id
+                          const isDisabled = offering.isSubjectTakenInOtherClass || offering.isFull || addingOffering === offering.id
 
                           return (
                             <div 
                               key={offering.id} 
-                              className={`p-4 transition-colors ${
-                                offering.isSubjectTaken 
+                              className={`p-4 ${
+                                offering.isAlreadyEnrolled
+                                  ? 'bg-green-50 dark:bg-green-950/20 border-l-4 border-green-500' 
+                                  : offering.isSubjectTakenInOtherClass
                                   ? 'bg-orange-50 dark:bg-orange-950/20 border-l-4 border-orange-500' 
-                                  : 'hover:bg-muted/30'
+                                  : 'transition-colors hover:bg-muted/30'
                               }`}
                             >
                               <div className="flex items-start justify-between gap-3">
@@ -271,12 +285,17 @@ export function KrsPicker({ userId, term }: KrsPickerProps) {
                                       </div>
                                     )}
                                   </div>
-                                  {offering.isSubjectTaken && (
-                                    <p className="text-xs text-orange-600 dark:text-orange-400 mt-2 font-medium">
-                                      ⚠️ Sudah diambil di kelas lain
+                                  {offering.isAlreadyEnrolled && (
+                                    <p className="text-xs text-green-600 dark:text-green-400 mt-2 font-medium">
+                                      ✓ Mata kuliah sudah diambil
                                     </p>
                                   )}
-                                  {offering.isFull && !offering.isSubjectTaken && (
+                                  {offering.isSubjectTakenInOtherClass && (
+                                    <p className="text-xs text-orange-600 dark:text-orange-400 mt-2 font-medium">
+                                      ⚠️ Mata kuliah sudah diambil di kelas lain
+                                    </p>
+                                  )}
+                                  {offering.isFull && !offering.isAlreadyEnrolled && !offering.isSubjectTakenInOtherClass && (
                                     <p className="text-xs text-red-600 dark:text-red-400 mt-2 font-medium">
                                       ⚠️ Kelas penuh
                                     </p>
@@ -285,12 +304,12 @@ export function KrsPicker({ userId, term }: KrsPickerProps) {
                                 <Button 
                                   size="sm" 
                                   onClick={() => handleAddOffering(offering)}
-                                  disabled={isDisabled}
+                                  disabled={isDisabled || offering.isAlreadyEnrolled}
                                   className="h-8 px-3 flex-shrink-0"
-                                  variant={offering.isSubjectTaken ? "outline" : "default"}
+                                  variant={offering.isAlreadyEnrolled ? "outline" : offering.isSubjectTakenInOtherClass || offering.isFull ? "outline" : "default"}
                                 >
                                   <Plus className="h-4 w-4 mr-1" />
-                                  {addingOffering === offering.id ? "..." : "Ambil"}
+                                  {addingOffering === offering.id ? "..." : offering.isAlreadyEnrolled ? "Diambil" : "Ambil"}
                                 </Button>
                               </div>
                             </div>
@@ -346,15 +365,17 @@ export function KrsPicker({ userId, term }: KrsPickerProps) {
                             if (!subject) return null
 
                             const enrollmentInfo = getEnrollmentInfo(offering)
-                            const isDisabled = offering.isSubjectTaken || offering.isFull || addingOffering === offering.id
+                            const isDisabled = offering.isSubjectTakenInOtherClass || offering.isFull || addingOffering === offering.id
 
                             return (
                               <Card 
                                 key={offering.id} 
-                                className={`transition-colors ${
-                                  offering.isSubjectTaken 
+                                className={`${
+                                  offering.isAlreadyEnrolled
+                                    ? 'border-green-500 bg-green-50 dark:bg-green-950/20' 
+                                    : offering.isSubjectTakenInOtherClass 
                                     ? 'border-orange-500 bg-orange-50 dark:bg-orange-950/20' 
-                                    : 'hover:border-primary/50'
+                                    : 'transition-colors hover:border-primary/50'
                                 }`}
                               >
                                 <CardContent className="p-4">
@@ -379,12 +400,17 @@ export function KrsPicker({ userId, term }: KrsPickerProps) {
                                           </div>
                                         )}
                                       </div>
-                                      {offering.isSubjectTaken && (
-                                        <p className="text-sm text-orange-600 dark:text-orange-400 mt-2 font-medium flex items-center gap-1">
-                                          ⚠️ Mata kuliah ini sudah diambil di kelas lain
+                                      {offering.isAlreadyEnrolled && (
+                                        <p className="text-sm text-green-600 dark:text-green-400 mt-2 font-medium flex items-center gap-1">
+                                          ✓ Mata kuliah sudah diambil
                                         </p>
                                       )}
-                                      {offering.isFull && !offering.isSubjectTaken && (
+                                      {offering.isSubjectTakenInOtherClass && (
+                                        <p className="text-sm text-orange-600 dark:text-orange-400 mt-2 font-medium flex items-center gap-1">
+                                          ⚠️ Mata kuliah sudah diambil di kelas lain
+                                        </p>
+                                      )}
+                                      {offering.isFull && !offering.isAlreadyEnrolled && !offering.isSubjectTakenInOtherClass && (
                                         <p className="text-sm text-red-600 dark:text-red-400 mt-2 font-medium flex items-center gap-1">
                                           ⚠️ Kelas sudah penuh
                                         </p>
@@ -393,12 +419,12 @@ export function KrsPicker({ userId, term }: KrsPickerProps) {
                                     <Button 
                                       size="sm" 
                                       onClick={() => handleAddOffering(offering)}
-                                      disabled={isDisabled}
+                                      disabled={isDisabled || offering.isAlreadyEnrolled}
                                       className="h-9 px-4 flex-shrink-0"
-                                      variant={offering.isSubjectTaken || offering.isFull ? "outline" : "default"}
+                                      variant={offering.isAlreadyEnrolled ? "secondary" : offering.isSubjectTakenInOtherClass || offering.isFull ? "outline" : "default"}
                                     >
                                       <Plus className="h-4 w-4 mr-1" />
-                                      {addingOffering === offering.id ? "..." : "Ambil"}
+                                      {addingOffering === offering.id ? "..." : offering.isAlreadyEnrolled ? "Diambil" : "Ambil"}
                                     </Button>
                                   </div>
                                 </CardContent>
