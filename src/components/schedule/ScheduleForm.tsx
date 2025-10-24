@@ -3,6 +3,7 @@
 import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { z } from "zod"
+import { useState, useEffect } from "react"
 import { useSubjectsStore } from "@/stores/subjects.store"
 import { useScheduleStore } from "@/stores/schedule.store"
 import { useKrsStore } from "@/stores/krs.store"
@@ -16,7 +17,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { showSuccess, showError, confirmAction } from "@/lib/alerts"
 import { parseTimeToMinutes, minutesToTimeString } from "@/lib/time"
 import { ActivityLogger } from "@/lib/activity-logger"
-import { AlertTriangle } from "lucide-react"
+import { generateUniqueColor, getColorPalette } from "@/lib/utils"
+import { AlertTriangle, Check } from "lucide-react"
 
 const scheduleFormSchema = z
   .object({
@@ -49,6 +51,7 @@ interface ScheduleFormProps {
   onSuccess?: () => void
   onCancel?: () => void
   defaultDay?: number
+  viewMode?: "simple" | "weekly" // Add viewMode prop
 }
 
 const dayNames = ["Minggu", "Senin", "Selasa", "Rabu", "Kamis", "Jumat", "Sabtu"]
@@ -64,10 +67,11 @@ const generateRoomOptions = () => {
   return rooms
 }
 
-export function ScheduleForm({ userId, event, onSuccess, onCancel, defaultDay }: ScheduleFormProps) {
+export function ScheduleForm({ userId, event, onSuccess, onCancel, defaultDay, viewMode = "simple" }: ScheduleFormProps) {
   const { subjects } = useSubjectsStore()
-  const { addEvent, updateEvent, getConflicts } = useScheduleStore()
+  const { addEvent, updateEvent, getConflicts, getEventsByUser } = useScheduleStore()
   const { getKrsByUser } = useKrsStore()
+  const [selectedColor, setSelectedColor] = useState<string>("#3b82f6")
 
   // Get current term
   const currentYear = new Date().getFullYear()
@@ -97,6 +101,23 @@ export function ScheduleForm({ userId, event, onSuccess, onCancel, defaultDay }:
       color: event?.color || "#3b82f6",
     },
   })
+
+  // Initialize selected color
+  useEffect(() => {
+    if (event?.color) {
+      setSelectedColor(event.color)
+    } else {
+      // Get used colors for generating unique color
+      const userEvents = getEventsByUser(userId)
+      const usedColors = userEvents
+        .map(e => e.color || subjects.find(s => s.id === e.subjectId)?.color)
+        .filter(Boolean) as string[]
+      
+      const uniqueColor = generateUniqueColor(usedColors)
+      setSelectedColor(uniqueColor)
+      form.setValue("color", uniqueColor)
+    }
+  }, [event, userId, getEventsByUser, subjects, form])
 
   const watchedValues = form.watch()
   const selectedSubject = watchedValues.subjectId ? subjects.find((s) => s.id === watchedValues.subjectId) : null
@@ -175,7 +196,7 @@ export function ScheduleForm({ userId, event, onSuccess, onCancel, defaultDay }:
       location: data.location || undefined,
       joinUrl: data.joinUrl || undefined,
       notes: data.notes || undefined,
-      color: selectedSubject ? undefined : data.color,
+      color: data.subjectId && data.subjectId !== "defaultSubjectId" ? undefined : selectedColor,
     }
 
     try {
@@ -209,6 +230,21 @@ export function ScheduleForm({ userId, event, onSuccess, onCancel, defaultDay }:
         </CardDescription>
       </CardHeader>
       <CardContent>
+        {availableSubjects.length === 0 && (
+          <div className="mb-4 p-3 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-lg">
+            <div className="flex items-start gap-2">
+              <AlertTriangle className="h-5 w-5 text-amber-600 dark:text-amber-400 flex-shrink-0 mt-0.5" />
+              <div className="flex-1">
+                <p className="text-sm font-medium text-amber-800 dark:text-amber-200">
+                  Belum Ada Mata Kuliah di KRS
+                </p>
+                <p className="text-xs text-amber-700 dark:text-amber-300 mt-1">
+                  Anda belum mengambil mata kuliah di KRS. Silakan ambil KRS terlebih dahulu untuk menambahkan jadwal mata kuliah, atau tambahkan sebagai jadwal pribadi.
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-2">
@@ -218,7 +254,7 @@ export function ScheduleForm({ userId, event, onSuccess, onCancel, defaultDay }:
                 onValueChange={(value) => form.setValue("subjectId", value || undefined)}
               >
                 <SelectTrigger>
-                  <SelectValue placeholder="Pilih mata kuliah atau kosongkan" />
+                  <SelectValue placeholder={availableSubjects.length === 0 ? "Jadwal Pribadi" : "Pilih mata kuliah atau kosongkan"} />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="defaultSubjectId">Jadwal Pribadi</SelectItem> {/* Updated value */}
@@ -229,6 +265,11 @@ export function ScheduleForm({ userId, event, onSuccess, onCancel, defaultDay }:
                   ))}
                 </SelectContent>
               </Select>
+              {availableSubjects.length === 0 && (
+                <p className="text-xs text-muted-foreground">
+                  Hanya mata kuliah yang sudah diambil di KRS yang dapat dijadwalkan
+                </p>
+              )}
             </div>
 
             <div className="space-y-2">
@@ -320,6 +361,38 @@ export function ScheduleForm({ userId, event, onSuccess, onCancel, defaultDay }:
             <Label htmlFor="notes">Catatan</Label>
             <Textarea id="notes" placeholder="Catatan tambahan..." {...form.register("notes")} />
           </div>
+
+          {/* Color picker - only show in weekly view */}
+          {viewMode === "weekly" && (
+            <div className="space-y-2">
+              <Label>Warna Jadwal</Label>
+              <div className="flex flex-wrap gap-2">
+                {getColorPalette().map((color) => (
+                  <button
+                    key={color}
+                    type="button"
+                    className="w-10 h-10 rounded-md border-2 transition-all hover:scale-110 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary"
+                    style={{ 
+                      backgroundColor: color,
+                      borderColor: selectedColor === color ? "#000" : "transparent"
+                    }}
+                    onClick={() => {
+                      setSelectedColor(color)
+                      form.setValue("color", color)
+                    }}
+                    title={color}
+                  >
+                    {selectedColor === color && (
+                      <Check className="h-5 w-5 text-white mx-auto drop-shadow-lg" />
+                    )}
+                  </button>
+                ))}
+              </div>
+              <p className="text-xs text-muted-foreground">
+                Pilih warna untuk membedakan jadwal di kalender
+              </p>
+            </div>
+          )}
 
           {conflicts.length > 0 && (
             <div className="p-3 bg-destructive/10 border border-destructive/20 rounded-lg">

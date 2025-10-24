@@ -4,13 +4,14 @@ import { useState } from "react"
 import { useScheduleStore } from "@/stores/schedule.store"
 import { useSubjectsStore } from "@/stores/subjects.store"
 import { useUIStore } from "@/stores/ui.store"
+import { useRemindersStore } from "@/stores/reminders.store"
 import type { ScheduleEvent } from "@/data/schema"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator, DropdownMenuLabel, DropdownMenuSub, DropdownMenuSubContent, DropdownMenuSubTrigger } from "@/components/ui/dropdown-menu"
-import { MoreHorizontal, Edit, Trash2, Copy, MapPin, ExternalLink, MoveHorizontal, Clock, Calendar } from "lucide-react"
+import { MoreHorizontal, Edit, Trash2, Copy, MapPin, ExternalLink, MoveHorizontal, Clock, Calendar, Bell } from "lucide-react"
 import { confirmAction, showSuccess, showError } from "@/lib/alerts"
-import { fmt24, nowUTC } from "@/lib/time"
+import { fmt24, nowUTC, toUTC } from "@/lib/time"
 import { cn } from "@/lib/utils"
 import { ActivityLogger } from "@/lib/activity-logger"
 
@@ -27,6 +28,7 @@ export function ScheduleGrid({ userId, onEditEvent, onAddEvent }: ScheduleGridPr
   const { getEventsByDay, deleteEvent, duplicateEvent, rescheduleEvent, getConflicts } = useScheduleStore()
   const { subjects } = useSubjectsStore()
   const { showNowLine } = useUIStore()
+  const { addReminder } = useRemindersStore()
   const [selectedDay, setSelectedDay] = useState<number>(new Date().getDay())
 
   const currentTime = nowUTC()
@@ -76,6 +78,45 @@ export function ScheduleGrid({ userId, onEditEvent, onAddEvent }: ScheduleGridPr
     ActivityLogger.scheduleUpdated(userId, eventName)
   }
 
+  const handleAddToReminder = (event: ScheduleEvent) => {
+    const subject = event.subjectId ? subjects.find((s) => s.id === event.subjectId) : null
+    const eventName = subject ? `${subject.kode} - ${subject.nama}` : "Jadwal Pribadi"
+    
+    // Calculate next occurrence of this day
+    const now = new Date()
+    const currentDay = now.getDay()
+    const targetDay = event.dayOfWeek
+    
+    let daysUntil = targetDay - currentDay
+    if (daysUntil <= 0) daysUntil += 7
+    
+    const nextDate = new Date(now)
+    nextDate.setDate(now.getDate() + daysUntil)
+    
+    // Set time from event's startUTC (which is milliseconds in day)
+    const startHour = Math.floor(event.startUTC / (1000 * 60 * 60)) % 24
+    const startMinute = Math.floor((event.startUTC % (1000 * 60 * 60)) / (1000 * 60))
+    nextDate.setHours(startHour, startMinute, 0, 0)
+    
+    // Convert to UTC timestamp
+    const dueUTC = toUTC(nextDate)
+    
+    // Add reminder
+    addReminder({
+      userId,
+      title: eventName,
+      dueUTC,
+      relatedSubjectId: event.subjectId,
+      isActive: true,
+      sendEmail: false,
+    })
+    
+    showSuccess(`Pengingat untuk "${eventName}" berhasil ditambahkan`)
+    
+    // Log activity
+    ActivityLogger.reminderCreated(userId, eventName)
+  }
+
   const getEventPosition = (event: ScheduleEvent) => {
     const startHour = Math.floor(event.startUTC / (1000 * 60 * 60)) % 24
     const startMinute = Math.floor((event.startUTC % (1000 * 60 * 60)) / (1000 * 60))
@@ -123,14 +164,25 @@ export function ScheduleGrid({ userId, onEditEvent, onAddEvent }: ScheduleGridPr
                     variant="ghost"
                     size="sm"
                     className="h-6 w-6 p-0 opacity-0 group-hover:opacity-100 transition-opacity"
+                    onClick={(e) => e.stopPropagation()}
                   >
                     <MoreHorizontal className="h-3 w-3" />
                   </Button>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent align="end">
-                  <DropdownMenuItem onClick={() => onEditEvent?.(event)}>
+                <DropdownMenuContent align="end" onClick={(e) => e.stopPropagation()}>
+                  <DropdownMenuItem onClick={(e) => {
+                    e.stopPropagation()
+                    onEditEvent?.(event)
+                  }}>
                     <Edit className="mr-2 h-4 w-4" />
                     Edit
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={(e) => {
+                    e.stopPropagation()
+                    handleAddToReminder(event)
+                  }}>
+                    <Bell className="mr-2 h-4 w-4" />
+                    Tambah ke Pengingat
                   </DropdownMenuItem>
                   <DropdownMenuSeparator />
                   <DropdownMenuSub>
@@ -138,11 +190,14 @@ export function ScheduleGrid({ userId, onEditEvent, onAddEvent }: ScheduleGridPr
                       <MoveHorizontal className="mr-2 h-4 w-4" />
                       Pindahkan ke
                     </DropdownMenuSubTrigger>
-                    <DropdownMenuSubContent>
+                    <DropdownMenuSubContent onClick={(e) => e.stopPropagation()}>
                       {dayNames.map((day, index) => (
                         <DropdownMenuItem
                           key={index}
-                          onClick={() => handleMoveEvent(event, index)}
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            handleMoveEvent(event, index)
+                          }}
                           disabled={index === event.dayOfWeek}
                         >
                           {day}
@@ -151,7 +206,8 @@ export function ScheduleGrid({ userId, onEditEvent, onAddEvent }: ScheduleGridPr
                     </DropdownMenuSubContent>
                   </DropdownMenuSub>
                   <DropdownMenuItem
-                    onClick={() => {
+                    onClick={(e) => {
+                      e.stopPropagation()
                       const targetDay = (event.dayOfWeek + 1) % 7
                       handleDuplicateEvent(event, targetDay)
                     }}
@@ -160,7 +216,10 @@ export function ScheduleGrid({ userId, onEditEvent, onAddEvent }: ScheduleGridPr
                     Duplikasi
                   </DropdownMenuItem>
                   <DropdownMenuSeparator />
-                  <DropdownMenuItem onClick={() => handleDeleteEvent(event)} className="text-destructive">
+                  <DropdownMenuItem onClick={(e) => {
+                    e.stopPropagation()
+                    handleDeleteEvent(event)
+                  }} className="text-destructive">
                     <Trash2 className="mr-2 h-4 w-4" />
                     Hapus
                   </DropdownMenuItem>
@@ -273,13 +332,15 @@ export function ScheduleGrid({ userId, onEditEvent, onAddEvent }: ScheduleGridPr
                                 backgroundColor: color + "15",
                                 borderColor: color + "40",
                               } as React.CSSProperties}
-                              onClick={(e) => {
-                                e.stopPropagation()
-                                onEditEvent?.(event)
-                              }}
                             >
                               <div className="flex items-start justify-between gap-2 mb-1.5">
-                                <div className="flex-1 min-w-0">
+                                <div 
+                                  className="flex-1 min-w-0"
+                                  onClick={(e) => {
+                                    e.stopPropagation()
+                                    onEditEvent?.(event)
+                                  }}
+                                >
                                   <h4 className="font-semibold text-sm leading-tight truncate" style={{ color } as React.CSSProperties}>
                                     {subject ? subject.nama : "Jadwal Pribadi"}
                                   </h4>
@@ -287,6 +348,17 @@ export function ScheduleGrid({ userId, onEditEvent, onAddEvent }: ScheduleGridPr
                                     <p className="text-xs text-muted-foreground mt-0.5">{subject.kode}</p>
                                   )}
                                 </div>
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  className="h-7 w-7 p-0 shrink-0"
+                                  onClick={(e) => {
+                                    e.stopPropagation()
+                                    handleAddToReminder(event)
+                                  }}
+                                >
+                                  <Bell className="h-3.5 w-3.5" />
+                                </Button>
                               </div>
                               <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted-foreground">
                                 <div className="flex items-center gap-1">

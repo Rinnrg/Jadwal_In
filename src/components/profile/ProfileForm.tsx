@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { useSessionStore } from "@/stores/session.store"
 import { useProfileStore } from "@/stores/profile.store"
 import type { Profile } from "@/data/schema"
@@ -12,21 +12,45 @@ import { AvatarUploader } from "@/components/profile/AvatarUploader"
 import { EKTMDialog } from "@/components/profile/EKTMDialog"
 import { showSuccess, showError } from "@/lib/alerts"
 import { ActivityLogger } from "@/lib/activity-logger"
-import { Lock, IdCard, Edit2, Check, X } from "lucide-react"
+import { Lock, IdCard, Edit2, Check, X, KeyRound } from "lucide-react"
 
 interface ProfileFormProps {
   profile?: Profile
   onSuccess?: () => void
   onChangePassword?: () => void
+  onSetPassword?: () => void
 }
 
-export function ProfileForm({ profile, onSuccess, onChangePassword }: ProfileFormProps) {
+export function ProfileForm({ profile, onSuccess, onChangePassword, onSetPassword }: ProfileFormProps) {
   const { session, updateSessionImage } = useSessionStore()
   const { updateProfile, createProfile } = useProfileStore()
   const [showEKTM, setShowEKTM] = useState(false)
   const [isEditing, setIsEditing] = useState(false)
   const [editedName, setEditedName] = useState(session?.name || "")
   const [isSaving, setIsSaving] = useState(false)
+  const [hasPassword, setHasPassword] = useState<boolean | null>(null)
+  const [isCheckingPassword, setIsCheckingPassword] = useState(true)
+
+  // Check if user has password
+  useEffect(() => {
+    const checkPassword = async () => {
+      if (!session) return
+      
+      try {
+        const response = await fetch(`/api/users/check-password?userId=${session.id}`)
+        if (response.ok) {
+          const data = await response.json()
+          setHasPassword(data.hasPassword)
+        }
+      } catch (error) {
+        console.error('Error checking password:', error)
+      } finally {
+        setIsCheckingPassword(false)
+      }
+    }
+    
+    checkPassword()
+  }, [session])
 
   // Helper untuk extract NIM dari email
   const getNIMFromEmail = (email: string): string | undefined => {
@@ -113,10 +137,13 @@ export function ProfileForm({ profile, onSuccess, onChangePassword }: ProfileFor
   // Get current avatar from session or profile (session.image is synced from profile)
   const currentAvatar = session?.image || profile?.avatarUrl
   
-  // Debug: log avatar sources
-  console.log('ProfileForm - session.image:', session?.image?.substring(0, 50))
-  console.log('ProfileForm - profile.avatarUrl:', profile?.avatarUrl?.substring(0, 50))
-  console.log('ProfileForm - currentAvatar:', currentAvatar?.substring(0, 50))
+  // Enhanced debug logging
+  console.log('=== ProfileForm Avatar Debug ===')
+  console.log('session.image:', session?.image?.substring(0, 100) || 'null')
+  console.log('profile.avatarUrl:', profile?.avatarUrl?.substring(0, 100) || 'null')
+  console.log('currentAvatar:', currentAvatar?.substring(0, 100) || 'null')
+  console.log('Is base64?', currentAvatar?.startsWith('data:'))
+  console.log('================================')
 
   const handleAvatarChange = async (avatarUrl: string) => {
     if (!session) return
@@ -180,8 +207,13 @@ export function ProfileForm({ profile, onSuccess, onChangePassword }: ProfileFor
       })
 
       if (!response.ok) {
-        throw new Error('Failed to update name')
+        const errorData = await response.json().catch(() => ({}))
+        console.error('API Error:', errorData)
+        throw new Error(errorData.error || 'Failed to update name')
       }
+
+      const data = await response.json()
+      console.log('Name updated successfully:', data)
 
       // Update session store (will trigger re-render)
       const sessionStore = useSessionStore.getState()
@@ -197,7 +229,8 @@ export function ProfileForm({ profile, onSuccess, onChangePassword }: ProfileFor
       ActivityLogger.profileUpdated(session.id, "name")
     } catch (error) {
       console.error('Name update error:', error)
-      showError("Gagal menyimpan nama. Silakan coba lagi.")
+      const errorMessage = error instanceof Error ? error.message : "Gagal menyimpan nama. Silakan coba lagi."
+      showError(errorMessage)
     } finally {
       setIsSaving(false)
     }
@@ -367,16 +400,41 @@ export function ProfileForm({ profile, onSuccess, onChangePassword }: ProfileFor
               </div>
             </div>
 
-            <div className="flex justify-start items-center pt-2">
-              <Button 
-                type="button" 
-                variant="outline"
-                onClick={onChangePassword}
-                className="cursor-pointer"
-              >
-                <Lock className="h-4 w-4 mr-2" />
-                Ganti Password
-              </Button>
+            <div className="flex flex-col sm:flex-row gap-2 pt-2">
+              {isCheckingPassword ? (
+                <Button type="button" variant="outline" disabled>
+                  <Lock className="h-4 w-4 mr-2" />
+                  Memuat...
+                </Button>
+              ) : hasPassword ? (
+                <Button 
+                  type="button" 
+                  variant="outline"
+                  onClick={onChangePassword}
+                  className="cursor-pointer"
+                >
+                  <Lock className="h-4 w-4 mr-2" />
+                  Ganti Password
+                </Button>
+              ) : (
+                <>
+                  <Button 
+                    type="button" 
+                    variant="default"
+                    onClick={onSetPassword}
+                    className="cursor-pointer bg-blue-600 hover:bg-blue-700 text-white"
+                  >
+                    <KeyRound className="h-4 w-4 mr-2" />
+                    Atur Password
+                  </Button>
+                  <div className="flex items-start gap-2 p-3 bg-blue-50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-800 rounded-md">
+                    <div className="text-xs text-blue-800 dark:text-blue-200">
+                      <p className="font-semibold mb-1">Akun Google Belum Punya Password</p>
+                      <p>Atur password agar bisa login menggunakan email dan password selain Google Sign-In.</p>
+                    </div>
+                  </div>
+                </>
+              )}
             </div>
           </div>
         </CardContent>

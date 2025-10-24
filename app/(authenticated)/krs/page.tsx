@@ -5,6 +5,7 @@ import { useSubjectsStore } from "@/stores/subjects.store"
 import { useOfferingsStore } from "@/stores/offerings.store"
 import { useKrsStore } from "@/stores/krs.store"
 import { useProfileStore } from "@/stores/profile.store"
+import { useNotificationStore } from "@/stores/notification.store"
 import { canAccessKRS } from "@/lib/rbac"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -22,12 +23,20 @@ export default function KrsPage() {
   const { fetchOfferings, isLoading: offeringsLoading } = useOfferingsStore()
   const { getTotalSks, clearKrsByUserAndTerm } = useKrsStore()
   const { getProfile } = useProfileStore()
+  const { clearBadge } = useNotificationStore()
 
   // Fetch data on mount
   useEffect(() => {
     fetchSubjects()
     fetchOfferings()
   }, [])
+
+  // Clear KRS notification badge when user opens this page
+  useEffect(() => {
+    if (session?.id) {
+      clearBadge("krs", session.id)
+    }
+  }, [session?.id, clearBadge])
 
   const currentYear = new Date().getFullYear()
   const currentMonth = new Date().getMonth()

@@ -1,9 +1,10 @@
 "use client"
 
-import { useState, useMemo } from "react"
+import { useState, useMemo, useEffect } from "react"
 import { useSessionStore } from "@/stores/session.store"
 import { useSubjectsStore } from "@/stores/subjects.store"
 import { useKrsStore } from "@/stores/krs.store"
+import { useNotificationStore } from "@/stores/notification.store"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Badge } from "@/components/ui/badge"
@@ -16,9 +17,24 @@ import type { Subject } from "@/data/schema"
 
 export default function AsynchronousPage() {
   const { session } = useSessionStore()
-  const { subjects, getSubjectsByPengampu, getActiveSubjects, getSubjectById } = useSubjectsStore()
+  const { subjects, getSubjectsByPengampu, getActiveSubjects, getSubjectById, fetchSubjects, isLoading } = useSubjectsStore()
   const { krsItems, getKrsByUser } = useKrsStore()
+  const { clearBadge } = useNotificationStore()
   const [selectedSubject, setSelectedSubject] = useState<Subject | null>(null)
+
+  // Fetch subjects on mount
+  useEffect(() => {
+    if (subjects.length === 0) {
+      fetchSubjects()
+    }
+  }, [fetchSubjects, subjects.length])
+
+  // Clear asynchronous notification badge when user opens this page
+  useEffect(() => {
+    if (session?.id) {
+      clearBadge("asynchronous", session.id)
+    }
+  }, [session?.id, clearBadge])
 
   const availableSubjects = useMemo(() => {
     if (!session) return []
@@ -58,6 +74,29 @@ export default function AsynchronousPage() {
             <CardDescription className="text-center">Anda harus login untuk mengakses halaman ini.</CardDescription>
           </CardHeader>
         </Card>
+      </div>
+    )
+  }
+
+  // Show loading state while fetching
+  if (isLoading) {
+    return (
+      <div className="space-y-4 md:space-y-6">
+        <div className="px-3 md:px-4">
+          <h1 className="text-lg md:text-2xl lg:text-3xl font-bold tracking-tight">Konten Asynchronous</h1>
+          <p className="text-muted-foreground text-xs md:text-sm mt-1">Kelola tugas, materi, dan kehadiran untuk mata kuliah</p>
+        </div>
+
+        <div className="px-3 md:px-4">
+          <Card>
+            <CardContent className="p-8 md:p-12 text-center">
+              <div className="w-16 h-16 rounded-full bg-muted flex items-center justify-center mx-auto mb-4 animate-pulse">
+                <BookOpen className="h-8 w-8 text-muted-foreground" />
+              </div>
+              <p className="text-sm md:text-base text-muted-foreground">Memuat data mata kuliah...</p>
+            </CardContent>
+          </Card>
+        </div>
       </div>
     )
   }

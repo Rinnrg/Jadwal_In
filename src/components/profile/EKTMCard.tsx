@@ -29,15 +29,42 @@ export function EKTMCard({ name, nim, fakultas, programStudi, avatarUrl }: EKTMC
   // Generate QR Code data - URL yang akan menampilkan E-KTM
   const qrData = `${typeof window !== 'undefined' ? window.location.origin : ''}/e-ktm/${nim}`
 
-  // Function to load image from URL
-  const loadImage = (url: string): Promise<HTMLImageElement> => {
-    return new Promise((resolve, reject) => {
-      const img = new window.Image()
-      img.crossOrigin = "anonymous"
-      img.onload = () => resolve(img)
-      img.onerror = reject
-      img.src = url
-    })
+  // Function to load image from URL with better CORS handling
+  const loadImage = async (url: string): Promise<HTMLImageElement> => {
+    // Try direct load first
+    try {
+      return await new Promise<HTMLImageElement>((resolve, reject) => {
+        const img = new window.Image()
+        img.crossOrigin = "anonymous"
+        img.onload = () => resolve(img)
+        img.onerror = reject
+        img.src = url
+      })
+    } catch (error) {
+      // If direct load fails, try using fetch + blob (better for CORS)
+      console.log('Direct image load failed, trying fetch method...')
+      try {
+        const response = await fetch(url, { mode: 'cors' })
+        const blob = await response.blob()
+        const objectUrl = URL.createObjectURL(blob)
+        
+        return await new Promise<HTMLImageElement>((resolve, reject) => {
+          const img = new window.Image()
+          img.onload = () => {
+            URL.revokeObjectURL(objectUrl)
+            resolve(img)
+          }
+          img.onerror = () => {
+            URL.revokeObjectURL(objectUrl)
+            reject(new Error('Failed to load image from blob'))
+          }
+          img.src = objectUrl
+        })
+      } catch (fetchError) {
+        console.error('Fetch method also failed:', fetchError)
+        throw error
+      }
+    }
   }
 
   const handleDownload = async () => {
@@ -66,17 +93,15 @@ export function EKTMCard({ name, nim, fakultas, programStudi, avatarUrl }: EKTMC
       ctx.fillStyle = '#ffffff'
       ctx.fillRect(0, 0, cardWidth, cardHeight)
 
-      // Load and draw background image
+      // Load and draw card template (desain E-KTM.svg)
       try {
-        const bgImage = await loadImage('/bg E-KTM.svg')
-        ctx.drawImage(bgImage, 0, 0, cardWidth, cardHeight)
+        const cardTemplate = await loadImage('/desain E-KTM.svg')
+        ctx.drawImage(cardTemplate, 0, 0, cardWidth, cardHeight)
+        console.log('✅ Successfully loaded desain E-KTM.svg for card template')
       } catch (e) {
-        console.warn('Could not load background image, using solid color')
-        // Fallback gradient background
-        const gradient = ctx.createLinearGradient(0, 0, cardWidth, cardHeight)
-        gradient.addColorStop(0, '#3b82f6')
-        gradient.addColorStop(1, '#1e40af')
-        ctx.fillStyle = gradient
+        console.warn('Could not load desain E-KTM.svg, using fallback background')
+        // Fallback: solid white background
+        ctx.fillStyle = '#ffffff'
         ctx.fillRect(0, 0, cardWidth, cardHeight)
       }
 
@@ -126,14 +151,28 @@ export function EKTMCard({ name, nim, fakultas, programStudi, avatarUrl }: EKTMC
 
       if (avatarUrl) {
         try {
-          const avatarImage = await loadImage(avatarUrl)
+          // Try to load the image with CORS handling
+          let imageUrl = avatarUrl
+          
+          // If it's a Google profile image, try to use a proxy or direct load
+          if (avatarUrl.includes('googleusercontent.com')) {
+            // For Google images, we can load directly but need proper CORS
+            imageUrl = avatarUrl
+          }
+          
+          const avatarImage = await loadImage(imageUrl)
+          
+          // Draw the image scaled to fit the circle
           ctx.drawImage(avatarImage, photoX, photoY, photoSize, photoSize)
+          
+          console.log('✅ Successfully loaded avatar image for PDF')
         } catch (e) {
+          console.warn('Could not load avatar image, using initials fallback:', e)
           // Draw fallback initials
           ctx.fillStyle = '#111827'
           ctx.fillRect(photoX, photoY, photoSize, photoSize)
           ctx.fillStyle = '#ffffff'
-          ctx.font = 'bold 20px sans-serif'
+          ctx.font = 'bold 24px Arial, Helvetica, sans-serif'
           ctx.textAlign = 'center'
           ctx.textBaseline = 'middle'
           const initials = name.split(" ").map(n => n[0]).join("").slice(0, 2).toUpperCase()
@@ -144,7 +183,7 @@ export function EKTMCard({ name, nim, fakultas, programStudi, avatarUrl }: EKTMC
         ctx.fillStyle = '#111827'
         ctx.fillRect(photoX, photoY, photoSize, photoSize)
         ctx.fillStyle = '#ffffff'
-        ctx.font = 'bold 20px sans-serif'
+        ctx.font = 'bold 24px Arial, Helvetica, sans-serif'
         ctx.textAlign = 'center'
         ctx.textBaseline = 'middle'
         const initials = name.split(" ").map(n => n[0]).join("").slice(0, 2).toUpperCase()
@@ -153,30 +192,39 @@ export function EKTMCard({ name, nim, fakultas, programStudi, avatarUrl }: EKTMC
 
       ctx.restore()
 
-      // Draw info section (bottom center) - positioned more carefully
-      const infoY = cardHeight - 62 // Move up to give more space
+      // Draw info section (bottom center) - matching CSS exactly: bottom: 48px
+      // Calculate from bottom: cardHeight - 48px (bottom position) - total content height
+      // Total content height estimation: name(12) + gap(2) + nim(10) + gap(2) + fakultas(9*1.3) + gap + prodi(9*1.3)
+      // Approximate: 12 + 2 + 10 + 2 + 12 + 2 + 12 = ~52px, so start at cardHeight - 48 - 52 = cardHeight - 100
+      
+      // Better calculation: Position from bottom upwards
+      const bottomMargin = 48 // CSS: bottom: 48px
+      const infoStartY = cardHeight - bottomMargin - 45 // Start 45px above bottom margin to fit all text
+      
       ctx.textAlign = 'center'
       ctx.textBaseline = 'top'
+      let currentY = infoStartY
 
-      // Name - with better font and spacing
+      // Name - matching CSS: font-size: 12px, font-weight: 700
       ctx.fillStyle = '#111827'
-      ctx.font = 'bold 13px Arial, Helvetica, sans-serif'
+      ctx.font = 'bold 12px Arial, Helvetica, sans-serif'
       const nameText = name.toUpperCase()
-      ctx.fillText(nameText, cardWidth / 2, infoY)
+      ctx.fillText(nameText, cardWidth / 2, currentY)
+      currentY += 12 + 2 // font size + gap
 
-      // NIM - slightly larger and more spacing from name
-      ctx.font = '600 11px Arial, Helvetica, sans-serif'
+      // NIM - matching CSS: font-size: 10px, font-weight: 600
+      ctx.font = '600 10px Arial, Helvetica, sans-serif'
       ctx.fillStyle = '#1f2937'
-      ctx.fillText(nim, cardWidth / 2, infoY + 16)
+      ctx.fillText(nim, cardWidth / 2, currentY)
+      currentY += 10 + 2 // font size + gap
 
-      // Fakultas & Prodi - improved spacing and sizing
+      // Fakultas & Prodi - matching CSS: font-size: 9px, font-weight: 600, line-height: 1.3
       ctx.font = '600 9px Arial, Helvetica, sans-serif'
-      ctx.fillStyle = '#374151'
+      ctx.fillStyle = '#1f2937'
       
-      // Better line height for readability
-      const lineHeight = 11
-      let currentY = infoY + 30
-
+      // Line height based on CSS: 9px * 1.3 = 11.7px ≈ 12px
+      const lineHeight = 12
+      
       // Draw Fakultas - single line, truncate if too long
       const maxTextWidth = cardWidth - 80
       let fakultasText = fakultas

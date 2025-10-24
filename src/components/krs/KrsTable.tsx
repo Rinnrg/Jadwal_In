@@ -1,20 +1,26 @@
 "use client"
 
-import { useMemo } from "react"
+import { useMemo, useState } from "react"
 import { useRouter } from "next/navigation"
 import { useSubjectsStore } from "@/stores/subjects.store"
 import { useOfferingsStore } from "@/stores/offerings.store"
 import { useKrsStore } from "@/stores/krs.store"
 import { useScheduleStore } from "@/stores/schedule.store"
+import { useRemindersStore } from "@/stores/reminders.store"
+import { useSessionStore } from "@/stores/session.store"
 import type { KrsItem } from "@/data/schema"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import { Trash2, Calendar } from "lucide-react"
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
+import { Trash2, Calendar, Bell } from "lucide-react"
 import { confirmAction, showSuccess, showError } from "@/lib/alerts"
-import { fmtDateTime } from "@/lib/time"
+import { fmtDateTime, nowUTC } from "@/lib/time"
 import { ActivityLogger } from "@/lib/activity-logger"
+import { generateUniqueColor } from "@/lib/utils"
 
 interface KrsTableProps {
   userId: string
@@ -28,6 +34,22 @@ export function KrsTable({ userId, term, onScheduleSuggestion }: KrsTableProps) 
   const { getOffering } = useOfferingsStore()
   const { getKrsByUser, removeKrsItem } = useKrsStore()
   const { addEvent, getEventsByUser } = useScheduleStore()
+  const { addReminder } = useRemindersStore()
+  const { session } = useSessionStore()
+  
+  const [reminderDialog, setReminderDialog] = useState<{
+    open: boolean
+    subjectId: string
+    subjectName: string
+    dueDate: string
+    dueTime: string
+  }>({
+    open: false,
+    subjectId: '',
+    subjectName: '',
+    dueDate: '',
+    dueTime: '08:00'
+  })
 
   const krsItems = getKrsByUser(userId, term)
   const userSchedule = getEventsByUser(userId)
@@ -48,8 +70,9 @@ export function KrsTable({ userId, term, onScheduleSuggestion }: KrsTableProps) 
     const groups = krsWithDetails.reduce((acc, item) => {
       if (!item) return acc
       
+      // Prioritize offering data, fallback to subject data
       const angkatan = item.offering?.angkatan || item.subject.angkatan || "Tidak ada angkatan"
-      const kelas = item.offering?.kelas || item.subject.kelas || "Tidak ada kelas"
+      const kelas = (item.offering?.kelas || item.subject.kelas || "Tidak ada kelas").trim()
       const key = `${angkatan}-${kelas}`
       
       if (!acc[key]) {
@@ -106,6 +129,12 @@ export function KrsTable({ userId, term, onScheduleSuggestion }: KrsTableProps) 
       return
     }
 
+    // Generate unique color for this schedule
+    const usedColors = userSchedule
+      .map(e => e.color)
+      .filter(Boolean) as string[]
+    const uniqueColor = generateUniqueColor(usedColors)
+
     // Add to schedule
     addEvent({
       userId,
@@ -114,10 +143,117 @@ export function KrsTable({ userId, term, onScheduleSuggestion }: KrsTableProps) 
       startUTC: slotStartUTC,
       endUTC: slotEndUTC,
       location: location || undefined,
-      color: subject?.color,
+      color: uniqueColor,
     })
 
     showSuccess(`${subject.nama} berhasil ditambahkan ke jadwal`)
+  }
+
+  const handleOpenReminderDialog = (subjectId: string, subjectName: string) => {
+    // Set default to tomorrow at 8 AM
+    const tomorrow = new Date()
+    tomorrow.setDate(tomorrow.getDate() + 1)
+    const dateStr = tomorrow.toISOString().split('T')[0]
+    
+    setReminderDialog({
+      open: true,
+      subjectId,
+      subjectName,
+      dueDate: dateStr,
+      dueTime: '08:00'
+    })
+  }
+
+  const handleSaveReminder = () => {
+    if (!reminderDialog.dueDate || !reminderDialog.dueTime) {
+      showError("Mohon isi tanggal dan waktu reminder")
+      return
+    }
+
+    // Combine date and time to UTC timestamp
+    const dateTimeStr = `${reminderDialog.dueDate}T${reminderDialog.dueTime}:00`
+    const dueUTC = new Date(dateTimeStr).getTime()
+
+    if (dueUTC < nowUTC()) {
+      showError("Waktu reminder tidak boleh di masa lalu")
+      return
+    }
+
+    addReminder({
+      userId,
+      title: `Reminder: ${reminderDialog.subjectName}`,
+      dueUTC,
+      relatedSubjectId: reminderDialog.subjectId,
+      isActive: true,
+      sendEmail: false
+    })
+
+    showSuccess(`Reminder untuk ${reminderDialog.subjectName} berhasil ditambahkan`)
+    setReminderDialog({ open: false, subjectId: '', subjectName: '', dueDate: '', dueTime: '08:00' })
+  }
+
+  const handleSyncAllToSchedule = (groupItems: typeof krsWithDetails) => {
+    let addedCount = 0
+    let skippedCount = 0
+    let errorCount = 0
+
+    groupItems.forEach((item) => {
+      if (!item) return
+
+      // Check if already in schedule
+      const hasSchedule = userSchedule.some(event => event.subjectId === item.subject.id)
+      if (hasSchedule) {
+        skippedCount++
+        return
+      }
+
+      // Get schedule info
+      const slotDay = item.offering?.slotDay ?? item.subject?.slotDay
+      const slotStartUTC = item.offering?.slotStartUTC ?? item.subject?.slotStartUTC
+      const slotEndUTC = item.offering?.slotEndUTC ?? item.subject?.slotEndUTC
+
+      // Validate all required fields are present and not null
+      if (
+        slotDay === undefined || 
+        slotDay === null || 
+        slotStartUTC === undefined || 
+        slotStartUTC === null || 
+        slotEndUTC === undefined || 
+        slotEndUTC === null
+      ) {
+        errorCount++
+        return
+      }
+
+      // Generate unique color
+      const usedColors = userSchedule
+        .map(e => e.color)
+        .filter(Boolean) as string[]
+      const uniqueColor = generateUniqueColor(usedColors)
+
+      // Add to schedule - now TypeScript knows these are not null
+      addEvent({
+        userId,
+        subjectId: item.subject.id,
+        dayOfWeek: slotDay,
+        startUTC: slotStartUTC,
+        endUTC: slotEndUTC,
+        color: uniqueColor,
+      })
+
+      addedCount++
+    })
+
+    // Show result
+    if (addedCount > 0) {
+      showSuccess(`${addedCount} mata kuliah berhasil ditambahkan ke jadwal`)
+    }
+    if (skippedCount > 0) {
+      showError(`${skippedCount} mata kuliah sudah ada di jadwal`)
+    }
+    if (errorCount > 0) {
+      showError(`${errorCount} mata kuliah tidak memiliki data jadwal`)
+    }
   }
 
   const getSemesterBadge = (semester: number) => {
@@ -134,164 +270,227 @@ export function KrsTable({ userId, term, onScheduleSuggestion }: KrsTableProps) 
     return colors[(semester - 1) % colors.length]
   }
 
-  if (krsWithDetails.length === 0) {
-    return (
-      <div className="md:bg-card md:border md:rounded-lg px-3 md:px-6 py-6">
-        <div className="mb-3 md:mb-4">
-          <h2 className="text-base md:text-xl font-bold">KRS Anda</h2>
-          <p className="text-xs md:text-sm text-muted-foreground">Mata kuliah yang telah Anda ambil</p>
-        </div>
-        <div className="text-center py-8 md:py-12">
+  return (
+    <div className="space-y-3 md:space-y-4">
+      {/* Empty State */}
+      {krsWithDetails.length === 0 ? (
+        <div className="text-center py-8 md:py-12 px-3">
           <p className="text-sm md:text-base text-muted-foreground">Belum ada mata kuliah yang diambil.</p>
           <p className="text-xs md:text-sm text-muted-foreground mt-1">Pilih mata kuliah dari daftar di atas.</p>
         </div>
-      </div>
-    )
-  }
+      ) : (
+        /* Content - Grouped by Class */
+        <div className="space-y-3 md:space-y-4">
+          {groupedKrs.map((group, groupIndex) => (
+            <div key={`${group.angkatan}-${group.kelas}`} className="animate-slide-in-left">
+              {/* Group Header Card */}
+              <Card className="border-2 border-primary/10">
+                <CardHeader className="px-3 md:px-6 py-2.5 md:py-3">
+                  <div className="flex items-center justify-between gap-2 flex-wrap">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <span className="text-sm md:text-base font-semibold">KRS Anda</span>
+                      <Badge variant="default" className="text-xs">
+                        Angkatan {group.angkatan}
+                      </Badge>
+                      <Badge variant="outline" className="text-xs">
+                        Kelas {group.kelas}
+                      </Badge>
+                      <span className="text-xs text-muted-foreground">
+                        {group.items.length} mata kuliah
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => handleSyncAllToSchedule(group.items)}
+                        className="h-7 px-2 md:px-3 text-xs hover:bg-blue-50 dark:hover:bg-blue-950/20 border-blue-200 dark:border-blue-800"
+                        title="Sinkronisasi semua ke jadwal"
+                      >
+                        <Calendar className="h-3 w-3 md:mr-1" />
+                        <span className="hidden md:inline">Sync Jadwal</span>
+                      </Button>
+                      <Badge variant="secondary" className="text-xs">
+                        {group.items.reduce((total, item) => total + (item?.subject.sks || 0), 0)} SKS
+                      </Badge>
+                    </div>
+                  </div>
+                </CardHeader>
+                
+                {/* Desktop Table View */}
+                <CardContent className="hidden md:block p-0">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Nama</TableHead>
+                        <TableHead>SKS</TableHead>
+                        <TableHead>Ditambahkan</TableHead>
+                        <TableHead className="w-[180px]">Aksi</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {group.items.map((item) => (
+                        <TableRow
+                          key={item!.id}
+                          className="hover:bg-muted/50 transition-all duration-300 hover:shadow-md hover:scale-[1.01]"
+                        >
+                          <TableCell>
+                            <div>
+                              <p className="font-medium">{item!.subject.nama}</p>
+                              {item!.subject.prodi && <p className="text-sm text-muted-foreground">{item!.subject.prodi}</p>}
+                              {item!.offering?.term && <p className="text-xs text-muted-foreground">{item!.offering.term}</p>}
+                            </div>
+                          </TableCell>
+                          <TableCell>{item!.subject.sks}</TableCell>
+                          <TableCell className="text-sm text-muted-foreground">{fmtDateTime(item!.createdAt)}</TableCell>
+                          <TableCell>
+                            <div className="flex space-x-1">
+                              {((item!.offering?.slotDay !== undefined && item!.offering?.slotStartUTC) || 
+                                (item!.subject.slotDay !== undefined && item!.subject.slotStartUTC)) && (
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  onClick={() => handleAddToSchedule(item!, item!.subject, item!.offering)}
+                                  title="Tambah ke jadwal"
+                                  className="hover:scale-110 transition-all duration-200 hover:shadow-md"
+                                  disabled={userSchedule.some(e => e.subjectId === item!.subject.id)}
+                                >
+                                  <Calendar className="h-4 w-4" />
+                                </Button>
+                              )}
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={() => handleOpenReminderDialog(item!.subject.id, item!.subject.nama)}
+                                title="Tambah reminder"
+                                className="hover:scale-110 transition-all duration-200 hover:shadow-md"
+                              >
+                                <Bell className="h-4 w-4" />
+                              </Button>
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={() => handleRemoveSubject(item!, item!.subject.nama, item!.offering?.kelas)}
+                                title="Hapus dari KRS"
+                                className="text-destructive hover:text-destructive hover:scale-110 transition-all duration-200 hover:shadow-md"
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </CardContent>
 
-  return (
-    <div className="space-y-3 md:space-y-4">
-      {/* Header */}
-      <div className="px-3 md:px-0">
-        <div className="md:bg-card md:border md:rounded-lg md:p-6 md:pb-4">
-          <h2 className="text-base md:text-xl font-bold">KRS Anda</h2>
-          <p className="text-xs md:text-sm text-muted-foreground">{krsWithDetails.length} mata kuliah telah dipilih</p>
-        </div>
-      </div>
-
-      {/* Content */}
-      <div className="space-y-3 md:space-y-4">
-        {groupedKrs.map((group, groupIndex) => (
-          <div key={`${group.angkatan}-${group.kelas}`} className="animate-slide-in-left" style={{ animationDelay: `${groupIndex * 0.1}s` }}>
-            {/* Group Header - Sticky di mobile */}
-            <div className="sticky top-[72px] md:static z-10 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-y md:border-0 px-3 md:px-0 py-2 md:py-0 md:mb-3">
-              <div className="flex items-center gap-2 flex-wrap">
-                <Badge variant="default" className="text-xs">
-                  Angkatan {group.angkatan}
-                </Badge>
-                <Badge variant="outline" className="text-xs">
-                  Kelas {group.kelas}
-                </Badge>
-                <span className="text-xs text-muted-foreground">
-                  {group.items.length} matkul
-                </span>
-              </div>
-            </div>
-            
-            {/* Desktop Table View */}
-            <div className="hidden md:block bg-card border rounded-lg">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Nama</TableHead>
-                    <TableHead>SKS</TableHead>
-                    <TableHead>Ditambahkan</TableHead>
-                    <TableHead className="w-[120px]">Aksi</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {group.items.map((item) => (
-                    <TableRow
-                      key={item!.id}
-                      className="hover:bg-muted/50 transition-all duration-300 hover:shadow-md hover:scale-[1.01]"
-                    >
-                      <TableCell>
-                        <div>
-                          <p className="font-medium">{item!.subject.nama}</p>
-                          {item!.subject.prodi && <p className="text-sm text-muted-foreground">{item!.subject.prodi}</p>}
-                          {item!.offering?.term && <p className="text-xs text-muted-foreground">{item!.offering.term}</p>}
+                {/* Mobile List View - Lebih kompak */}
+                <CardContent className="md:hidden p-2">
+                  <div className="space-y-2">
+                    {group.items.map((item) => (
+                      <div 
+                        key={item!.id} 
+                        className="border rounded-lg p-3 bg-card hover:border-primary/50 transition-colors space-y-2"
+                      >
+                        {/* Header Row */}
+                        <div className="flex items-start gap-2">
+                          <div className="flex-1 min-w-0">
+                            <h4 className="font-semibold text-sm leading-tight line-clamp-2">
+                              {item!.subject.nama}
+                            </h4>
+                            {item!.subject.prodi && (
+                              <p className="text-xs text-muted-foreground truncate mt-0.5">{item!.subject.prodi}</p>
+                            )}
+                          </div>
+                          <Badge className="text-xs flex-shrink-0">{item!.subject.sks} SKS</Badge>
                         </div>
-                      </TableCell>
-                      <TableCell>{item!.subject.sks}</TableCell>
-                      <TableCell className="text-sm text-muted-foreground">{fmtDateTime(item!.createdAt)}</TableCell>
-                      <TableCell>
-                        <div className="flex space-x-1">
+
+                        {/* Date Info */}
+                        <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                          <Calendar className="h-3 w-3 flex-shrink-0" />
+                          <span className="truncate">{fmtDateTime(item!.createdAt)}</span>
+                        </div>
+
+                        {/* Actions - Horizontal layout */}
+                        <div className="flex items-center gap-2 pt-1">
                           {((item!.offering?.slotDay !== undefined && item!.offering?.slotStartUTC) || 
                             (item!.subject.slotDay !== undefined && item!.subject.slotStartUTC)) && (
                             <Button
                               size="sm"
-                              variant={userSchedule.some(e => e.subjectId === item!.subject.id) ? "outline" : "default"}
+                              variant="outline"
                               onClick={() => handleAddToSchedule(item!, item!.subject, item!.offering)}
-                              title="Tambah ke jadwal"
-                              className="hover:scale-110 transition-all duration-200 hover:shadow-md"
+                              className="h-8 px-2"
                               disabled={userSchedule.some(e => e.subjectId === item!.subject.id)}
                             >
-                              <Calendar className="h-4 w-4 mr-1" />
-                              {userSchedule.some(e => e.subjectId === item!.subject.id) ? "Terjadwal" : "Jadwalkan"}
+                              <Calendar className="h-3 w-3" />
                             </Button>
                           )}
                           <Button
                             size="sm"
                             variant="outline"
-                            onClick={() => handleRemoveSubject(item!, item!.subject.nama, item!.offering?.kelas)}
-                            className="text-destructive hover:text-destructive hover:scale-110 transition-all duration-200 hover:shadow-md"
+                            onClick={() => handleOpenReminderDialog(item!.subject.id, item!.subject.nama)}
+                            className="h-8 px-2"
                           >
-                            <Trash2 className="h-4 w-4" />
+                            <Bell className="h-3 w-3" />
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => handleRemoveSubject(item!, item!.subject.nama, item!.offering?.kelas)}
+                            className="text-destructive hover:text-destructive h-8 px-2"
+                          >
+                            <Trash2 className="h-3 w-3" />
                           </Button>
                         </div>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
+                      </div>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
             </div>
+          ))}
+        </div>
+      )}
 
-            {/* Mobile List View - Lebih kompak */}
-            <div className="md:hidden space-y-2 px-3">
-              {group.items.map((item) => (
-                <div 
-                  key={item!.id} 
-                  className="border rounded-lg p-3 bg-card hover:border-primary/50 transition-colors space-y-2"
-                >
-                  {/* Header Row */}
-                  <div className="flex items-start gap-2">
-                    <div className="flex-1 min-w-0">
-                      <h4 className="font-semibold text-sm leading-tight line-clamp-2">
-                        {item!.subject.nama}
-                      </h4>
-                      {item!.subject.prodi && (
-                        <p className="text-xs text-muted-foreground truncate mt-0.5">{item!.subject.prodi}</p>
-                      )}
-                    </div>
-                    <Badge className="text-xs flex-shrink-0">{item!.subject.sks}</Badge>
-                  </div>
-
-                  {/* Date Info */}
-                  <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
-                    <Calendar className="h-3 w-3 flex-shrink-0" />
-                    <span className="truncate">{fmtDateTime(item!.createdAt)}</span>
-                  </div>
-
-                  {/* Actions - Horizontal layout */}
-                  <div className="flex items-center gap-2 pt-1">
-                    {((item!.offering?.slotDay !== undefined && item!.offering?.slotStartUTC) || 
-                      (item!.subject.slotDay !== undefined && item!.subject.slotStartUTC)) && (
-                      <Button
-                        size="sm"
-                        variant={userSchedule.some(e => e.subjectId === item!.subject.id) ? "outline" : "default"}
-                        onClick={() => handleAddToSchedule(item!, item!.subject, item!.offering)}
-                        className="flex-1 h-8 text-xs"
-                        disabled={userSchedule.some(e => e.subjectId === item!.subject.id)}
-                      >
-                        <Calendar className="h-3 w-3 mr-1" />
-                        {userSchedule.some(e => e.subjectId === item!.subject.id) ? "OK" : "Jadwal"}
-                      </Button>
-                    )}
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={() => handleRemoveSubject(item!, item!.subject.nama, item!.offering?.kelas)}
-                      className="text-destructive hover:text-destructive h-8 px-3"
-                    >
-                      <Trash2 className="h-3 w-3" />
-                    </Button>
-                  </div>
-                </div>
-              ))}
+      {/* Reminder Dialog */}
+      <Dialog open={reminderDialog.open} onOpenChange={(open) => setReminderDialog({ ...reminderDialog, open })}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Tambah Reminder</DialogTitle>
+            <DialogDescription>
+              Buat reminder untuk mata kuliah {reminderDialog.subjectName}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="reminder-date">Tanggal</Label>
+              <Input
+                id="reminder-date"
+                type="date"
+                value={reminderDialog.dueDate}
+                onChange={(e) => setReminderDialog({ ...reminderDialog, dueDate: e.target.value })}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="reminder-time">Waktu</Label>
+              <Input
+                id="reminder-time"
+                type="time"
+                value={reminderDialog.dueTime}
+                onChange={(e) => setReminderDialog({ ...reminderDialog, dueTime: e.target.value })}
+              />
             </div>
           </div>
-        ))}
-      </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setReminderDialog({ ...reminderDialog, open: false })}>
+              Batal
+            </Button>
+            <Button onClick={handleSaveReminder}>
+              Simpan Reminder
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }

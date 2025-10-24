@@ -657,8 +657,12 @@ export function SubjectForm({ subject, onSuccess, onCancel }: SubjectFormProps) 
                         <div className="space-y-2">
                           <Label>Hari</Label>
                           <Select
-                            value={schedule.day?.toString()}
-                            onValueChange={(value) => updateKelasSchedule(schedule.kelas, 'day', Number.parseInt(value))}
+                            value={schedule.day?.toString() || 'placeholder'}
+                            onValueChange={(value) => {
+                              if (value !== 'placeholder') {
+                                updateKelasSchedule(schedule.kelas, 'day', Number.parseInt(value))
+                              }
+                            }}
                           >
                             <SelectTrigger>
                               <SelectValue placeholder="Pilih hari" />
@@ -708,14 +712,14 @@ export function SubjectForm({ subject, onSuccess, onCancel }: SubjectFormProps) 
                       <div className="space-y-2">
                         <Label>Ruang</Label>
                         <Select
-                          value={schedule.ruang || ''}
-                          onValueChange={(value) => updateKelasSchedule(schedule.kelas, 'ruang', value)}
+                          value={schedule.ruang || 'auto'}
+                          onValueChange={(value) => updateKelasSchedule(schedule.kelas, 'ruang', value === 'auto' ? undefined : value)}
                         >
                           <SelectTrigger>
                             <SelectValue placeholder="Pilih ruangan (opsional)" />
                           </SelectTrigger>
                           <SelectContent className="max-h-[300px]">
-                            <SelectItem value="">
+                            <SelectItem value="auto">
                               <span className="text-muted-foreground">Auto-generate</span>
                             </SelectItem>
                             {generateRoomOptions().map((room) => (

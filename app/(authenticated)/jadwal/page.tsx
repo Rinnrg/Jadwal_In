@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { Calendar, Clock, MapPin, User, Plus, Search, Grid3x3, List, Download, Upload, Printer, Trash2, Command } from "lucide-react"
+import { Calendar, Clock, MapPin, User, Plus, Search, Grid3x3, List, Download, Upload, Printer, Trash2, Command, Bell } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -20,6 +20,8 @@ import { useScheduleStore } from "@/stores/schedule.store"
 import { useSubjectsStore } from "@/stores/subjects.store"
 import { useKrsStore } from "@/stores/krs.store"
 import { useUIStore } from "@/stores/ui.store"
+import { useRemindersStore } from "@/stores/reminders.store"
+import { useNotificationStore } from "@/stores/notification.store"
 import type { ScheduleEvent } from "@/data/schema"
 import { ScheduleGrid } from "@/components/schedule/ScheduleGrid"
 import { ScheduleForm } from "@/components/schedule/ScheduleForm"
@@ -27,6 +29,8 @@ import { NextUpCard } from "@/components/schedule/NextUpCard"
 import { Legend } from "@/components/schedule/Legend"
 import { confirmAction, showSuccess, showError } from "@/lib/alerts"
 import { exportICS, parseICS } from "@/lib/ics"
+import { toUTC } from "@/lib/time"
+import { ActivityLogger } from "@/lib/activity-logger"
 
 type ViewMode = "simple" | "weekly"
 
@@ -36,6 +40,8 @@ export default function JadwalPage() {
   const { subjects } = useSubjectsStore()
   const { getKrsByUser } = useKrsStore()
   const { showNowLine, showLegend, setShowNowLine, setShowLegend } = useUIStore()
+  const { addReminder } = useRemindersStore()
+  const { clearBadge } = useNotificationStore()
 
   const [viewMode, setViewMode] = useState<ViewMode>("simple")
   const [searchTerm, setSearchTerm] = useState("")
@@ -49,6 +55,13 @@ export default function JadwalPage() {
   const userEvents = session ? getEventsByUser(session.id) : []
   const userKrsItems = session ? getKrsByUser(session.id) : []
   const hasKrsItems = userKrsItems.length > 0
+
+  // Clear jadwal notification badge when user opens this page
+  useEffect(() => {
+    if (session?.id) {
+      clearBadge("jadwal", session.id)
+    }
+  }, [session?.id, clearBadge])
 
   const handleAddEvent = (day?: number, hour?: number) => {
     if (!hasKrsItems) {
@@ -179,6 +192,50 @@ export default function JadwalPage() {
     }
   }
 
+  const handleAddToReminder = (event: ScheduleEvent) => {
+    if (!session) {
+      showError("Session tidak ditemukan")
+      return
+    }
+
+    const subject = subjects.find((s) => s.id === event.subjectId)
+    const eventName = subject ? `${subject.kode} - ${subject.nama}` : "Jadwal Pribadi"
+    
+    // Calculate next occurrence of this day
+    const now = new Date()
+    const currentDay = now.getDay()
+    const targetDay = event.dayOfWeek
+    
+    let daysUntil = targetDay - currentDay
+    if (daysUntil <= 0) daysUntil += 7
+    
+    const nextDate = new Date(now)
+    nextDate.setDate(now.getDate() + daysUntil)
+    
+    // Set time from event's startUTC (which is milliseconds in day)
+    const startHour = Math.floor(event.startUTC / (1000 * 60 * 60)) % 24
+    const startMinute = Math.floor((event.startUTC % (1000 * 60 * 60)) / (1000 * 60))
+    nextDate.setHours(startHour, startMinute, 0, 0)
+    
+    // Convert to UTC timestamp
+    const dueUTC = toUTC(nextDate)
+    
+    // Add reminder
+    addReminder({
+      userId: session.id,
+      title: eventName,
+      dueUTC,
+      relatedSubjectId: event.subjectId,
+      isActive: true,
+      sendEmail: false,
+    })
+    
+    showSuccess(`Pengingat untuk "${eventName}" berhasil ditambahkan`)
+    
+    // Log activity
+    ActivityLogger.reminderCreated(session.id, eventName)
+  }
+
   const handleKeyboardShortcut = (e: KeyboardEvent) => {
     if ((e.metaKey || e.ctrlKey) && e.key === "k") {
       e.preventDefault()
@@ -267,6 +324,7 @@ export default function JadwalPage() {
             defaultDay={defaultDay}
             onSuccess={handleFormSuccess}
             onCancel={handleCancel}
+            viewMode={viewMode}
           />
         </div>
       </div>
@@ -347,6 +405,15 @@ export default function JadwalPage() {
                   </div>
 
                   <div className="flex gap-2 w-full sm:w-auto">
+                    <Button 
+                      variant="ghost" 
+                      size="sm"
+                      onClick={() => handleAddToReminder(item)}
+                      className="h-8 md:h-9 px-2 md:px-3"
+                      title="Tambah ke Pengingat"
+                    >
+                      <Bell className="h-3.5 w-3.5 md:h-4 md:w-4" />
+                    </Button>
                     <Button variant="outline" size="sm" onClick={() => handleEditEvent(item)} className="flex-1 sm:flex-none text-xs md:text-sm h-8 md:h-9">
                       Edit
                     </Button>
@@ -444,6 +511,27 @@ export default function JadwalPage() {
           </Button>
         </div>
       </div>
+
+      {/* KRS Info Alert */}
+      {!hasKrsItems && (
+        <div className="px-2 md:px-0">
+          <div className="p-3 md:p-4 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg animate-slide-down">
+            <div className="flex items-start gap-2 md:gap-3">
+              <svg className="h-5 w-5 text-blue-600 dark:text-blue-400 flex-shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              <div className="flex-1">
+                <p className="text-sm font-medium text-blue-800 dark:text-blue-200">
+                  Ambil KRS Terlebih Dahulu
+                </p>
+                <p className="text-xs text-blue-700 dark:text-blue-300 mt-1">
+                  Untuk menambahkan jadwal mata kuliah, silakan ambil KRS terlebih dahulu di halaman KRS. Anda masih dapat menambahkan jadwal pribadi.
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* View Mode Content */}
       {viewMode === "simple" ? renderSimpleView() : renderWeeklyView()}

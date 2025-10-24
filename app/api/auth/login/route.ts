@@ -70,7 +70,9 @@ export async function POST(request: NextRequest) {
       // For other users, check if password is set
       if (!user.password) {
         return NextResponse.json(
-          { error: 'Password belum diatur. Silakan hubungi admin.' },
+          { 
+            error: 'Akun ini dibuat melalui Google Sign-In dan belum memiliki password. Silakan login menggunakan tombol "Google" atau hubungi admin untuk mengatur password.' 
+          },
           { status: 401 }
         )
       }

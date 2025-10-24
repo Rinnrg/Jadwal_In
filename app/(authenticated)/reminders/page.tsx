@@ -1,37 +1,55 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { useSessionStore } from "@/stores/session.store"
 import { useRemindersStore } from "@/stores/reminders.store"
+import { useKrsStore } from "@/stores/krs.store"
+import { useNotificationStore } from "@/stores/notification.store"
 import type { Reminder } from "@/data/schema"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { ReminderForm } from "@/components/reminders/ReminderForm"
 import { ReminderList } from "@/components/reminders/ReminderList"
-import { Bell, AlertTriangle, Trash2 } from "lucide-react"
+import { Bell, AlertTriangle, Trash2, Plus } from "lucide-react"
 import { confirmAction, showSuccess } from "@/lib/alerts"
 
 export default function RemindersPage() {
   const { session } = useSessionStore()
   const { getActiveReminders, getUpcomingReminders, getOverdueReminders, clearUserReminders } = useRemindersStore()
+  const { getKrsByUser } = useKrsStore()
+  const { clearBadge } = useNotificationStore()
   const [editingReminder, setEditingReminder] = useState<Reminder | null>(null)
+  const [isFormOpen, setIsFormOpen] = useState(false)
+
+  // Clear reminder notification badge when user opens this page
+  useEffect(() => {
+    if (session?.id) {
+      clearBadge("reminder", session.id)
+    }
+  }, [session?.id, clearBadge])
 
   if (!session) return null
 
   const activeReminders = getActiveReminders(session.id)
   const upcomingReminders = getUpcomingReminders(session.id, 24)
   const overdueReminders = getOverdueReminders(session.id)
+  const userKrsItems = getKrsByUser(session.id)
+  const hasKrsItems = userKrsItems.length > 0
 
   const handleEdit = (reminder: Reminder) => {
     setEditingReminder(reminder)
+    setIsFormOpen(true)
   }
 
   const handleFormSuccess = () => {
     setEditingReminder(null)
+    setIsFormOpen(false)
   }
 
   const handleCancel = () => {
     setEditingReminder(null)
+    setIsFormOpen(false)
   }
 
   const handleClearAll = async () => {
@@ -54,19 +72,51 @@ export default function RemindersPage() {
           <h1 className="text-xl md:text-2xl lg:text-3xl font-bold tracking-tight">Pengingat</h1>
           <p className="text-muted-foreground text-sm md:text-base">Kelola pengingat tugas dan kegiatan Anda</p>
         </div>
-        <Button variant="outline" onClick={handleClearAll} disabled={activeReminders.length === 0} className="text-xs md:text-sm w-fit">
-          <Trash2 className="h-3.5 w-3.5 md:h-4 md:w-4 mr-1.5 md:mr-2" />
-          Hapus Semua
-        </Button>
+        <div className="flex gap-2">
+          <Button onClick={() => setIsFormOpen(true)} className="text-xs md:text-sm w-fit">
+            <Plus className="h-3.5 w-3.5 md:h-4 md:w-4 mr-1.5 md:mr-2" />
+            Tambah Pengingat
+          </Button>
+          <Button variant="outline" onClick={handleClearAll} disabled={activeReminders.length === 0} className="text-xs md:text-sm w-fit">
+            <Trash2 className="h-3.5 w-3.5 md:h-4 md:w-4 mr-1.5 md:mr-2" />
+            Hapus Semua
+          </Button>
+        </div>
       </div>
 
-      {/* Form at Top */}
-      <ReminderForm
-        userId={session.id}
-        reminder={editingReminder || undefined}
-        onSuccess={handleFormSuccess}
-        onCancel={editingReminder ? handleCancel : undefined}
-      />
+      {/* Dialog Form */}
+      <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>{editingReminder ? "Edit Pengingat" : "Tambah Pengingat"}</DialogTitle>
+          </DialogHeader>
+          <ReminderForm
+            userId={session.id}
+            reminder={editingReminder || undefined}
+            onSuccess={handleFormSuccess}
+            onCancel={handleCancel}
+          />
+        </DialogContent>
+      </Dialog>
+
+      {/* KRS Info Alert */}
+      {!hasKrsItems && (
+        <div className="p-3 md:p-4 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg animate-slide-down">
+          <div className="flex items-start gap-2 md:gap-3">
+            <svg className="h-5 w-5 text-blue-600 dark:text-blue-400 flex-shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            <div className="flex-1">
+              <p className="text-sm font-medium text-blue-800 dark:text-blue-200">
+                Ambil KRS Terlebih Dahulu
+              </p>
+              <p className="text-xs text-blue-700 dark:text-blue-300 mt-1">
+                Untuk membuat pengingat berdasarkan jadwal mata kuliah, silakan ambil KRS dan buat jadwal terlebih dahulu. Anda masih dapat membuat pengingat manual.
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Upcoming Reminders */}
       {upcomingReminders.length > 0 && (
