@@ -19,15 +19,20 @@ interface GradesState {
   calculateSemesterGPA: (userId: string, term: string, subjects?: any[]) => number
 }
 
-// Grade point mapping
+// Grade point mapping with extended grade ranges (sesuai standar akademik)
 const gradePoints: Record<string, number> = {
-  A: 4.0,
-  "B+": 3.5,
-  B: 3.0,
-  "C+": 2.5,
-  C: 2.0,
-  D: 1.0,
-  E: 0.0,
+  "A": 4.0,   // 85-100
+  "A-": 3.7,  // 80-84
+  "B+": 3.3,  // 75-79
+  "B": 3.0,   // 70-74
+  "B-": 2.7,  // 65-69
+  "C+": 2.3,  // 60-64
+  "C": 2.0,   // 55-59
+  "C-": 1.7,  // 50-54
+  "D+": 1.3,  // 45-49
+  "D": 1.0,   // 40-44
+  "D-": 0.7,  // 35-39
+  "E": 0.0,   // 0-34
 }
 
 export const useGradesStore = create<GradesState>()(

@@ -4,6 +4,7 @@ import { useState, useEffect } from "react"
 import { useSessionStore } from "@/stores/session.store"
 import { useRemindersStore } from "@/stores/reminders.store"
 import { useKrsStore } from "@/stores/krs.store"
+import { useSubjectsStore } from "@/stores/subjects.store"
 import { useNotificationStore } from "@/stores/notification.store"
 import type { Reminder } from "@/data/schema"
 import { Button } from "@/components/ui/button"
@@ -18,6 +19,7 @@ export default function RemindersPage() {
   const { session } = useSessionStore()
   const { getActiveReminders, getUpcomingReminders, getOverdueReminders, clearUserReminders } = useRemindersStore()
   const { getKrsByUser } = useKrsStore()
+  const { subjects } = useSubjectsStore()
   const { clearBadge } = useNotificationStore()
   const [editingReminder, setEditingReminder] = useState<Reminder | null>(null)
   const [isFormOpen, setIsFormOpen] = useState(false)
@@ -35,7 +37,15 @@ export default function RemindersPage() {
   const upcomingReminders = getUpcomingReminders(session.id, 24)
   const overdueReminders = getOverdueReminders(session.id)
   const userKrsItems = getKrsByUser(session.id)
-  const hasKrsItems = userKrsItems.length > 0
+  
+  // For dosen/kaprodi: check if they have taught subjects with status "aktif"
+  const taughtSubjects = session && (session.role === "dosen" || session.role === "kaprodi")
+    ? subjects.filter(s => s.status === "aktif" && s.pengampuIds?.includes(session.id))
+    : []
+    
+  const hasKrsItems = session?.role === "mahasiswa" 
+    ? userKrsItems.length > 0 
+    : taughtSubjects.length > 0
 
   const handleEdit = (reminder: Reminder) => {
     setEditingReminder(reminder)
@@ -108,10 +118,12 @@ export default function RemindersPage() {
             </svg>
             <div className="flex-1">
               <p className="text-sm font-medium text-blue-800 dark:text-blue-200">
-                Ambil KRS Terlebih Dahulu
+                {session?.role === "mahasiswa" ? "Ambil KRS Terlebih Dahulu" : "Tambah Mata Kuliah Terlebih Dahulu"}
               </p>
               <p className="text-xs text-blue-700 dark:text-blue-300 mt-1">
-                Untuk membuat pengingat berdasarkan jadwal mata kuliah, silakan ambil KRS dan buat jadwal terlebih dahulu. Anda masih dapat membuat pengingat manual.
+                {session?.role === "mahasiswa" 
+                  ? "Untuk membuat pengingat berdasarkan jadwal mata kuliah, silakan ambil KRS dan buat jadwal terlebih dahulu. Anda masih dapat membuat pengingat manual."
+                  : "Untuk membuat pengingat berdasarkan jadwal mengajar, silakan tambahkan mata kuliah yang Anda ampu dengan status aktif di halaman Mata Kuliah. Anda masih dapat membuat pengingat manual."}
               </p>
             </div>
           </div>

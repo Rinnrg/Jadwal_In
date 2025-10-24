@@ -136,11 +136,17 @@ export const useCourseworkStore = create<CourseworkState>()(
             const sessionDate = new Date(startDate)
             sessionDate.setDate(startDate.getDate() + (i - 1) * 7)
 
+            // Determine session type based on meeting number
+            let sessionType: "regular" | "UTS" | "UAS" = "regular"
+            if (i === 8) sessionType = "UTS"
+            if (i === 16) sessionType = "UAS"
+
             const newSession: AttendanceSession = {
               id: generateId(),
               subjectId,
               dateUTC: sessionDate.getTime(),
               meetingNumber: i,
+              sessionType,
               records: enrolledStudents.map((student) => ({
                 studentUserId: student.id,
                 status: "alfa" as const,

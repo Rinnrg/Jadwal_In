@@ -36,9 +36,11 @@ export default async function EKTMPublicPage({ params }: PageProps) {
 
   console.log('[E-KTM] Searching for NIM:', nim)
 
-  // First, try to find user by NIM in profile
-  let profile = await prisma.profile.findFirst({
-    where: { nim },
+  // Find profile by NIM (works for both regular and Google Auth users)
+  const profile = await prisma.profile.findFirst({
+    where: { 
+      nim: nim 
+    },
     include: {
       user: {
         select: {
@@ -51,42 +53,7 @@ export default async function EKTMPublicPage({ params }: PageProps) {
 
   console.log('[E-KTM] Profile found by NIM:', profile ? 'Yes' : 'No')
 
-  // If not found, try to find by email pattern (for Google Auth users)
-  if (!profile) {
-    console.log('[E-KTM] Trying to find by email pattern')
-    
-    // Extract NIM pattern from the full NIM (remove year prefix for email matching)
-    const nimPattern = nim.substring(2) // e.g., "22050974025" -> "050974025"
-    
-    // Try to find user by email that contains the NIM pattern
-    const user = await prisma.user.findFirst({
-      where: {
-        email: {
-          contains: nimPattern,
-        },
-        role: "mahasiswa",
-      },
-      include: {
-        profile: true,
-      },
-    })
-
-    console.log('[E-KTM] User by email found:', user ? 'Yes' : 'No')
-
-    if (user) {
-      // Create a temporary profile object for display
-      profile = {
-        nim: nim,
-        avatarUrl: user.profile?.avatarUrl || null,
-        user: {
-          name: user.name,
-          email: user.email,
-        },
-      } as any
-    }
-  }
-
-  // If still not found, show 404
+  // If not found, show 404
   if (!profile) {
     console.log('[E-KTM] No user found, showing 404')
     notFound()

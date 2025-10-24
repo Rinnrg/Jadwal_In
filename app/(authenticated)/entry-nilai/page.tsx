@@ -5,6 +5,8 @@ import { useSubjectsStore } from "@/stores/subjects.store"
 import { useOfferingsStore } from "@/stores/offerings.store"
 import { useUsersStore } from "@/stores/users.store"
 import { useKrsStore } from "@/stores/krs.store"
+import { useCourseworkStore } from "@/stores/coursework.store"
+import { useSubmissionsStore } from "@/stores/submissions.store"
 import { canAccessEntryNilai } from "@/lib/rbac"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -13,23 +15,11 @@ import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Badge } from "@/components/ui/badge"
-import { Search, Save, FileDown, Users, BookOpen, TrendingUp, AlertCircle } from "lucide-react"
+import { Search, Save, FileDown, Users, BookOpen, TrendingUp, AlertCircle, Info } from "lucide-react"
 import { useState, useMemo } from "react"
 import { arr } from "@/lib/utils"
 import type { Subject } from "@/data/schema"
-
-const gradeOptions = [
-  { value: "A", label: "A (4.0)", color: "bg-green-100 text-green-800" },
-  { value: "A-", label: "A- (3.7)", color: "bg-green-100 text-green-700" },
-  { value: "B+", label: "B+ (3.3)", color: "bg-blue-100 text-blue-800" },
-  { value: "B", label: "B (3.0)", color: "bg-blue-100 text-blue-700" },
-  { value: "B-", label: "B- (2.7)", color: "bg-blue-100 text-blue-600" },
-  { value: "C+", label: "C+ (2.3)", color: "bg-yellow-100 text-yellow-800" },
-  { value: "C", label: "C (2.0)", color: "bg-yellow-100 text-yellow-700" },
-  { value: "C-", label: "C- (1.7)", color: "bg-yellow-100 text-yellow-600" },
-  { value: "D", label: "D (1.0)", color: "bg-orange-100 text-orange-800" },
-  { value: "E", label: "E (0.0)", color: "bg-red-100 text-red-800" },
-]
+import { gradeOptions, getGradeFromScore, getGradeColor } from "@/components/grade-info-card"
 
 export default function EntryNilaiPage() {
   const { session } = useSessionStore()
@@ -37,9 +27,13 @@ export default function EntryNilaiPage() {
   const { getOfferingsByPengampu, getOffering } = useOfferingsStore()
   const { getMahasiswaUsers, getUserById } = useUsersStore()
   const { getKrsByOffering } = useKrsStore()
+  const { getAttendanceBySubject } = useCourseworkStore()
+  const { getSubmissionByStudent, getSubmissionsByAssignment } = useSubmissionsStore()
+  const { getAssignmentsBySubject } = useCourseworkStore()
+  
   const [selectedOffering, setSelectedOffering] = useState("")
   const [searchTerm, setSearchTerm] = useState("")
-  const [grades, setGrades] = useState<Record<string, string>>({})
+  const [grades, setGrades] = useState<Record<string, { nilaiAngka?: number; nilaiHuruf?: string }>>({})
 
   const availableOfferings = useMemo(() => {
     if (!session) return []
@@ -65,24 +59,65 @@ export default function EntryNilaiPage() {
 
     const krsItems = getKrsByOffering(selectedOffering)
     const mahasiswaUsers = getMahasiswaUsers()
+    const attendanceSessions = getAttendanceBySubject(selectedOffering)
+    const assignments = getAssignmentsBySubject(selectedOffering)
 
     return arr(krsItems)
       .map((krs) => {
         const student = mahasiswaUsers.find((user) => user.id === krs.userId)
-        return student
-          ? {
-              id: student.id,
-              nim: `202${Math.floor(Math.random() * 10000)
-                .toString()
-                .padStart(4, "0")}`, // Mock NIM
-              name: student.name,
-              currentGrade: "B+", // Mock current grade
-              status: "active",
-            }
-          : null
+        if (!student) return null
+
+        // Calculate attendance percentage
+        const studentAttendance = attendanceSessions.map(session => 
+          session.records.find(r => r.studentUserId === student.id)
+        )
+        const hadirCount = studentAttendance.filter(a => a?.status === "hadir").length
+        const attendancePercentage = attendanceSessions.length > 0 
+          ? Math.round((hadirCount / attendanceSessions.length) * 100) 
+          : 0
+
+        // Calculate assignment completion
+        const submittedAssignments = assignments.filter(assignment => {
+          const submission = getSubmissionByStudent(assignment.id, student.id)
+          return submission && (submission.status === "submitted" || submission.status === "graded")
+        }).length
+        const assignmentPercentage = assignments.length > 0
+          ? Math.round((submittedAssignments / assignments.length) * 100)
+          : 0
+
+        // Get UTS score (meeting 8)
+        const utsSession = attendanceSessions.find(s => s.sessionType === "UTS")
+        const utsAssignment = assignments.find(a => 
+          a.title.toLowerCase().includes("uts") || 
+          a.title.toLowerCase().includes("ujian tengah")
+        )
+        const utsSubmission = utsAssignment ? getSubmissionByStudent(utsAssignment.id, student.id) : null
+        const utsScore = utsSubmission?.grade
+
+        // Get UAS score (meeting 16)
+        const uasSession = attendanceSessions.find(s => s.sessionType === "UAS")
+        const uasAssignment = assignments.find(a => 
+          a.title.toLowerCase().includes("uas") || 
+          a.title.toLowerCase().includes("ujian akhir")
+        )
+        const uasSubmission = uasAssignment ? getSubmissionByStudent(uasAssignment.id, student.id) : null
+        const uasScore = uasSubmission?.grade
+
+        return {
+          id: student.id,
+          nim: `202${Math.floor(Math.random() * 10000).toString().padStart(4, "0")}`,
+          name: student.name,
+          currentGrade: "B+",
+          status: "active",
+          attendancePercentage,
+          assignmentCompletion: assignmentPercentage,
+          assignmentCount: { submitted: submittedAssignments, total: assignments.length },
+          utsScore,
+          uasScore,
+        }
       })
       .filter(Boolean)
-  }, [selectedOffering, availableOfferings, getKrsByOffering, getMahasiswaUsers])
+  }, [selectedOffering, availableOfferings, getKrsByOffering, getMahasiswaUsers, getAttendanceBySubject, getAssignmentsBySubject, getSubmissionByStudent])
 
   const selectedOfferingData = availableOfferings.find((s) => s.id === selectedOffering)
 
@@ -91,8 +126,24 @@ export default function EntryNilaiPage() {
       student && (student.name.toLowerCase().includes(searchTerm.toLowerCase()) || student.nim.includes(searchTerm)),
   )
 
-  const handleGradeChange = (studentId: string, grade: string) => {
-    setGrades((prev) => ({ ...prev, [studentId]: grade }))
+  const handleScoreChange = (studentId: string, score: number) => {
+    const grade = getGradeFromScore(score)
+    setGrades((prev) => ({
+      ...prev,
+      [studentId]: { nilaiAngka: score, nilaiHuruf: grade.value },
+    }))
+  }
+
+  const handleGradeChange = (studentId: string, gradeValue: string) => {
+    const grade = gradeOptions.find(g => g.value === gradeValue)
+    if (grade) {
+      // Use middle of range as default score
+      const defaultScore = Math.round((grade.minScore + grade.maxScore) / 2)
+      setGrades((prev) => ({
+        ...prev,
+        [studentId]: { nilaiAngka: prev[studentId]?.nilaiAngka || defaultScore, nilaiHuruf: gradeValue },
+      }))
+    }
   }
 
   const handleSaveGrades = () => {
@@ -100,15 +151,24 @@ export default function EntryNilaiPage() {
     alert("Nilai berhasil disimpan!")
   }
 
+  // Calculate statistics
+  const totalGraded = Object.keys(grades).length
+  const averageScore = totalGraded > 0 
+    ? Object.values(grades).reduce((sum, g) => sum + (g.nilaiAngka || 0), 0) / totalGraded 
+    : 0
+  const averageGPA = totalGraded > 0
+    ? Object.values(grades).reduce((sum, g) => {
+        const grade = gradeOptions.find(opt => opt.value === g.nilaiHuruf)
+        return sum + (grade?.bobot || 0)
+      }, 0) / totalGraded
+    : 0
+
   const handleExportGrades = () => {
     console.log("Exporting grades for offering:", selectedOffering)
     alert("Export nilai berhasil!")
   }
 
-  const getGradeBadgeColor = (grade: string) => {
-    const gradeOption = gradeOptions.find((g) => g.value === grade)
-    return gradeOption?.color || "bg-gray-100 text-gray-800"
-  }
+
 
   if (!session || !canAccessEntryNilai(session.role)) {
     return (
@@ -149,58 +209,84 @@ export default function EntryNilaiPage() {
   }
 
   return (
-    <div className="space-y-6">
-      <div className="space-y-2">
-        <h1 className="text-3xl font-bold tracking-tight text-balance">Entry Nilai Mahasiswa</h1>
-        <p className="text-muted-foreground text-pretty">
+    <div className="space-y-4 md:space-y-6">
+      <div className="space-y-1 md:space-y-2">
+        <h1 className="text-xl md:text-2xl lg:text-3xl font-bold tracking-tight text-balance">Entry Nilai Mahasiswa</h1>
+        <p className="text-muted-foreground text-pretty text-xs md:text-sm">
           Kelola dan input nilai mahasiswa untuk penawaran mata kuliah yang diampu. Pilih penawaran dan masukkan nilai
           untuk setiap mahasiswa.
         </p>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+      {/* Statistics Cards - Responsive Grid */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4">
         <Card>
-          <CardContent className="p-6">
+          <CardContent className="p-3 md:p-4 lg:p-6">
             <div className="flex items-center space-x-2">
-              <BookOpen className="h-5 w-5 text-primary" />
-              <div>
-                <p className="text-sm font-medium text-muted-foreground">
+              <BookOpen className="h-4 w-4 md:h-5 md:w-5 text-primary shrink-0" />
+              <div className="min-w-0">
+                <p className="text-[10px] md:text-xs lg:text-sm font-medium text-muted-foreground truncate">
                   {session.role === "dosen" ? "Mata Kuliah Diampu" : "Total Mata Kuliah"}
                 </p>
-                <p className="text-2xl font-bold">{availableOfferings.length}</p>
+                <p className="text-lg md:text-xl lg:text-2xl font-bold">{availableOfferings.length}</p>
               </div>
             </div>
           </CardContent>
         </Card>
         <Card>
-          <CardContent className="p-6">
+          <CardContent className="p-3 md:p-4 lg:p-6">
             <div className="flex items-center space-x-2">
-              <Users className="h-5 w-5 text-primary" />
-              <div>
-                <p className="text-sm font-medium text-muted-foreground">Mahasiswa Terdaftar</p>
-                <p className="text-2xl font-bold">{enrolledStudents.length}</p>
+              <Users className="h-4 w-4 md:h-5 md:w-5 text-primary shrink-0" />
+              <div className="min-w-0">
+                <p className="text-[10px] md:text-xs lg:text-sm font-medium text-muted-foreground truncate">Mahasiswa Terdaftar</p>
+                <p className="text-lg md:text-xl lg:text-2xl font-bold">{enrolledStudents.length}</p>
               </div>
             </div>
           </CardContent>
         </Card>
         <Card>
-          <CardContent className="p-6">
+          <CardContent className="p-3 md:p-4 lg:p-6">
             <div className="flex items-center space-x-2">
-              <TrendingUp className="h-5 w-5 text-primary" />
-              <div>
-                <p className="text-sm font-medium text-muted-foreground">Nilai Terinput</p>
-                <p className="text-2xl font-bold">{Object.keys(grades).length}</p>
+              <TrendingUp className="h-4 w-4 md:h-5 md:w-5 text-primary shrink-0" />
+              <div className="min-w-0">
+                <p className="text-[10px] md:text-xs lg:text-sm font-medium text-muted-foreground truncate">Nilai Terinput</p>
+                <p className="text-lg md:text-xl lg:text-2xl font-bold">{totalGraded}</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="p-3 md:p-4 lg:p-6">
+            <div className="flex items-center space-x-2">
+              <TrendingUp className="h-4 w-4 md:h-5 md:w-5 text-green-500 shrink-0" />
+              <div className="min-w-0">
+                <p className="text-[10px] md:text-xs lg:text-sm font-medium text-muted-foreground truncate">Rata-rata Nilai</p>
+                <p className="text-lg md:text-xl lg:text-2xl font-bold">{averageScore.toFixed(1)}</p>
               </div>
             </div>
           </CardContent>
         </Card>
       </div>
 
+      {/* Info Box */}
+      <Card className="border-blue-200 bg-blue-50 dark:border-blue-800 dark:bg-blue-900/20">
+        <CardHeader className="px-3 md:px-6 pt-3 md:pt-6 pb-2 md:pb-4">
+          <CardTitle className="text-blue-800 dark:text-blue-200 text-sm md:text-base flex items-center gap-2">
+            <Info className="h-4 w-4" />
+            Sistem Penilaian
+          </CardTitle>
+          <CardDescription className="text-blue-700 dark:text-blue-300 text-[10px] md:text-xs">
+            Masukkan nilai angka (0-100) atau pilih nilai huruf. Sistem akan otomatis menghitung bobot (mutu) sesuai standar akademik.
+            Nilai akan otomatis tersinkronisasi dengan KHS mahasiswa.
+          </CardDescription>
+        </CardHeader>
+      </Card>
+
       {/* Offering Selection */}
       <Card>
-        <CardHeader>
-          <CardTitle>Pilih Mata Kuliah</CardTitle>
-          <CardDescription>
+        <CardHeader className="px-3 md:px-6 pt-3 md:pt-6 pb-2 md:pb-4">
+          <CardTitle className="text-sm md:text-base">Pilih Mata Kuliah</CardTitle>
+          <CardDescription className="text-[10px] md:text-xs">
             {session.role === "dosen"
               ? "Pilih mata kuliah yang Anda ampu untuk melakukan entry nilai"
               : "Pilih mata kuliah untuk melakukan entry nilai mahasiswa"}
@@ -252,90 +338,250 @@ export default function EntryNilaiPage() {
       {/* Grades Entry Table */}
       {selectedOffering && selectedOfferingData && (
         <Card>
-          <CardHeader>
-            <div className="flex items-center justify-between">
-              <div>
-                <CardTitle>
+          <CardHeader className="px-3 md:px-6 pt-3 md:pt-6 pb-2 md:pb-4">
+            <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3 md:gap-4">
+              <div className="flex-1 min-w-0">
+                <CardTitle className="text-sm md:text-base truncate">
                   Daftar Mahasiswa - {selectedOfferingData.nama}
                   {selectedOfferingData.kelas && ` (Kelas ${selectedOfferingData.kelas})`}
                 </CardTitle>
-                <CardDescription>Input nilai untuk {filteredStudents.length} mahasiswa yang terdaftar</CardDescription>
+                <CardDescription className="text-[10px] md:text-xs">
+                  Input nilai untuk {filteredStudents.length} mahasiswa yang terdaftar
+                </CardDescription>
               </div>
-              <div className="flex gap-2">
-                <Button onClick={handleSaveGrades} className="gap-2">
-                  <Save className="h-4 w-4" />
-                  Simpan Nilai
+              <div className="flex gap-2 w-full sm:w-auto">
+                <Button onClick={handleSaveGrades} className="gap-1.5 md:gap-2 flex-1 sm:flex-none text-xs md:text-sm h-8 md:h-10">
+                  <Save className="h-3.5 w-3.5 md:h-4 md:w-4" />
+                  <span className="hidden sm:inline">Simpan Nilai</span>
+                  <span className="sm:hidden">Simpan</span>
                 </Button>
-                <Button variant="outline" onClick={handleExportGrades} className="gap-2 bg-transparent">
-                  <FileDown className="h-4 w-4" />
-                  Export
+                <Button variant="outline" onClick={handleExportGrades} className="gap-1.5 md:gap-2 bg-transparent px-2 md:px-4 text-xs md:text-sm h-8 md:h-10">
+                  <FileDown className="h-3.5 w-3.5 md:h-4 md:w-4" />
+                  <span className="hidden md:inline">Export</span>
                 </Button>
               </div>
             </div>
           </CardHeader>
-          <CardContent>
+          <CardContent className="px-0 md:px-6 pb-3 md:pb-6">
             {filteredStudents.length === 0 ? (
-              <div className="text-center py-8">
-                <Users className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-                <h3 className="text-lg font-semibold mb-2">Tidak Ada Mahasiswa</h3>
-                <p className="text-muted-foreground">
+              <div className="text-center py-6 md:py-8 px-3">
+                <Users className="h-10 w-10 md:h-12 md:w-12 text-muted-foreground mx-auto mb-3 md:mb-4" />
+                <h3 className="text-base md:text-lg font-semibold mb-1 md:mb-2">Tidak Ada Mahasiswa</h3>
+                <p className="text-muted-foreground text-xs md:text-sm">
                   {searchTerm
                     ? "Tidak ada mahasiswa yang sesuai dengan pencarian"
                     : "Belum ada mahasiswa yang mengambil mata kuliah ini"}
                 </p>
               </div>
             ) : (
-              <div className="rounded-md border">
-                <Table>
-                  <TableHeader>
-                    <TableRow className="bg-muted/50">
-                      <TableHead className="font-semibold">NIM</TableHead>
-                      <TableHead className="font-semibold">Nama Mahasiswa</TableHead>
-                      <TableHead className="font-semibold">Nilai Saat Ini</TableHead>
-                      <TableHead className="font-semibold">Nilai Baru</TableHead>
-                      <TableHead className="font-semibold">Status</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {filteredStudents.map((student, index) => (
-                      <TableRow key={student!.id} className={index % 2 === 0 ? "bg-card" : "bg-background"}>
-                        <TableCell className="font-mono font-medium">{student!.nim}</TableCell>
-                        <TableCell className="font-medium">{student!.name}</TableCell>
-                        <TableCell>
-                          <Badge variant="secondary" className={getGradeBadgeColor(student!.currentGrade)}>
-                            {student!.currentGrade}
-                          </Badge>
-                        </TableCell>
-                        <TableCell>
-                          <Select
-                            value={grades[student!.id] || ""}
-                            onValueChange={(value) => handleGradeChange(student!.id, value)}
-                          >
-                            <SelectTrigger className="w-32">
-                              <SelectValue placeholder="Pilih nilai" />
-                            </SelectTrigger>
-                            <SelectContent>
-                              {gradeOptions.map((grade) => (
-                                <SelectItem key={grade.value} value={grade.value}>
-                                  <div className="flex items-center gap-2">
-                                    <div className={`w-3 h-3 rounded-full ${grade.color.split(" ")[0]}`} />
-                                    {grade.label}
-                                  </div>
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                        </TableCell>
-                        <TableCell>
-                          <Badge variant={student!.status === "active" ? "default" : "secondary"}>
-                            {student!.status === "active" ? "Aktif" : "Tidak Aktif"}
-                          </Badge>
-                        </TableCell>
+              <>
+                {/* Desktop Table View */}
+                <div className="hidden md:block rounded-md border max-h-[600px] overflow-auto">
+                  <Table>
+                    <TableHeader className="sticky top-0 bg-muted/50 z-10">
+                      <TableRow>
+                        <TableHead className="font-semibold">NIM</TableHead>
+                        <TableHead className="font-semibold">Nama</TableHead>
+                        <TableHead className="font-semibold text-center">Kehadiran</TableHead>
+                        <TableHead className="font-semibold text-center">Tugas</TableHead>
+                        <TableHead className="font-semibold text-center">UTS</TableHead>
+                        <TableHead className="font-semibold text-center">UAS</TableHead>
+                        <TableHead className="font-semibold">Nilai Angka</TableHead>
+                        <TableHead className="font-semibold">Nilai Huruf</TableHead>
+                        <TableHead className="font-semibold">Bobot</TableHead>
                       </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </div>
+                    </TableHeader>
+                    <TableBody>
+                      {filteredStudents.map((student, index) => {
+                        const currentGrade = grades[student!.id]
+                        const gradeInfo = currentGrade?.nilaiHuruf ? gradeOptions.find(g => g.value === currentGrade.nilaiHuruf) : null
+                        
+                        return (
+                          <TableRow key={student!.id} className={index % 2 === 0 ? "bg-card" : "bg-background"}>
+                            <TableCell className="font-mono font-medium text-sm">{student!.nim}</TableCell>
+                            <TableCell className="font-medium">{student!.name}</TableCell>
+                            <TableCell className="text-center">
+                              <div className="flex flex-col items-center gap-1">
+                                <span className="text-sm font-medium">{student!.attendancePercentage}%</span>
+                                <div className="w-16 h-1.5 bg-muted rounded-full overflow-hidden">
+                                  <div 
+                                    className={`h-full transition-all ${student!.attendancePercentage >= 75 ? 'bg-green-500' : student!.attendancePercentage >= 50 ? 'bg-yellow-500' : 'bg-red-500'}`}
+                                    style={{ width: `${Math.min(100, student!.attendancePercentage)}%` }}
+                                  />
+                                </div>
+                              </div>
+                            </TableCell>
+                            <TableCell className="text-center">
+                              <div className="flex flex-col items-center gap-1">
+                                <span className="text-xs text-muted-foreground">
+                                  {student!.assignmentCount.submitted}/{student!.assignmentCount.total}
+                                </span>
+                                <Badge variant="outline" className="text-xs">
+                                  {student!.assignmentCompletion}%
+                                </Badge>
+                              </div>
+                            </TableCell>
+                            <TableCell className="text-center">
+                              {student!.utsScore !== undefined ? (
+                                <span className="text-sm font-medium">{student!.utsScore.toFixed(0)}</span>
+                              ) : (
+                                <span className="text-xs text-muted-foreground">-</span>
+                              )}
+                            </TableCell>
+                            <TableCell className="text-center">
+                              {student!.uasScore !== undefined ? (
+                                <span className="text-sm font-medium">{student!.uasScore.toFixed(0)}</span>
+                              ) : (
+                                <span className="text-xs text-muted-foreground">-</span>
+                              )}
+                            </TableCell>
+                            <TableCell>
+                              <Input
+                                type="number"
+                                min="0"
+                                max="100"
+                                value={currentGrade?.nilaiAngka || ""}
+                                onChange={(e) => handleScoreChange(student!.id, parseFloat(e.target.value) || 0)}
+                                placeholder="0-100"
+                                className="w-20"
+                              />
+                            </TableCell>
+                            <TableCell>
+                              <Select
+                                value={currentGrade?.nilaiHuruf || ""}
+                                onValueChange={(value) => handleGradeChange(student!.id, value)}
+                              >
+                                <SelectTrigger className="w-24">
+                                  <SelectValue placeholder="Pilih" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  {gradeOptions.map((grade) => (
+                                    <SelectItem key={grade.value} value={grade.value}>
+                                      <div className="flex items-center gap-2">
+                                        <div className={`w-3 h-3 rounded-full ${grade.color.split(" ")[0]}`} />
+                                        {grade.label}
+                                      </div>
+                                    </SelectItem>
+                                  ))}
+                                </SelectContent>
+                              </Select>
+                            </TableCell>
+                            <TableCell>
+                              {gradeInfo && (
+                                <Badge variant="secondary" className={gradeInfo.color}>
+                                  {gradeInfo.bobot.toFixed(1)}
+                                </Badge>
+                              )}
+                            </TableCell>
+                          </TableRow>
+                        )
+                      })}
+                    </TableBody>
+                  </Table>
+                </div>
+
+                {/* Mobile Card View */}
+                <div className="md:hidden space-y-3 px-3">
+                  {filteredStudents.map((student) => {
+                    const currentGrade = grades[student!.id]
+                    const gradeInfo = currentGrade?.nilaiHuruf ? gradeOptions.find(g => g.value === currentGrade.nilaiHuruf) : null
+                    
+                    return (
+                      <Card key={student!.id} className="overflow-hidden">
+                        <CardContent className="p-4">
+                          <div className="flex items-start justify-between mb-3">
+                            <div className="flex-1 min-w-0">
+                              <p className="font-medium text-sm truncate">{student!.name}</p>
+                              <p className="text-xs text-muted-foreground font-mono">{student!.nim}</p>
+                            </div>
+                            <Badge variant={student!.status === "active" ? "default" : "secondary"} className="text-xs ml-2">
+                              {student!.status === "active" ? "Aktif" : "Tidak Aktif"}
+                            </Badge>
+                          </div>
+
+                          {/* Student Stats */}
+                          <div className="grid grid-cols-4 gap-2 mb-3 p-2 bg-muted/50 rounded-md">
+                            <div className="text-center">
+                              <p className="text-xs text-muted-foreground">Hadir</p>
+                              <p className="text-sm font-semibold">{student!.attendancePercentage}%</p>
+                            </div>
+                            <div className="text-center">
+                              <p className="text-xs text-muted-foreground">Tugas</p>
+                              <p className="text-sm font-semibold">{student!.assignmentCount.submitted}/{student!.assignmentCount.total}</p>
+                            </div>
+                            <div className="text-center">
+                              <p className="text-xs text-muted-foreground">UTS</p>
+                              <p className="text-sm font-semibold">
+                                {student!.utsScore !== undefined ? student!.utsScore.toFixed(0) : "-"}
+                              </p>
+                            </div>
+                            <div className="text-center">
+                              <p className="text-xs text-muted-foreground">UAS</p>
+                              <p className="text-sm font-semibold">
+                                {student!.uasScore !== undefined ? student!.uasScore.toFixed(0) : "-"}
+                              </p>
+                            </div>
+                          </div>
+                          
+                          <div className="space-y-3">
+                            <div className="grid grid-cols-2 gap-3">
+                              <div>
+                                <Label className="text-xs text-muted-foreground">Nilai Angka (0-100)</Label>
+                                <Input
+                                  type="number"
+                                  min="0"
+                                  max="100"
+                                  value={currentGrade?.nilaiAngka || ""}
+                                  onChange={(e) => handleScoreChange(student!.id, parseFloat(e.target.value) || 0)}
+                                  placeholder="0-100"
+                                  className="mt-1 h-9 text-sm"
+                                />
+                              </div>
+                              
+                              <div>
+                                <Label className="text-xs text-muted-foreground">Nilai Huruf</Label>
+                                <Select
+                                  value={currentGrade?.nilaiHuruf || ""}
+                                  onValueChange={(value) => handleGradeChange(student!.id, value)}
+                                >
+                                  <SelectTrigger className="mt-1 h-9 text-xs">
+                                    <SelectValue placeholder="Pilih" />
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                    {gradeOptions.map((grade) => (
+                                      <SelectItem key={grade.value} value={grade.value} className="text-xs">
+                                        <div className="flex items-center gap-2">
+                                          <div className={`w-3 h-3 rounded-full ${grade.color.split(" ")[0]}`} />
+                                          {grade.label}
+                                        </div>
+                                      </SelectItem>
+                                    ))}
+                                  </SelectContent>
+                                </Select>
+                              </div>
+                            </div>
+                            
+                            {gradeInfo && (
+                              <div className="flex items-center justify-between p-2 bg-muted/50 rounded-md">
+                                <span className="text-xs text-muted-foreground">Bobot (Mutu)</span>
+                                <Badge variant="secondary" className={`${gradeInfo.color} text-xs`}>
+                                  {gradeInfo.bobot.toFixed(1)}
+                                </Badge>
+                              </div>
+                            )}
+                            
+                            {currentGrade?.nilaiAngka && gradeInfo && (
+                              <div className="text-xs text-muted-foreground">
+                                Range: {gradeInfo.minScore} - {gradeInfo.maxScore}
+                              </div>
+                            )}
+                          </div>
+                        </CardContent>
+                      </Card>
+                    )
+                  })}
+                </div>
+              </>
             )}
           </CardContent>
         </Card>

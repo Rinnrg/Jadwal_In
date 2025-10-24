@@ -18,12 +18,17 @@ import { showSuccess, showError } from "@/lib/alerts"
 
 export default function KhsPage() {
   const { session } = useSessionStore()
-  const { subjects } = useSubjectsStore()
+  const { subjects, fetchSubjects } = useSubjectsStore()
   const { getGradesByUser, calculateGPA, calculateSemesterGPA, grades: allGrades } = useGradesStore()
   const { getProfile } = useProfileStore()
   const { clearBadge } = useNotificationStore()
 
   const [selectedTerm, setSelectedTerm] = useState("Semua Semester")
+
+  // Fetch subjects on mount
+  useEffect(() => {
+    fetchSubjects()
+  }, [fetchSubjects])
 
   // Clear KHS notification badge when user opens this page
   useEffect(() => {
@@ -65,16 +70,26 @@ export default function KhsPage() {
     switch (nilaiHuruf) {
       case "A":
         return "bg-emerald-100 text-emerald-800 dark:bg-emerald-900 dark:text-emerald-200"
+      case "A-":
+        return "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/80 dark:text-emerald-300"
       case "B+":
         return "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200"
       case "B":
+        return "bg-blue-100 text-blue-700 dark:bg-blue-900/80 dark:text-blue-300"
+      case "B-":
         return "bg-cyan-100 text-cyan-800 dark:bg-cyan-900 dark:text-cyan-200"
       case "C+":
         return "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200"
       case "C":
+        return "bg-yellow-100 text-yellow-700 dark:bg-yellow-900/80 dark:text-yellow-300"
+      case "C-":
         return "bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-200"
+      case "D+":
+        return "bg-red-100 text-red-700 dark:bg-red-900/80 dark:text-red-300"
       case "D":
         return "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200"
+      case "D-":
+        return "bg-red-200 text-red-900 dark:bg-red-900 dark:text-red-100"
       case "E":
         return "bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-200"
       default:
@@ -86,16 +101,13 @@ export default function KhsPage() {
     try {
       const profile = getProfile(session.id)
       
-      if (!profile) {
-        showError("Profil tidak ditemukan. Silakan lengkapi profil Anda terlebih dahulu.")
-        return
-      }
-
+      // Allow export even without complete profile data
+      // Use fallback values for missing data
       generateTranscriptPDF({
         studentName: session.name,
-        studentNIM: profile.nim || "-",
-        studentProdi: profile.prodi || "Belum diisi",
-        studentAngkatan: profile.angkatan?.toString() || "-",
+        studentNIM: profile?.nim || "Belum diisi",
+        studentProdi: profile?.prodi || "Belum diisi",
+        studentAngkatan: profile?.angkatan?.toString() || "Belum diisi",
         grades: grades,
         subjects: subjects,
         cumulativeGPA: cumulativeGPA
@@ -255,26 +267,37 @@ export default function KhsPage() {
                           <TableHead className="text-xs md:text-sm">SKS</TableHead>
                           <TableHead className="text-xs md:text-sm">Nilai Angka</TableHead>
                           <TableHead className="text-xs md:text-sm">Nilai Huruf</TableHead>
+                          <TableHead className="text-xs md:text-sm">Mutu</TableHead>
                         </TableRow>
                       </TableHeader>
                       <TableBody>
                         {termGrades.map((grade) => {
                           const subject = subjects.find((s) => s.id === grade.subjectId)
+                          // Get grade bobot from gradeOptions
+                          let gradeBobot = 0
+                          if (grade.nilaiHuruf) {
+                            const gradeMap: Record<string, number> = {
+                              "A": 4.0, "A-": 3.7, "B+": 3.3, "B": 3.0, "B-": 2.7,
+                              "C+": 2.3, "C": 2.0, "C-": 1.7, "D+": 1.3, "D": 1.0, "D-": 0.7, "E": 0.0
+                            }
+                            gradeBobot = gradeMap[grade.nilaiHuruf] || 0
+                          }
+                          
                           return (
                             <TableRow key={grade.id}>
-                              <TableCell className="font-medium text-xs md:text-sm">{subject?.kode}</TableCell>
+                              <TableCell className="text-xs md:text-sm font-mono">{subject?.kode}</TableCell>
                               <TableCell className="text-xs md:text-sm">
                                 <div>
                                   <p className="font-medium">{subject?.nama}</p>
                                   {subject?.prodi && <p className="text-[10px] md:text-xs text-muted-foreground">{subject.prodi}</p>}
                                 </div>
                               </TableCell>
-                              <TableCell className="text-xs md:text-sm">{subject?.sks}</TableCell>
+                              <TableCell className="text-xs md:text-sm text-center">{subject?.sks}</TableCell>
                               <TableCell className="text-xs md:text-sm">
-                                {grade.nilaiAngka ? (
-                                  <span className="font-medium">{grade.nilaiAngka}</span>
+                                {grade.nilaiAngka !== null && grade.nilaiAngka !== undefined ? (
+                                  <span className="font-medium">{grade.nilaiAngka.toFixed(1)}</span>
                                 ) : (
-                                  <Badge variant="outline" className="text-xs">Belum Dinilai</Badge>
+                                  <span className="text-muted-foreground">-</span>
                                 )}
                               </TableCell>
                               <TableCell>
@@ -282,6 +305,13 @@ export default function KhsPage() {
                                   <Badge className={`${getGradeColor(grade.nilaiHuruf)} text-xs`}>{grade.nilaiHuruf}</Badge>
                                 ) : (
                                   <Badge variant="outline" className="text-xs">Belum Dinilai</Badge>
+                                )}
+                              </TableCell>
+                              <TableCell className="text-xs md:text-sm">
+                                {grade.nilaiHuruf ? (
+                                  <span className="font-medium">{gradeBobot.toFixed(1)}</span>
+                                ) : (
+                                  <span className="text-muted-foreground">-</span>
                                 )}
                               </TableCell>
                             </TableRow>
@@ -331,26 +361,37 @@ export default function KhsPage() {
                     <TableHead className="text-xs md:text-sm">SKS</TableHead>
                     <TableHead className="text-xs md:text-sm">Nilai Angka</TableHead>
                     <TableHead className="text-xs md:text-sm">Nilai Huruf</TableHead>
+                    <TableHead className="text-xs md:text-sm">Mutu</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {grades.map((grade) => {
                     const subject = subjects.find((s) => s.id === grade.subjectId)
+                    // Get grade bobot from gradeOptions
+                    let gradeBobot = 0
+                    if (grade.nilaiHuruf) {
+                      const gradeMap: Record<string, number> = {
+                        "A": 4.0, "A-": 3.7, "B+": 3.3, "B": 3.0, "B-": 2.7,
+                        "C+": 2.3, "C": 2.0, "C-": 1.7, "D+": 1.3, "D": 1.0, "D-": 0.7, "E": 0.0
+                      }
+                      gradeBobot = gradeMap[grade.nilaiHuruf] || 0
+                    }
+                    
                     return (
                       <TableRow key={grade.id}>
-                        <TableCell className="font-medium text-xs md:text-sm">{subject?.kode}</TableCell>
+                        <TableCell className="text-xs md:text-sm font-mono">{subject?.kode}</TableCell>
                         <TableCell className="text-xs md:text-sm">
                           <div>
                             <p className="font-medium">{subject?.nama}</p>
                             {subject?.prodi && <p className="text-[10px] md:text-xs text-muted-foreground">{subject.prodi}</p>}
                           </div>
                         </TableCell>
-                        <TableCell className="text-xs md:text-sm">{subject?.sks}</TableCell>
+                        <TableCell className="text-xs md:text-sm text-center">{subject?.sks}</TableCell>
                         <TableCell className="text-xs md:text-sm">
-                          {grade.nilaiAngka ? (
-                            <span className="font-medium">{grade.nilaiAngka}</span>
+                          {grade.nilaiAngka !== null && grade.nilaiAngka !== undefined ? (
+                            <span className="font-medium">{grade.nilaiAngka.toFixed(1)}</span>
                           ) : (
-                            <Badge variant="outline" className="text-xs">Belum Dinilai</Badge>
+                            <span className="text-muted-foreground">-</span>
                           )}
                         </TableCell>
                         <TableCell>
@@ -358,6 +399,13 @@ export default function KhsPage() {
                             <Badge className={`${getGradeColor(grade.nilaiHuruf)} text-xs`}>{grade.nilaiHuruf}</Badge>
                           ) : (
                             <Badge variant="outline" className="text-xs">Belum Dinilai</Badge>
+                          )}
+                        </TableCell>
+                        <TableCell className="text-xs md:text-sm">
+                          {grade.nilaiHuruf ? (
+                            <span className="font-medium">{gradeBobot.toFixed(1)}</span>
+                          ) : (
+                            <span className="text-muted-foreground">-</span>
                           )}
                         </TableCell>
                       </TableRow>
