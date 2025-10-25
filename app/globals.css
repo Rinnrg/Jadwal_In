@@ -391,6 +391,23 @@
     animation: float 20s ease-in-out infinite;
   }
 
+  /* Slower float animation for clouds - very gentle movement */
+  @keyframes float-slow {
+    0%, 100% {
+      transform: translateY(0px) translateX(0px);
+    }
+    33% {
+      transform: translateY(-15px) translateX(8px);
+    }
+    66% {
+      transform: translateY(8px) translateX(-8px);
+    }
+  }
+
+  .animate-float-slow {
+    animation: float-slow 40s ease-in-out infinite;
+  }
+
   /* Radial gradient utility for realistic sun/moon */
   .bg-gradient-radial {
     background-image: radial-gradient(circle, var(--tw-gradient-stops));

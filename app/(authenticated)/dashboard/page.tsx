@@ -71,9 +71,7 @@ export default function DashboardPage() {
   const { isPolling } = useRealtimeSync({
     enabled: true,
     pollingInterval: 5000, // Poll every 5 seconds
-    onSubjectAdded: (subject) => {
-      console.log("[Dashboard] New subject detected:", subject)
-    },
+    // Removed onSubjectAdded callback to prevent spam logs
   })
 
   useEffect(() => {
@@ -217,7 +215,7 @@ export default function DashboardPage() {
   }
 
   const profile = getProfile(session.id)
-  const avatarUrl = profile?.avatarUrl || session.image
+  const avatarUrl = profile?.avatarUrl || session.image || ""
   const timeColors = getTimeBasedColors()
   const celestialPos = getCelestialPosition()
   const isSunTime = currentTime.getHours() >= 5 && currentTime.getHours() < 18
@@ -522,8 +520,8 @@ export default function DashboardPage() {
                   </div>
                 </div>
                 
-                {/* Sun rays with smooth animation */}
-                <div className="absolute inset-0 animate-spin-slow transition-opacity duration-1000 ease-in-out">
+                {/* Sun rays - static, no rotation */}
+                <div className="absolute inset-0 transition-opacity duration-1000 ease-in-out">
                   {[...Array(12)].map((_, i) => (
                     <div
                       key={i}
@@ -610,11 +608,11 @@ export default function DashboardPage() {
             )}
           </div>
           
-          {/* Clouds for daytime - scattered across card, visible on mobile, adjusted to prevent overflow, realistic colors */}
+          {/* Clouds for daytime - scattered across card, visible on mobile, adjusted to prevent overflow, realistic colors, slower movement */}
           {isSunTime && (
             <div className="absolute inset-0 pointer-events-none z-0 overflow-hidden transition-all duration-1000 ease-in-out">
               <div 
-                className={`absolute top-8 right-8 md:top-12 md:right-16 w-16 h-6 md:w-24 md:h-10 rounded-full blur-md animate-float transition-all duration-1000 ease-in-out ${
+                className={`absolute top-8 right-8 md:top-12 md:right-16 w-16 h-6 md:w-24 md:h-10 rounded-full blur-md animate-float-slow transition-all duration-1000 ease-in-out ${
                   currentTime.getHours() < 11
                     ? 'bg-white/60 dark:bg-gray-300/30' // Pagi - putih lembut
                     : currentTime.getHours() < 15
@@ -624,24 +622,24 @@ export default function DashboardPage() {
                 style={{ transition: 'all 1s ease-in-out' }}
               ></div>
               <div 
-                className={`absolute top-16 right-16 md:top-24 md:right-32 w-12 h-5 md:w-20 md:h-8 rounded-full blur-md animate-float transition-all duration-1000 ease-in-out ${
+                className={`absolute top-16 right-16 md:top-24 md:right-32 w-12 h-5 md:w-20 md:h-8 rounded-full blur-md animate-float-slow transition-all duration-1000 ease-in-out ${
                   currentTime.getHours() < 11
                     ? 'bg-white/50 dark:bg-gray-300/25' // Pagi
                     : currentTime.getHours() < 15
                     ? 'bg-white/65 dark:bg-gray-200/35' // Siang
                     : 'bg-orange-100/50 dark:bg-orange-300/25' // Sore
                 }`}
-                style={{ animationDelay: "0.5s", transition: 'all 1s ease-in-out' }}
+                style={{ animationDelay: "2s", transition: 'all 1s ease-in-out' }}
               ></div>
               <div 
-                className={`absolute bottom-12 right-12 md:bottom-20 md:right-24 w-18 h-7 md:w-28 md:h-12 rounded-full blur-md animate-float transition-all duration-1000 ease-in-out ${
+                className={`absolute bottom-12 right-12 md:bottom-20 md:right-24 w-18 h-7 md:w-28 md:h-12 rounded-full blur-md animate-float-slow transition-all duration-1000 ease-in-out ${
                   currentTime.getHours() < 11
                     ? 'bg-white/55 dark:bg-gray-300/28' // Pagi
                     : currentTime.getHours() < 15
                     ? 'bg-white/68 dark:bg-gray-200/38' // Siang
                     : 'bg-orange-100/55 dark:bg-orange-300/28' // Sore
                 }`}
-                style={{ animationDelay: "1s", transition: 'all 1s ease-in-out' }}
+                style={{ animationDelay: "4s", transition: 'all 1s ease-in-out' }}
               ></div>
             </div>
           )}
