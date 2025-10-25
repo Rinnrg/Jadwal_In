@@ -467,9 +467,14 @@
   /* Sonner Toast Customization */
   [data-sonner-toast] {
     animation: toast-slide-in 0.35s cubic-bezier(0.21, 1.02, 0.73, 1) forwards;
-    backdrop-filter: blur(10px);
-    -webkit-backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(8px) !important;
+    backdrop-filter: blur(8px) !important;
     transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+    background: hsl(var(--background) / 0.95) !important;
+  }
+
+  .dark [data-sonner-toast] {
+    background: hsl(var(--background) / 0.95) !important;
   }
 
   [data-sonner-toast][data-removed="true"] {
