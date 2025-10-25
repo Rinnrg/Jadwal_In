@@ -96,13 +96,32 @@ export async function POST(request: NextRequest) {
     const data = subjectSchema.parse(body)
 
     // Check if kode already exists
-    const existingSubject = await prisma.subject.findUnique({
+    const existingSubjectByKode = await prisma.subject.findUnique({
       where: { kode: data.kode },
     })
 
-    if (existingSubject) {
+    if (existingSubjectByKode) {
       return NextResponse.json(
         { error: 'Kode mata kuliah sudah digunakan' },
+        { status: 400 }
+      )
+    }
+
+    // CRITICAL: Check if nama already exists for same angkatan and kelas
+    const existingSubjectByNama = await prisma.subject.findFirst({
+      where: {
+        nama: {
+          equals: data.nama,
+          mode: 'insensitive', // Case-insensitive comparison
+        },
+        angkatan: data.angkatan,
+        kelas: data.kelas,
+      },
+    })
+
+    if (existingSubjectByNama) {
+      return NextResponse.json(
+        { error: `Mata kuliah "${data.nama}" sudah ada untuk angkatan ${data.angkatan} kelas ${data.kelas}` },
         { status: 400 }
       )
     }

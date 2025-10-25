@@ -21,7 +21,7 @@ interface RealtimeSyncOptions {
 export function useRealtimeSync(options: RealtimeSyncOptions = {}) {
   const {
     enabled = true,
-    pollingInterval = 1000, // 1 detik untuk realtime
+    pollingInterval = 2000, // 2 detik untuk realtime (lebih cepat dari sebelumnya)
     onSubjectAdded,
     onKrsUpdated,
   } = options
@@ -57,8 +57,8 @@ export function useRealtimeSync(options: RealtimeSyncOptions = {}) {
       if (isPolling) return // Prevent overlapping polls
       
       const now = Date.now()
-      // Prevent polling too frequently (minimum 1 second between polls for realtime)
-      if (now - lastPollTime.current < 1000) {
+      // Prevent polling too frequently (minimum 2 second between polls for realtime)
+      if (now - lastPollTime.current < 2000) {
         return
       }
       lastPollTime.current = now

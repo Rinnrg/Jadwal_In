@@ -8,6 +8,8 @@ export interface NotificationBadge {
   count: number
   lastUpdated: number
   isRead: boolean
+  lastNotifiedCount?: number // Track last notified count
+  hasEverNotified?: boolean // Track if we've ever shown a notification
 }
 
 interface NotificationState {
@@ -36,6 +38,12 @@ interface NotificationState {
   
   // Clear all badges for user
   clearAllBadges: (userId: string) => void
+  
+  // Check if should show notification (for real-time updates)
+  shouldShowNotification: (type: NotificationBadge["type"], userId: string) => boolean
+  
+  // Mark notification as shown (track last notified count)
+  markNotificationShown: (type: NotificationBadge["type"], userId: string, count: number) => void
 }
 
 export const useNotificationStore = create<NotificationState>()(
@@ -126,6 +134,39 @@ export const useNotificationStore = create<NotificationState>()(
       clearAllBadges: (userId) => {
         set((state) => ({
           badges: state.badges.filter((badge) => badge.userId !== userId),
+        }))
+      },
+      
+      // Check if should show notification for real-time updates
+      shouldShowNotification: (type, userId) => {
+        const badge = get().badges.find(
+          (b) => b.type === type && b.userId === userId
+        )
+        
+        if (!badge) return false
+        
+        // If never notified before and count > 0, don't show (initial load)
+        if (!badge.hasEverNotified && badge.count > 0) {
+          return false
+        }
+        
+        // If count increased from last notified count, show notification
+        const lastNotified = badge.lastNotifiedCount ?? 0
+        return badge.count > lastNotified
+      },
+      
+      // Mark notification as shown (update lastNotifiedCount)
+      markNotificationShown: (type, userId, count) => {
+        set((state) => ({
+          badges: state.badges.map((badge) =>
+            badge.type === type && badge.userId === userId
+              ? {
+                  ...badge,
+                  lastNotifiedCount: count,
+                  hasEverNotified: true,
+                }
+              : badge
+          ),
         }))
       },
     }),
