@@ -22,8 +22,8 @@ interface KrsPickerProps {
 }
 
 export function KrsPicker({ userId, term }: KrsPickerProps) {
-  const { getSubjectById } = useSubjectsStore()
-  const { getOfferingsForStudent } = useOfferingsStore()
+  const { getSubjectById, subjects } = useSubjectsStore()
+  const { getOfferingsForStudent, offerings } = useOfferingsStore()
   const { addKrsItem, isOfferingInKrs, getKrsByOffering, getKrsByUser, isSubjectInKrs, krsItems } = useKrsStore()
   const { getProfile } = useProfileStore()
   const { session } = useSessionStore()
@@ -40,10 +40,10 @@ export function KrsPicker({ userId, term }: KrsPickerProps) {
   const userAngkatan = profile?.angkatan || studentInfo.angkatan
   const userKelas = profile?.kelas?.trim() || studentInfo.kelas
 
-  // Force update when krsItems change
+  // Force update when krsItems, subjects, or offerings change
   useEffect(() => {
     setForceUpdate(prev => prev + 1)
-  }, [krsItems.length])
+  }, [krsItems.length, subjects.length, offerings.length])
 
   // Get user's current KRS items - reactive to changes
   const userKrsItems = useMemo(() => {
@@ -114,7 +114,7 @@ export function KrsPicker({ userId, term }: KrsPickerProps) {
         }
       })
       .filter((offering): offering is NonNullable<typeof offering> => offering !== null)
-  }, [userAngkatan, getOfferingsForStudent, getSubjectById, getKrsByOffering, searchTerm, isOfferingInKrs, userId, userKrsItems]) // Use userKrsItems instead of direct krsItems
+  }, [userAngkatan, getOfferingsForStudent, getSubjectById, getKrsByOffering, searchTerm, isOfferingInKrs, userId, userKrsItems, subjects, offerings]) // Add subjects and offerings to trigger re-render when status changes
 
   // Group offerings by kelas
   const groupedOfferings = useMemo(() => {

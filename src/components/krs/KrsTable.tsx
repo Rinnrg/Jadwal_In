@@ -30,8 +30,8 @@ interface KrsTableProps {
 
 export function KrsTable({ userId, term, onScheduleSuggestion }: KrsTableProps) {
   const router = useRouter()
-  const { getSubjectById } = useSubjectsStore()
-  const { getOffering } = useOfferingsStore()
+  const { getSubjectById, subjects } = useSubjectsStore()
+  const { getOffering, offerings } = useOfferingsStore()
   const { getKrsByUser, removeKrsItem, krsItems: allKrsItems } = useKrsStore()
   const { addEvent, getEventsByUser } = useScheduleStore()
   const { addReminder } = useRemindersStore()
@@ -54,10 +54,10 @@ export function KrsTable({ userId, term, onScheduleSuggestion }: KrsTableProps) 
     dueTime: '08:00'
   })
 
-  // Force update when allKrsItems change
+  // Force update when allKrsItems, subjects, or offerings change
   useEffect(() => {
     setForceUpdate(prev => prev + 1)
-  }, [allKrsItems.length])
+  }, [allKrsItems.length, subjects.length, offerings.length])
 
   const krsItems = useMemo(() => {
     return getKrsByUser(userId, term)

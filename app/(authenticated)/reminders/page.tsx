@@ -18,18 +18,26 @@ import { confirmAction, showSuccess } from "@/lib/alerts"
 
 export default function RemindersPage() {
   const { session } = useSessionStore()
-  const { getActiveReminders, getUpcomingReminders, getOverdueReminders, clearUserReminders } = useRemindersStore()
-  const { getKrsByUser } = useKrsStore()
+  const { getActiveReminders, getUpcomingReminders, getOverdueReminders, clearUserReminders, reminders } = useRemindersStore()
+  const { getKrsByUser, krsItems } = useKrsStore()
   const { subjects } = useSubjectsStore()
   const { markAsRead } = useNotificationStore()
   const [editingReminder, setEditingReminder] = useState<Reminder | null>(null)
   const [isFormOpen, setIsFormOpen] = useState(false)
+  
+  // Force re-render trigger for reactive updates
+  const [, setForceUpdate] = useState(0)
 
   // Enable real-time sync for Reminders page
   useRealtimeSync({
     enabled: true,
     pollingInterval: 2000, // 2 seconds for real-time updates
   })
+  
+  // Force update when store data changes
+  useEffect(() => {
+    setForceUpdate(prev => prev + 1)
+  }, [reminders.length, subjects.length, krsItems.length])
 
   // Mark reminder notification as read when user opens this page
   useEffect(() => {
