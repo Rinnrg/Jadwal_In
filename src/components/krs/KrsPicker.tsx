@@ -54,11 +54,32 @@ export function KrsPicker({ userId, term }: KrsPickerProps) {
     // Get ALL offerings for angkatan (tidak filter by kelas, mahasiswa bebas pilih kelas mana saja)
     const offerings = getOfferingsForStudent(userAngkatan)
     
-    console.log('[KrsPicker] Total offerings for angkatan', userAngkatan, ':', offerings.length)
+    console.log('[KrsPicker] ===== DEBUGGING OFFERINGS =====')
+    console.log('[KrsPicker] User angkatan:', userAngkatan)
+    console.log('[KrsPicker] Total offerings for angkatan:', offerings.length)
     console.log('[KrsPicker] Offerings status breakdown:', {
       buka: offerings.filter(o => o.status === 'buka').length,
       tutup: offerings.filter(o => o.status === 'tutup').length,
     })
+    
+    // CRITICAL CHECK: Find subjects that are AKTIF but have NO offerings
+    const allActiveSubjects = subjects.filter(s => s.status === 'aktif' && s.angkatan === userAngkatan)
+    const subjectsWithoutOfferings = allActiveSubjects.filter(subject => {
+      const hasOffering = offerings.some(o => o.subjectId === subject.id)
+      return !hasOffering
+    })
+    
+    if (subjectsWithoutOfferings.length > 0) {
+      console.warn('[KrsPicker] ⚠️ SUBJECTS WITHOUT OFFERINGS (akan tidak muncul di KRS):')
+      subjectsWithoutOfferings.forEach(subject => {
+        console.warn(`  - ${subject.nama} (${subject.kode}) - STATUS: ${subject.status}`)
+        console.warn(`    → Silakan toggle OFF lalu ON lagi untuk auto-create offering`)
+      })
+    }
+    
+    console.log('[KrsPicker] Active subjects for angkatan:', allActiveSubjects.length)
+    console.log('[KrsPicker] Subjects with offerings:', allActiveSubjects.length - subjectsWithoutOfferings.length)
+    console.log('[KrsPicker] Missing offerings count:', subjectsWithoutOfferings.length)
 
     return offerings
       .map((offering) => {
@@ -67,12 +88,14 @@ export function KrsPicker({ userId, term }: KrsPickerProps) {
         // Only show if subject exists and is active
         if (!subject || subject.status !== "aktif") {
           if (!subject) {
-            console.log('[KrsPicker] Skipping offering - subject not found:', offering.subjectId)
+            console.log('[KrsPicker] ❌ Skipping offering - subject not found:', offering.subjectId)
           } else if (subject.status !== "aktif") {
-            console.log('[KrsPicker] Skipping offering - subject not active:', subject.nama, 'status:', subject.status)
+            console.log('[KrsPicker] ❌ Skipping offering - subject not active:', subject.nama, 'status:', subject.status)
           }
           return null
         }
+        
+        console.log('[KrsPicker] ✅ Including offering:', subject.nama, '- Kelas:', offering.kelas)
 
         // CRITICAL CHANGE: Check berdasarkan NAMA mata kuliah, bukan hanya subjectId
         // Ini mencegah user mengambil "Manajemen Proyek" di kelas berbeda meskipun kode berbeda

@@ -15,6 +15,14 @@ import { Edit, Trash2, Search } from "lucide-react"
 import { confirmAction, showSuccess, showError } from "@/lib/alerts"
 import { arr } from "@/lib/utils"
 
+// Helper function to get current term
+const getCurrentTerm = () => {
+  const currentYear = new Date().getFullYear()
+  const currentMonth = new Date().getMonth()
+  const isOddSemester = currentMonth >= 8 || currentMonth <= 1
+  return `${currentYear}/${currentYear + 1}-${isOddSemester ? "Ganjil" : "Genap"}`
+}
+
 interface SubjectTableProps {
   subjects?: Subject[]
   onEdit?: (subject: Subject) => void
@@ -82,6 +90,72 @@ export function SubjectTable({ subjects: subjectsProp, onEdit }: SubjectTablePro
       showSuccess("Mata kuliah berhasil dihapus")
     }
   }
+  
+  const handleFixMissingOfferings = async (angkatan: number | string, kelas: string) => {
+    try {
+      const activeSubjects = subjects.filter(
+        (s) => s.angkatan === angkatan && s.kelas === kelas && s.status === "aktif"
+      )
+      
+      // Find subjects without offerings
+      const subjectsWithoutOfferings = activeSubjects.filter(subject => {
+        const offerings = getOfferingsBySubject(subject.id)
+        return offerings.length === 0
+      })
+      
+      if (subjectsWithoutOfferings.length === 0) {
+        showSuccess("Semua mata kuliah aktif sudah memiliki penawaran!")
+        return
+      }
+      
+      const confirmed = await confirmAction(
+        "Buat Penawaran yang Hilang",
+        `Ditemukan ${subjectsWithoutOfferings.length} mata kuliah aktif tanpa penawaran:\n\n${subjectsWithoutOfferings.map(s => `• ${s.nama}`).join('\n')}\n\nBuat penawaran untuk semua mata kuliah ini?`,
+        "Ya, Buat Penawaran"
+      )
+      
+      if (!confirmed) return
+      
+      const { addOffering } = useOfferingsStore.getState()
+      const currentTerm = getCurrentTerm()
+      
+      let created = 0
+      let failed = 0
+      
+      for (const subject of subjectsWithoutOfferings) {
+        try {
+          console.log(`[FixOfferings] Creating offering for "${subject.nama}"`)
+          await addOffering({
+            subjectId: subject.id,
+            angkatan: subject.angkatan,
+            kelas: subject.kelas || kelas,
+            semester: subject.semester,
+            term: currentTerm,
+            status: "buka",
+            capacity: 40,
+          })
+          created++
+        } catch (error) {
+          console.error(`[FixOfferings] Failed for "${subject.nama}":`, error)
+          failed++
+        }
+      }
+      
+      if (created > 0) {
+        showSuccess(`✅ Berhasil membuat ${created} penawaran${failed > 0 ? `, ${failed} gagal` : ''}. Silakan cek halaman KRS!`)
+        // Force refresh
+        setTimeout(() => {
+          const { fetchOfferings } = useOfferingsStore.getState()
+          fetchOfferings(undefined, true)
+        }, 100)
+      } else {
+        showError("Gagal membuat penawaran. Silakan coba lagi.")
+      }
+    } catch (error) {
+      console.error('[FixOfferings] Error:', error)
+      showError("Terjadi kesalahan saat membuat penawaran")
+    }
+  }
 
   const handleToggleSubjectStatus = async (subject: Subject) => {
     try {
@@ -101,12 +175,7 @@ export function SubjectTable({ subjects: subjectsProp, onEdit }: SubjectTablePro
         console.log(`[SubjectTable] Auto-creating offering for subject "${subject.nama}"`)
         
         const { addOffering } = useOfferingsStore.getState()
-        
-        // Get current term
-        const currentYear = new Date().getFullYear()
-        const currentMonth = new Date().getMonth()
-        const isOddSemester = currentMonth >= 8 || currentMonth <= 1
-        const currentTerm = `${currentYear}/${currentYear + 1}-${isOddSemester ? "Ganjil" : "Genap"}`
+        const currentTerm = getCurrentTerm()
         
         // Create offering for this subject's angkatan and kelas
         try {
@@ -165,7 +234,39 @@ export function SubjectTable({ subjects: subjectsProp, onEdit }: SubjectTablePro
         showError("Tidak ada mata kuliah aktif untuk grup ini. Pastikan mata kuliah sudah diaktifkan terlebih dahulu.")
         return
       }
-
+      
+      // CRITICAL: Check for subjects without offerings and auto-create them
+      const { addOffering } = useOfferingsStore.getState()
+      const currentTerm = getCurrentTerm()
+      
+      let offeringsCreated = 0
+      for (const subject of activeSubjects) {
+        const subjectOfferings = getOfferingsBySubject(subject.id)
+        if (subjectOfferings.length === 0) {
+          console.log(`[RefreshKRS] Creating missing offering for "${subject.nama}"`)
+          try {
+            await addOffering({
+              subjectId: subject.id,
+              angkatan: subject.angkatan,
+              kelas: subject.kelas || kelas,
+              semester: subject.semester,
+              term: currentTerm,
+              status: "buka",
+              capacity: 40,
+            })
+            offeringsCreated++
+          } catch (error) {
+            console.error(`[RefreshKRS] Failed to create offering for "${subject.nama}":`, error)
+          }
+        }
+      }
+      
+      if (offeringsCreated > 0) {
+        showSuccess(`Dibuat ${offeringsCreated} penawaran yang hilang. Silakan refresh halaman.`)
+        // Wait a bit for offerings to be created
+        await new Promise(resolve => setTimeout(resolve, 500))
+      }
+      
       const confirmed = await confirmAction(
         "Refresh KRS Mahasiswa",
         `Refresh akan menambahkan ${activeSubjects.length} mata kuliah AKTIF ke KRS mahasiswa Angkatan ${angkatan} Kelas ${kelas}.\n\nHanya mata kuliah dengan status AKTIF yang akan ditambahkan.`,
@@ -175,12 +276,6 @@ export function SubjectTable({ subjects: subjectsProp, onEdit }: SubjectTablePro
       if (!confirmed) {
         return
       }
-
-      // Get current term
-      const currentYear = new Date().getFullYear()
-      const currentMonth = new Date().getMonth()
-      const isOddSemester = currentMonth >= 8 || currentMonth <= 1
-      const currentTerm = `${currentYear}/${currentYear + 1}-${isOddSemester ? "Ganjil" : "Genap"}`
 
       // Import users store to get mahasiswa
       const { useUsersStore } = await import('@/stores/users.store')
@@ -328,6 +423,16 @@ export function SubjectTable({ subjects: subjectsProp, onEdit }: SubjectTablePro
                         </span>
                       </div>
                       <div className="flex items-center gap-1.5 md:gap-2 sm:ml-auto flex-wrap">
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => handleFixMissingOfferings(group.angkatan, group.kelas)}
+                          className="text-xs md:text-sm h-8 md:h-9 border-orange-500 text-orange-600 hover:bg-orange-50 dark:hover:bg-orange-950/20"
+                          title="Buat penawaran untuk mata kuliah yang belum punya offering"
+                        >
+                          <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="mr-1"><circle cx="12" cy="12" r="10"/><path d="M12 8v4M12 16h.01"/></svg>
+                          Fix Offerings
+                        </Button>
                         <Button
                           size="sm"
                           variant="secondary"
