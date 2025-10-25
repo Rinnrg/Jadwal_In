@@ -26,10 +26,8 @@ export function SubjectTable({ subjects: subjectsProp, onEdit }: SubjectTablePro
   const { getUserById } = useUsersStore()
   const { getOfferingsBySubject, updateOffering } = useOfferingsStore()
   const [searchTerm, setSearchTerm] = useState("")
-  const [angkatanFilter, setAngkatanFilter] = useState("")
   const [kelasFilter, setKelasFilter] = useState("")
 
-  const uniqueAngkatan = [...new Set(subjects.map((s) => s.angkatan).filter(Boolean))].sort()
   const uniqueKelas = [...new Set(subjects.map((s) => s.kelas).filter(Boolean))].sort()
 
   const filteredSubjects = subjects.filter((subject) => {
@@ -38,10 +36,9 @@ export function SubjectTable({ subjects: subjectsProp, onEdit }: SubjectTablePro
       subject.nama.toLowerCase().includes(searchTerm.toLowerCase()) ||
       subject.prodi?.toLowerCase().includes(searchTerm.toLowerCase())
 
-    const matchesAngkatan = !angkatanFilter || subject.angkatan?.toString() === angkatanFilter
     const matchesKelas = !kelasFilter || subject.kelas?.toLowerCase() === kelasFilter.toLowerCase()
 
-    return matchesSearch && matchesAngkatan && matchesKelas
+    return matchesSearch && matchesKelas
   })
 
   // Group subjects by angkatan and kelas
@@ -183,6 +180,76 @@ export function SubjectTable({ subjects: subjectsProp, onEdit }: SubjectTablePro
     }
   }
 
+  const handleStoreToKRS = async (angkatan: number | string, kelas: string) => {
+    try {
+      // Get all subjects in this group
+      const groupSubjects = subjects.filter(
+        (s) => s.angkatan === angkatan && s.kelas === kelas
+      )
+
+      if (groupSubjects.length === 0) {
+        showError("Tidak ada mata kuliah untuk grup ini")
+        return
+      }
+
+      const confirmed = await confirmAction(
+        "Store ke KRS Mahasiswa",
+        `Apakah Anda yakin ingin menambahkan semua mata kuliah Angkatan ${angkatan} Kelas ${kelas} ke KRS mahasiswa?\n\nSemua mahasiswa dengan angkatan dan kelas yang sesuai akan mendapatkan mata kuliah ini di KRS mereka.`,
+        "Ya, Store ke KRS"
+      )
+      
+      if (!confirmed) {
+        return
+      }
+
+      // Get current term
+      const currentYear = new Date().getFullYear()
+      const currentMonth = new Date().getMonth()
+      const isOddSemester = currentMonth >= 8 || currentMonth <= 1
+      const currentTerm = `${currentYear}/${currentYear + 1}-${isOddSemester ? "Ganjil" : "Genap"}`
+
+      // Import users store to get mahasiswa
+      const { useUsersStore } = await import('@/stores/users.store')
+      const { useKrsStore } = await import('@/stores/krs.store')
+      
+      const users = useUsersStore.getState().users
+      const { addKrsItem } = useKrsStore.getState()
+      
+      // Filter mahasiswa with matching angkatan and kelas from profile
+      const targetMahasiswa = users.filter(u => 
+        u.role === 'mahasiswa' && 
+        u.profile?.angkatan === angkatan &&
+        u.profile?.kelas === kelas
+      )
+
+      if (targetMahasiswa.length === 0) {
+        showError(`Tidak ada mahasiswa dengan Angkatan ${angkatan} Kelas ${kelas}`)
+        return
+      }
+
+      let addedCount = 0
+      
+      // Add each subject to each mahasiswa's KRS
+      for (const mahasiswa of targetMahasiswa) {
+        for (const subject of groupSubjects) {
+          // Check if already in KRS
+          const { isSubjectInKrs } = useKrsStore.getState()
+          if (!isSubjectInKrs(mahasiswa.id, subject.id, currentTerm)) {
+            addKrsItem(mahasiswa.id, subject.id, currentTerm, undefined, subject.nama, subject.sks)
+            addedCount++
+          }
+        }
+      }
+
+      showSuccess(
+        `Berhasil menambahkan ${addedCount} mata kuliah ke KRS ${targetMahasiswa.length} mahasiswa`
+      )
+    } catch (error) {
+      console.error('Error storing to KRS:', error)
+      showError("Gagal menambahkan ke KRS mahasiswa")
+    }
+  }
+
   const getGroupOfferingsStatus = (angkatan: number | string, kelas: string): "buka" | "tutup" | "mixed" => {
     const allOfferings = useOfferingsStore.getState().offerings.filter(
       (o) => o.angkatan === angkatan && o.kelas === kelas
@@ -245,21 +312,6 @@ export function SubjectTable({ subjects: subjectsProp, onEdit }: SubjectTablePro
           <div className="flex flex-col sm:flex-row gap-2 md:gap-4">
             <div className="flex-1">
               <select
-                value={angkatanFilter}
-                onChange={(e) => setAngkatanFilter(e.target.value)}
-                className="w-full h-9 md:h-11 px-2 md:px-3 py-1.5 md:py-2 border border-input bg-background rounded-md text-xs md:text-sm cursor-pointer"
-                aria-label="Filter berdasarkan angkatan"
-              >
-                <option value="">Semua Angkatan</option>
-                {uniqueAngkatan.map((angkatan) => (
-                  <option key={angkatan} value={angkatan}>
-                    Angkatan {angkatan}
-                  </option>
-                ))}
-              </select>
-            </div>
-            <div className="flex-1">
-              <select
                 value={kelasFilter}
                 onChange={(e) => setKelasFilter(e.target.value)}
                 className="w-full h-9 md:h-11 px-2 md:px-3 py-1.5 md:py-2 border border-input bg-background rounded-md text-xs md:text-sm cursor-pointer"
@@ -278,7 +330,7 @@ export function SubjectTable({ subjects: subjectsProp, onEdit }: SubjectTablePro
           {filteredSubjects.length === 0 ? (
           <div className="text-center py-6 md:py-8">
             <p className="text-xs md:text-base text-muted-foreground">
-              {searchTerm || angkatanFilter || kelasFilter
+              {searchTerm || kelasFilter
                 ? "Tidak ada mata kuliah yang sesuai dengan filter"
                 : "Belum ada mata kuliah. Tambahkan mata kuliah pertama Anda."}
             </p>
@@ -302,11 +354,18 @@ export function SubjectTable({ subjects: subjectsProp, onEdit }: SubjectTablePro
                         </span>
                       </div>
                       <div className="flex items-center gap-1.5 md:gap-2 sm:ml-auto">
-                        <span className="text-[10px] md:text-sm text-muted-foreground">Tampil di KRS:</span>
-                        <Switch
-                          checked={getGroupOfferingsStatus(group.angkatan, group.kelas) === "buka"}
-                          onCheckedChange={() => handleToggleGroupOfferings(group.angkatan, group.kelas)}
-                        />
+                        <Button
+                          size="sm"
+                          variant={getGroupOfferingsStatus(group.angkatan, group.kelas) === "buka" ? "default" : "outline"}
+                          onClick={() => handleStoreToKRS(group.angkatan, group.kelas)}
+                          className="text-xs md:text-sm h-8 md:h-9"
+                        >
+                          Store ke KRS
+                        </Button>
+                        <span className="text-[10px] md:text-xs text-muted-foreground">
+                          {getGroupOfferingsStatus(group.angkatan, group.kelas) === "buka" ? "Buka" : 
+                           getGroupOfferingsStatus(group.angkatan, group.kelas) === "mixed" ? "Sebagian" : "Tutup"}
+                        </span>
                       </div>
                     </div>
                   </div>
