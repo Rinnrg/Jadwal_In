@@ -52,10 +52,10 @@ export function useNotificationManager() {
     const count = upcomingReminders.length
     const prevCount = previousCounts.current.reminder
     
-    // On initial load, just set the count without triggering notification
+    // On initial load, just set the count silently - DO NOT update badge yet
     if (isInitialLoad.current) {
       previousCounts.current.reminder = count
-      updateBadge("reminder", userId, count)
+      // Don't call updateBadge during initial load to prevent triggering notifications
       return
     }
     
@@ -76,10 +76,10 @@ export function useNotificationManager() {
       const count = krsItems.length
       const prevCount = previousCounts.current.krs
       
-      // On initial load, just set the count without triggering notification
+      // On initial load, just set the count silently - DO NOT update badge yet
       if (isInitialLoad.current) {
         previousCounts.current.krs = count
-        updateBadge("krs", userId, count)
+        // Don't call updateBadge during initial load to prevent triggering notifications
         return
       }
       
@@ -90,7 +90,9 @@ export function useNotificationManager() {
       }
     } catch (error) {
       // If there's an error, clear the badge
-      clearBadge("krs", userId)
+      if (!isInitialLoad.current) {
+        clearBadge("krs", userId)
+      }
       previousCounts.current.krs = 0
     }
   }, [userId, getKrsByUser, updateBadge, clearBadge])
@@ -106,10 +108,10 @@ export function useNotificationManager() {
       const count = grades.filter((grade: any) => grade.nilaiHuruf).length
       const prevCount = previousCounts.current.khs
       
-      // On initial load, just set the count without triggering notification
+      // On initial load, just set the count silently - DO NOT update badge yet
       if (isInitialLoad.current) {
         previousCounts.current.khs = count
-        updateBadge("khs", userId, count)
+        // Don't call updateBadge during initial load to prevent triggering notifications
         return
       }
       
@@ -119,7 +121,9 @@ export function useNotificationManager() {
         previousCounts.current.khs = count
       }
     } catch (error) {
-      clearBadge("khs", userId)
+      if (!isInitialLoad.current) {
+        clearBadge("khs", userId)
+      }
       previousCounts.current.khs = 0
     }
   }, [userId, getGradesByUser, updateBadge, clearBadge])
@@ -143,10 +147,10 @@ export function useNotificationManager() {
       const count = userAssignments.length + userMaterials.length
       const prevCount = previousCounts.current.asynchronous
       
-      // On initial load, just set the count without triggering notification
+      // On initial load, just set the count silently - DO NOT update badge yet
       if (isInitialLoad.current) {
         previousCounts.current.asynchronous = count
-        updateBadge("asynchronous", userId, count)
+        // Don't call updateBadge during initial load to prevent triggering notifications
         return
       }
       
@@ -156,7 +160,9 @@ export function useNotificationManager() {
         previousCounts.current.asynchronous = count
       }
     } catch (error) {
-      clearBadge("asynchronous", userId)
+      if (!isInitialLoad.current) {
+        clearBadge("asynchronous", userId)
+      }
       previousCounts.current.asynchronous = 0
     }
   }, [userId, assignments, materials, updateBadge, clearBadge])
@@ -170,10 +176,10 @@ export function useNotificationManager() {
       const count = schedule.length
       const prevCount = previousCounts.current.jadwal
       
-      // On initial load, just set the count without triggering notification
+      // On initial load, just set the count silently - DO NOT update badge yet
       if (isInitialLoad.current) {
         previousCounts.current.jadwal = count
-        updateBadge("jadwal", userId, count > 0 ? 1 : 0)
+        // Don't call updateBadge during initial load to prevent triggering notifications
         return
       }
       
@@ -183,7 +189,9 @@ export function useNotificationManager() {
         previousCounts.current.jadwal = count
       }
     } catch (error) {
-      clearBadge("jadwal", userId)
+      if (!isInitialLoad.current) {
+        clearBadge("jadwal", userId)
+      }
       previousCounts.current.jadwal = 0
     }
   }, [userId, getEventsByUser, updateBadge, clearBadge])
@@ -192,7 +200,7 @@ export function useNotificationManager() {
   useEffect(() => {
     if (!userId) return
 
-    // Initial checks (silently update counts)
+    // Initial checks (silently update counts - NO badge updates)
     checkReminders()
     checkKRS()
     checkKHS()
@@ -202,6 +210,32 @@ export function useNotificationManager() {
     // Mark initial load as complete after all checks
     const timer = setTimeout(() => {
       isInitialLoad.current = false
+      
+      // NOW update badges with current counts (after grace period)
+      // This ensures badges show in UI but don't trigger notifications
+      const krsItems = getKrsByUser(userId)
+      updateBadge("krs", userId, krsItems.length)
+      
+      const now = nowUTC()
+      const thirtyMinutesLater = now + 30 * 60 * 1000
+      const activeReminders = getActiveReminders(userId)
+      const upcomingReminders = activeReminders.filter(
+        (reminder) => reminder.dueUTC > now && reminder.dueUTC <= thirtyMinutesLater
+      )
+      updateBadge("reminder", userId, upcomingReminders.length)
+      
+      const grades = getGradesByUser(userId)
+      const gradeCount = grades.filter((grade: any) => grade.nilaiHuruf).length
+      updateBadge("khs", userId, gradeCount)
+      
+      const schedule = getEventsByUser(userId)
+      updateBadge("jadwal", userId, schedule.length > 0 ? 1 : 0)
+      
+      const userAssignments = assignments.filter(a => a.dueUTC && a.dueUTC > nowUTC())
+      const asyncCount = userAssignments.length + materials.length
+      updateBadge("asynchronous", userId, asyncCount)
+      
+      console.log('[NotificationManager] Initial load complete - badges updated silently')
     }, 2000) // Wait 2 seconds before allowing notifications
 
     // Check reminders every minute
@@ -220,7 +254,7 @@ export function useNotificationManager() {
       clearInterval(reminderInterval)
       clearInterval(generalInterval)
     }
-  }, [userId, checkReminders, checkKRS, checkKHS, checkAsynchronous, checkSchedule])
+  }, [userId, checkReminders, checkKRS, checkKHS, checkAsynchronous, checkSchedule, getKrsByUser, getActiveReminders, getGradesByUser, getEventsByUser, assignments, materials, updateBadge])
 
   return {
     checkReminders,
