@@ -6,6 +6,7 @@ import { useSubjectsStore } from "@/stores/subjects.store"
 import { useGradesStore } from "@/stores/grades.store"
 import { useProfileStore } from "@/stores/profile.store"
 import { useNotificationStore } from "@/stores/notification.store"
+import { useRealtimeSync } from "@/hooks/use-realtime-sync"
 import { canAccessKHS } from "@/lib/rbac"
 import { generateTranscriptPDF } from "@/lib/pdf-transcript"
 import { Button } from "@/components/ui/button"
@@ -22,6 +23,12 @@ export default function KhsPage() {
   const { getGradesByUser, calculateGPA, calculateSemesterGPA, grades: allGrades } = useGradesStore()
   const { getProfile } = useProfileStore()
   const { markAsRead } = useNotificationStore()
+
+  // Enable real-time sync for KHS page
+  useRealtimeSync({
+    enabled: true,
+    pollingInterval: 2000, // 2 seconds for real-time updates
+  })
 
   const [selectedTerm, setSelectedTerm] = useState("Semua Semester")
 

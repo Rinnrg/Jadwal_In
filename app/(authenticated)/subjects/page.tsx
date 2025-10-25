@@ -4,6 +4,7 @@ import { useState, useEffect } from "react"
 import { useSessionStore } from "@/stores/session.store"
 import { useSubjectsStore } from "@/stores/subjects.store"
 import { useOfferingsStore } from "@/stores/offerings.store"
+import { useRealtimeSync } from "@/hooks/use-realtime-sync"
 import { canAccessSubjects, canEditSubject } from "@/lib/rbac"
 import type { Subject } from "@/data/schema"
 import { Button } from "@/components/ui/button"
@@ -30,6 +31,12 @@ export default function SubjectsPage() {
   const [showForm, setShowForm] = useState(false)
   const [editingSubject, setEditingSubject] = useState<Subject | null>(null)
   const [selectedSubjectForOfferings, setSelectedSubjectForOfferings] = useState<Subject | null>(null)
+
+  // Enable real-time sync for Subjects page
+  useRealtimeSync({
+    enabled: true,
+    pollingInterval: 2000, // 2 seconds for real-time updates
+  })
 
   // Fetch subjects and offerings from API on mount
   useEffect(() => {

@@ -7,6 +7,7 @@ import { useUsersStore } from "@/stores/users.store"
 import { useKrsStore } from "@/stores/krs.store"
 import { useCourseworkStore } from "@/stores/coursework.store"
 import { useSubmissionsStore } from "@/stores/submissions.store"
+import { useRealtimeSync } from "@/hooks/use-realtime-sync"
 import { canAccessEntryNilai } from "@/lib/rbac"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -30,6 +31,12 @@ export default function EntryNilaiPage() {
   const { getAttendanceBySubject } = useCourseworkStore()
   const { getSubmissionByStudent, getSubmissionsByAssignment } = useSubmissionsStore()
   const { getAssignmentsBySubject } = useCourseworkStore()
+  
+  // Enable real-time sync for Entry Nilai page
+  useRealtimeSync({
+    enabled: true,
+    pollingInterval: 2000, // 2 seconds for real-time updates
+  })
   
   const [selectedOffering, setSelectedOffering] = useState("")
   const [searchTerm, setSearchTerm] = useState("")

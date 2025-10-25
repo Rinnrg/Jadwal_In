@@ -24,6 +24,7 @@ import { useRemindersStore } from "@/stores/reminders.store"
 import { useNotificationStore } from "@/stores/notification.store"
 import { useProfileStore } from "@/stores/profile.store"
 import { useUsersStore } from "@/stores/users.store"
+import { useRealtimeSync } from "@/hooks/use-realtime-sync"
 import type { ScheduleEvent } from "@/data/schema"
 import { ScheduleGrid } from "@/components/schedule/ScheduleGrid"
 import { ScheduleForm } from "@/components/schedule/ScheduleForm"
@@ -45,6 +46,12 @@ export default function JadwalPage() {
   const { markAsRead } = useNotificationStore()
   const { getProfile, profiles } = useProfileStore()
   const { getUserById, fetchUsers, users, isLoading: isLoadingUsers } = useUsersStore()
+
+  // Enable real-time sync for Jadwal page
+  useRealtimeSync({
+    enabled: true,
+    pollingInterval: 2000, // 2 seconds for real-time updates
+  })
 
   const [viewMode, setViewMode] = useState<ViewMode>("simple")
   const [searchTerm, setSearchTerm] = useState("")
