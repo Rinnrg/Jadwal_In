@@ -405,7 +405,7 @@
   }
 
   .animate-float-slow {
-    animation: float-slow 40s ease-in-out infinite;
+    animation: float-slow 120s ease-in-out infinite;
   }
 
   /* Radial gradient utility for realistic sun/moon */
