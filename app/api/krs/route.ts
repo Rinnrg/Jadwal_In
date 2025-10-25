@@ -18,6 +18,8 @@ export async function GET(request: NextRequest) {
     const term = searchParams.get('term')
     const subjectId = searchParams.get('subjectId')
 
+    console.log('[KRS API] GET request:', { userId, term, subjectId })
+
     const where: any = {}
     
     if (userId) {
@@ -63,6 +65,8 @@ export async function GET(request: NextRequest) {
       },
     })
 
+    console.log('[KRS API] Found', krsItems.length, 'items')
+
     // Transform to match expected format
     const transformedItems = krsItems.map(item => ({
       id: item.id,
@@ -89,6 +93,8 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
+    console.log('[KRS API] POST request:', body)
+    
     const data = krsItemSchema.parse(body)
 
     // Check if item already exists
@@ -103,6 +109,7 @@ export async function POST(request: NextRequest) {
     })
 
     if (existing) {
+      console.log('[KRS API] Duplicate found:', existing.id)
       return NextResponse.json(
         { error: 'Mata kuliah sudah ada di KRS' },
         { status: 400 }
@@ -115,6 +122,7 @@ export async function POST(request: NextRequest) {
     })
 
     if (!subject) {
+      console.log('[KRS API] Subject not found:', data.subjectId)
       return NextResponse.json(
         { error: 'Mata kuliah tidak ditemukan' },
         { status: 404 }
@@ -122,6 +130,7 @@ export async function POST(request: NextRequest) {
     }
 
     if (subject.status !== 'aktif') {
+      console.log('[KRS API] Subject not active:', subject.status)
       return NextResponse.json(
         { error: 'Mata kuliah tidak aktif' },
         { status: 400 }
@@ -135,6 +144,7 @@ export async function POST(request: NextRequest) {
       })
 
       if (!offering) {
+        console.log('[KRS API] Offering not found:', data.offeringId)
         return NextResponse.json(
           { error: 'Penawaran tidak ditemukan' },
           { status: 404 }
@@ -142,6 +152,7 @@ export async function POST(request: NextRequest) {
       }
 
       if (offering.status !== 'buka') {
+        console.log('[KRS API] Offering not open:', offering.status)
         return NextResponse.json(
           { error: 'Penawaran sudah ditutup' },
           { status: 400 }
@@ -153,6 +164,8 @@ export async function POST(request: NextRequest) {
         const enrollmentCount = await prisma.krsItem.count({
           where: { offeringId: data.offeringId },
         })
+
+        console.log('[KRS API] Capacity check:', { enrollmentCount, capacity: offering.capacity })
 
         if (enrollmentCount >= offering.capacity) {
           return NextResponse.json(
@@ -196,6 +209,8 @@ export async function POST(request: NextRequest) {
         },
       },
     })
+
+    console.log('[KRS API] Created KRS item:', krsItem.id)
 
     // Also create a grade entry (initially empty)
     await prisma.grade.upsert({

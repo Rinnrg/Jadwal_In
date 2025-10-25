@@ -37,12 +37,27 @@ export default function KrsPage() {
     const loadData = async () => {
       if (!session) return
       
+      // CRITICAL: Clear old localStorage data to prevent conflicts
       try {
-        // Fetch subjects and offerings
+        const oldKrsData = localStorage.getItem('jadwalin:krs:v2')
+        if (oldKrsData) {
+          console.log('[KRS Page] Found old localStorage data, clearing...')
+          localStorage.removeItem('jadwalin:krs:v2')
+        }
+      } catch (e) {
+        console.error('[KRS Page] Error clearing localStorage:', e)
+      }
+      
+      try {
+        console.log('[KRS Page] Loading data...')
+        
+        // Fetch subjects and offerings first
         await Promise.all([
           fetchSubjects(),
           fetchOfferings(),
         ])
+        
+        console.log('[KRS Page] Subjects and offerings loaded')
         
         // Fetch KRS items for current user
         const currentYear = new Date().getFullYear()
@@ -50,7 +65,9 @@ export default function KrsPage() {
         const isOddSemester = currentMonth >= 8 || currentMonth <= 1
         const currentTerm = `${currentYear}/${currentYear + 1}-${isOddSemester ? "Ganjil" : "Genap"}`
         
-        await fetchKrsItems(session.id, currentTerm)
+        console.log('[KRS Page] Fetching KRS for term:', currentTerm)
+        await fetchKrsItems(session.id, currentTerm, true) // Force refresh
+        console.log('[KRS Page] KRS items loaded')
       } catch (error) {
         console.error('[KRS Page] Error loading data:', error)
       }

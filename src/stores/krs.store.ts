@@ -35,6 +35,7 @@ export const useKrsStore = create<KrsState>()((set, get) => ({
     // Prevent too frequent fetches unless force refresh
     const now = Date.now()
     if (!forceRefresh && now - get().lastFetchTime < 1000) {
+      console.log('[KRS Store] Skipping fetch (too soon)')
       return
     }
 
@@ -47,6 +48,8 @@ export const useKrsStore = create<KrsState>()((set, get) => ({
       // Add cache busting
       params.append('_t', Date.now().toString())
       
+      console.log('[KRS Store] Fetching KRS items:', { userId, term, forceRefresh })
+      
       const response = await fetch(`/api/krs?${params.toString()}`, {
         cache: 'no-store',
         headers: {
@@ -57,6 +60,8 @@ export const useKrsStore = create<KrsState>()((set, get) => ({
       if (!response.ok) throw new Error('Failed to fetch KRS items')
       
       const krsItems = await response.json()
+      console.log('[KRS Store] Fetched KRS items:', krsItems.length, 'items')
+      
       set({ krsItems, isLoading: false, lastFetchTime: now })
     } catch (error) {
       console.error('[KRS Store] Error fetching KRS:', error)
@@ -67,6 +72,8 @@ export const useKrsStore = create<KrsState>()((set, get) => ({
   addKrsItem: async (userId, subjectId, term, offeringId, subjectName, sks) => {
     set({ isLoading: true, error: null })
     try {
+      console.log('[KRS Store] Adding KRS item:', { userId, subjectId, term, offeringId })
+      
       const response = await fetch('/api/krs', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -80,10 +87,12 @@ export const useKrsStore = create<KrsState>()((set, get) => ({
       
       if (!response.ok) {
         const errorData = await response.json()
+        console.error('[KRS Store] Failed to add:', errorData)
         throw new Error(errorData.error || 'Failed to add KRS item')
       }
       
       const newItem = await response.json()
+      console.log('[KRS Store] Added successfully:', newItem)
       
       set((state) => ({
         krsItems: [...state.krsItems, newItem],
@@ -96,6 +105,7 @@ export const useKrsStore = create<KrsState>()((set, get) => ({
       }
       
       // Force refresh to ensure all clients get updated data
+      console.log('[KRS Store] Force refreshing after add...')
       setTimeout(() => get().fetchKrsItems(userId, term, true), 100)
     } catch (error) {
       set({ error: (error as Error).message, isLoading: false })
