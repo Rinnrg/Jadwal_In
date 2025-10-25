@@ -162,10 +162,7 @@ export function SubjectTable({ subjects: subjectsProp, onEdit }: SubjectTablePro
       const newStatus = subject.status === "aktif" ? "arsip" : "aktif"
       await updateSubject(subject.id, { status: newStatus })
       
-      // CRITICAL: When activating subject, also open all offerings for this subject
-      // When archiving subject, close all offerings for this subject
       const offerings = getOfferingsBySubject(subject.id)
-      const newOfferingStatus = newStatus === "aktif" ? "buka" : "tutup"
       
       console.log(`[SubjectTable] Toggling subject "${subject.nama}" to ${newStatus}`)
       console.log(`[SubjectTable] Found ${offerings.length} offerings for subject`)
@@ -185,7 +182,7 @@ export function SubjectTable({ subjects: subjectsProp, onEdit }: SubjectTablePro
             kelas: subject.kelas || "A", // Default to A if no kelas
             semester: subject.semester,
             term: currentTerm,
-            status: "buka",
+            status: "buka", // Default to buka, but KRS will filter by subject status anyway
             capacity: 40, // Default capacity
           })
           
@@ -196,22 +193,16 @@ export function SubjectTable({ subjects: subjectsProp, onEdit }: SubjectTablePro
           console.error('[SubjectTable] Error creating offering:', error)
           showSuccess(`Mata kuliah "${subject.nama}" diaktifkan, tapi gagal membuat penawaran otomatis`)
         }
-      } else if (offerings.length > 0) {
-        // Update all existing offerings for this subject
-        console.log(`[SubjectTable] Updating ${offerings.length} offerings to ${newOfferingStatus}`)
-        
-        await Promise.all(
-          offerings.map(offering => 
-            updateOffering(offering.id, { status: newOfferingStatus })
-          )
-        )
-        
-        showSuccess(
-          `Mata kuliah "${subject.nama}" diubah menjadi ${newStatus} dan ${offerings.length} penawaran diubah menjadi ${newOfferingStatus}`
-        )
       } else {
-        // Just update subject status (archiving with no offerings)
-        showSuccess(`Mata kuliah "${subject.nama}" diubah menjadi ${newStatus}`)
+        // Just notify - no need to update offering status
+        // KRS page will filter by subject.status automatically
+        showSuccess(
+          `Mata kuliah "${subject.nama}" diubah menjadi ${newStatus}${
+            offerings.length > 0 
+              ? ` (${offerings.length} penawaran tersedia)`
+              : ''
+          }`
+        )
       }
       
       // Force refresh offerings and KRS

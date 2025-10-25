@@ -57,10 +57,7 @@ export function KrsPicker({ userId, term }: KrsPickerProps) {
     console.log('[KrsPicker] ===== DEBUGGING OFFERINGS =====')
     console.log('[KrsPicker] User angkatan:', userAngkatan)
     console.log('[KrsPicker] Total offerings for angkatan:', offerings.length)
-    console.log('[KrsPicker] Offerings status breakdown:', {
-      buka: offerings.filter(o => o.status === 'buka').length,
-      tutup: offerings.filter(o => o.status === 'tutup').length,
-    })
+    console.log('[KrsPicker] Note: Visibility controlled by SUBJECT status (aktif/arsip), not offering status')
     
     // CRITICAL CHECK: Find subjects that are AKTIF but have NO offerings
     const allActiveSubjects = subjects.filter(s => s.status === 'aktif' && s.angkatan === userAngkatan)
@@ -72,14 +69,30 @@ export function KrsPicker({ userId, term }: KrsPickerProps) {
     if (subjectsWithoutOfferings.length > 0) {
       console.warn('[KrsPicker] ⚠️ SUBJECTS WITHOUT OFFERINGS (akan tidak muncul di KRS):')
       subjectsWithoutOfferings.forEach(subject => {
-        console.warn(`  - ${subject.nama} (${subject.kode}) - STATUS: ${subject.status}`)
-        console.warn(`    → Silakan toggle OFF lalu ON lagi untuk auto-create offering`)
+        console.warn(`  - ${subject.nama} (${subject.kode}) - Angkatan: ${subject.angkatan}, Kelas: ${subject.kelas}, STATUS: ${subject.status}`)
+        console.warn(`    → FIX: Buka halaman Subjects, klik "Fix Offerings" untuk kelas ${subject.kelas}`)
       })
+    } else {
+      console.log('[KrsPicker] ✅ All active subjects have offerings!')
     }
     
     console.log('[KrsPicker] Active subjects for angkatan:', allActiveSubjects.length)
     console.log('[KrsPicker] Subjects with offerings:', allActiveSubjects.length - subjectsWithoutOfferings.length)
     console.log('[KrsPicker] Missing offerings count:', subjectsWithoutOfferings.length)
+    
+    if (subjectsWithoutOfferings.length > 0) {
+      console.log('')
+      console.log('🔧 CARA FIX:')
+      console.log('1. Buka halaman SUBJECTS')
+      console.log('2. Cari grup "Angkatan ' + userAngkatan + '"')
+      console.log('3. Klik tombol "Fix Offerings" (oranye)')
+      console.log('4. Atau toggle OFF → ON untuk subject yang bermasalah')
+      console.log('5. Refresh halaman KRS ini')
+      console.log('')
+    }
+    
+    console.log('[KrsPicker] ===== END DEBUGGING =====')
+    console.log('')
 
     return offerings
       .map((offering) => {

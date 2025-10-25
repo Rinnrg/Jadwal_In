@@ -141,22 +141,24 @@ export const useOfferingsStore = create<OfferingsState>()((set, get) => ({
   getOfferingsForStudent: (angkatan, kelas) => {
     // Filter by angkatan only - mahasiswa bebas pilih kelas mana saja
     // Parameter kelas tetap ada untuk backward compatibility tapi tidak digunakan
+    // CRITICAL: Don't filter by offering status here - let KrsPicker filter by SUBJECT status instead
+    // This way, "ON" toggle in Subjects page directly controls visibility in KRS
     return get().offerings.filter(
-      (offering) =>
-        offering.angkatan === angkatan &&
-        offering.status === "buka"
+      (offering) => offering.angkatan === angkatan
     )
   },
 
   getOfferingsByAngkatan: (angkatan) => {
+    // Don't filter by status - let subject status control visibility
     return get().offerings.filter(
-      (offering) => offering.angkatan === angkatan && offering.status === "buka"
+      (offering) => offering.angkatan === angkatan
     )
   },
 
   getOfferingsGroupedByKelas: (angkatan) => {
+    // Don't filter by status - let subject status control visibility
     const offerings = get().offerings.filter(
-      (offering) => offering.angkatan === angkatan && offering.status === "buka"
+      (offering) => offering.angkatan === angkatan
     )
     
     // Group by kelas
