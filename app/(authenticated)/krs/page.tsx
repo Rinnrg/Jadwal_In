@@ -139,9 +139,6 @@ export default function KrsPage() {
               <div className="text-xs text-muted-foreground mt-1">{totalSks}/24 SKS</div>
             </div>
           </div>
-          <Badge variant={totalSks > 24 ? "destructive" : totalSks < 12 ? "secondary" : "default"} className="ml-2">
-            {totalSks > 24 ? "Over" : totalSks < 12 ? "Min" : "OK"}
-          </Badge>
         </div>
       </div>
 

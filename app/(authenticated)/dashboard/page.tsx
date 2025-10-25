@@ -520,30 +520,6 @@ export default function DashboardPage() {
                   </div>
                 </div>
                 
-                {/* Sun rays - static, no rotation */}
-                <div className="absolute inset-0 transition-opacity duration-1000 ease-in-out">
-                  {[...Array(12)].map((_, i) => (
-                    <div
-                      key={i}
-                      className={`absolute w-1.5 h-6 md:w-2 md:h-10 lg:w-3 lg:h-12 rounded-full transition-all duration-1000 ease-in-out ${
-                        currentTime.getHours() < 11
-                          ? 'bg-gradient-to-t from-transparent via-yellow-400/60 to-yellow-300/40' // Pagi
-                          : currentTime.getHours() < 15
-                          ? 'bg-gradient-to-t from-transparent via-yellow-300/70 to-white/50' // Siang
-                          : 'bg-gradient-to-t from-transparent via-orange-500/60 to-orange-400/40' // Sore
-                      }`}
-                      style={{
-                        left: '50%',
-                        top: '-1.5rem',
-                        transform: `translateX(-50%) rotate(${i * 30}deg)`,
-                        transformOrigin: '0.25rem 2.5rem',
-                        opacity: 0.6 + (Math.sin(i) * 0.2),
-                        transition: 'all 1s ease-in-out'
-                      }}
-                    ></div>
-                  ))}
-                </div>
-                
                 {/* Glow effect */}
                 <div 
                   className={`absolute inset-0 rounded-full transition-all duration-1000 ease-in-out ${
@@ -675,11 +651,14 @@ export default function DashboardPage() {
                   </Avatar>
                   {/* Live Indicator - positioned at bottom right of avatar */}
                   <div 
-                    className={`absolute bottom-0 right-0 w-4 h-4 md:w-5 md:h-5 lg:w-6 lg:h-6 bg-green-500 rounded-full border-2 border-background shadow-lg transition-all duration-500 ease-in-out ${
+                    className={`absolute bottom-0 right-0 w-4 h-4 md:w-5 md:h-5 lg:w-6 lg:h-6 bg-green-500 rounded-full border-2 border-background shadow-lg ${
                       isPolling 
                         ? 'opacity-100 scale-100 animate-pulse' 
                         : 'opacity-0 scale-0'
                     }`}
+                    style={{
+                      transition: 'opacity 0.5s ease-in-out, transform 0.5s ease-in-out'
+                    }}
                     title="Live"
                   >
                     {/* Ripple effect for live indicator */}

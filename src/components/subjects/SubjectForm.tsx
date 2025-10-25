@@ -46,6 +46,13 @@ interface SubjectFormProps {
   onCancel?: () => void
 }
 
+interface ApplyToOtherClassesConfig {
+  nama: boolean
+  sks: boolean
+  angkatan: boolean
+  pengampuIds: boolean
+}
+
 const dayNames = ["Minggu", "Senin", "Selasa", "Rabu", "Kamis", "Jumat", "Sabtu"]
 
 // Available class options
@@ -158,6 +165,13 @@ export function SubjectForm({ subject, onSuccess, onCancel }: SubjectFormProps) 
   const [selectedKelas, setSelectedKelas] = useState<string[]>(subject?.kelas ? [subject.kelas] : [])
   const [kelasInput, setKelasInput] = useState("")
   const [kelasSchedules, setKelasSchedules] = useState<KelasSchedule[]>([])
+  const [applyToOtherClasses, setApplyToOtherClasses] = useState(false)
+  const [applyConfig, setApplyConfig] = useState<ApplyToOtherClassesConfig>({
+    nama: true,
+    sks: true,
+    angkatan: true,
+    pengampuIds: true,
+  })
 
   const form = useForm<SubjectFormData>({
     resolver: zodResolver(subjectFormSchema),
@@ -181,6 +195,32 @@ export function SubjectForm({ subject, onSuccess, onCancel }: SubjectFormProps) 
       if (existing) {
         return existing
       }
+      
+      // If editing and this is the original kelas, populate schedule from subject
+      if (subject && kelas === subject.kelas) {
+        const schedule: KelasSchedule = {
+          kelas,
+          pengampuIds: subject.pengampuIds || [],
+        }
+        
+        // Populate schedule data if exists
+        if (subject.slotDay !== undefined && subject.slotDay !== null && 
+            subject.slotStartUTC !== undefined && subject.slotStartUTC !== null && 
+            subject.slotEndUTC !== undefined && subject.slotEndUTC !== null) {
+          schedule.day = subject.slotDay as number
+          schedule.startTime = minutesToTimeString(Math.floor(subject.slotStartUTC as number / (60 * 1000)))
+          schedule.endTime = minutesToTimeString(Math.floor(subject.slotEndUTC as number / (60 * 1000)))
+          schedule.ruang = subject.slotRuang ? subject.slotRuang : undefined
+          
+          // Also enable manual schedule if schedule exists
+          if (!form.watch("hasManualSchedule")) {
+            form.setValue("hasManualSchedule", true)
+          }
+        }
+        
+        return schedule
+      }
+      
       // Initialize with pengampuIds from subject if editing
       return { 
         kelas,
@@ -290,6 +330,15 @@ export function SubjectForm({ subject, onSuccess, onCancel }: SubjectFormProps) 
         // Get the original class of the subject being edited
         const originalKelas = subject.kelas
         
+        // If "Apply to Other Classes" is enabled, find related subjects
+        const relatedSubjects = applyToOtherClasses 
+          ? subjects.filter(s => 
+              s.nama === subject.nama && 
+              s.angkatan === subject.angkatan && 
+              s.id !== subject.id
+            )
+          : []
+        
         for (let i = 0; i < selectedKelas.length; i++) {
           const kelas = selectedKelas[i]
           
@@ -358,6 +407,30 @@ export function SubjectForm({ subject, onSuccess, onCancel }: SubjectFormProps) 
               status: "aktif",
             })
             createdCount++
+          }
+        }
+        
+        // Apply changes to related subjects if enabled
+        if (applyToOtherClasses && relatedSubjects.length > 0) {
+          for (const relatedSubject of relatedSubjects) {
+            const updateData: any = {}
+            
+            if (applyConfig.nama) updateData.nama = data.nama
+            if (applyConfig.sks) updateData.sks = data.sks
+            if (applyConfig.angkatan) updateData.angkatan = data.angkatan
+            
+            // For pengampuIds, we need to find the matching kelas schedule
+            if (applyConfig.pengampuIds) {
+              const matchingSchedule = kelasSchedules.find(s => s.kelas === relatedSubject.kelas)
+              if (matchingSchedule && matchingSchedule.pengampuIds) {
+                updateData.pengampuIds = matchingSchedule.pengampuIds
+              }
+            }
+            
+            if (Object.keys(updateData).length > 0) {
+              await updateSubject(relatedSubject.id, updateData)
+              updatedCount++
+            }
           }
         }
         
@@ -626,12 +699,12 @@ export function SubjectForm({ subject, onSuccess, onCancel }: SubjectFormProps) 
                 checked={form.watch("hasManualSchedule")}
                 onCheckedChange={(checked) => form.setValue("hasManualSchedule", checked)}
               />
-              <Label htmlFor="hasManualSchedule" className="text-base font-semibold">Atur Jadwal Manual Per Kelas</Label>
+              <Label htmlFor="hasManualSchedule" className="text-base font-semibold">Atur Jadwal Manual</Label>
             </div>
             <p className="text-sm text-muted-foreground -mt-2">
               {form.watch("hasManualSchedule") 
                 ? "Atur jadwal untuk setiap kelas secara manual. Sistem akan memvalidasi agar tidak ada jadwal yang bentrok."
-                : "Jika tidak dicentang, jadwal akan otomatis di-generate untuk setiap kelas (Senin-Jumat, waktu sesuai SKS, tidak bentrok)"}
+                : "Jadwal akan otomatis di-generate untuk setiap kelas (Senin-Jumat, waktu sesuai SKS, tidak bentrok)"}
             </p>
 
             {form.watch("hasManualSchedule") && selectedKelas.length > 0 && (
@@ -739,6 +812,95 @@ export function SubjectForm({ subject, onSuccess, onCancel }: SubjectFormProps) 
               </div>
             )}
           </div>
+
+          {subject && (
+            <div className="space-y-4 pt-4 border-t">
+              <div className="flex items-center space-x-2">
+                <Switch
+                  id="applyToOtherClasses"
+                  checked={applyToOtherClasses}
+                  onCheckedChange={setApplyToOtherClasses}
+                />
+                <Label htmlFor="applyToOtherClasses" className="text-base font-semibold">
+                  Terapkan di Kelas Lain
+                </Label>
+              </div>
+              <p className="text-sm text-muted-foreground -mt-2">
+                Perubahan akan diterapkan ke mata kuliah dengan nama dan angkatan yang sama (kelas berbeda)
+              </p>
+              
+              {applyToOtherClasses && (
+                <Card className="border-2 border-primary/20">
+                  <CardHeader className="pb-3">
+                    <CardTitle className="text-sm">Pilih Data yang Akan Diterapkan</CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-3">
+                    <div className="flex items-center space-x-2">
+                      <input
+                        type="checkbox"
+                        id="apply-nama"
+                        checked={applyConfig.nama}
+                        onChange={(e) => setApplyConfig({...applyConfig, nama: e.target.checked})}
+                        className="h-4 w-4 rounded border-gray-300"
+                        aria-label="Terapkan nama mata kuliah"
+                      />
+                      <Label htmlFor="apply-nama" className="text-sm cursor-pointer">
+                        Nama Mata Kuliah
+                      </Label>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <input
+                        type="checkbox"
+                        id="apply-sks"
+                        checked={applyConfig.sks}
+                        onChange={(e) => setApplyConfig({...applyConfig, sks: e.target.checked})}
+                        className="h-4 w-4 rounded border-gray-300"
+                        aria-label="Terapkan SKS"
+                      />
+                      <Label htmlFor="apply-sks" className="text-sm cursor-pointer">
+                        SKS
+                      </Label>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <input
+                        type="checkbox"
+                        id="apply-angkatan"
+                        checked={applyConfig.angkatan}
+                        onChange={(e) => setApplyConfig({...applyConfig, angkatan: e.target.checked})}
+                        className="h-4 w-4 rounded border-gray-300"
+                        aria-label="Terapkan angkatan"
+                      />
+                      <Label htmlFor="apply-angkatan" className="text-sm cursor-pointer">
+                        Angkatan
+                      </Label>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <input
+                        type="checkbox"
+                        id="apply-pengampu"
+                        checked={applyConfig.pengampuIds}
+                        onChange={(e) => setApplyConfig({...applyConfig, pengampuIds: e.target.checked})}
+                        className="h-4 w-4 rounded border-gray-300"
+                        aria-label="Terapkan dosen pengampu"
+                      />
+                      <Label htmlFor="apply-pengampu" className="text-sm cursor-pointer">
+                        Dosen Pengampu
+                      </Label>
+                    </div>
+                    <div className="mt-3 p-3 bg-blue-50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-800 rounded-md">
+                      <p className="text-xs text-blue-800 dark:text-blue-300">
+                        💡 Mata kuliah yang akan diupdate: {subjects.filter(s => 
+                          s.nama === subject.nama && 
+                          s.angkatan === subject.angkatan && 
+                          s.id !== subject.id
+                        ).length} kelas lainnya
+                      </p>
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
+            </div>
+          )}
 
           <div className="flex justify-end space-x-2">
             {onCancel && (
