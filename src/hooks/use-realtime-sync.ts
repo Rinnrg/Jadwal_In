@@ -327,10 +327,11 @@ export function useRealtimeSync(options: RealtimeSyncOptions = {}) {
               // Call optional callback
               onSubjectAdded?.(subject)
             })
-          } else {
-            // Even if count didn't change, update the store to catch offering status changes
-            useSubjectsStore.setState({ subjects: latestSubjects })
           }
+          
+          // CRITICAL: Always update subjects store to catch status changes (aktif → arsip)
+          // This ensures KRS page updates when subjects are archived/unarchived
+          useSubjectsStore.setState({ subjects: latestSubjects })
           
           // Always update previousSubjectsCount at the end
           previousSubjectsCount.current = latestSubjects.length

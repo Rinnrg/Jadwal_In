@@ -1,5 +1,6 @@
 "use client"
 
+import { useState, useMemo, useEffect } from "react"
 import { useSessionStore } from "@/stores/session.store"
 import { useSubjectsStore } from "@/stores/subjects.store"
 import { useOfferingsStore } from "@/stores/offerings.store"
@@ -17,26 +18,33 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Badge } from "@/components/ui/badge"
 import { Search, Save, FileDown, Users, BookOpen, TrendingUp, AlertCircle, Info } from "lucide-react"
-import { useState, useMemo } from "react"
 import { arr } from "@/lib/utils"
 import type { Subject } from "@/data/schema"
 import { gradeOptions, getGradeFromScore, getGradeColor } from "@/components/grade-info-card"
 
 export default function EntryNilaiPage() {
   const { session } = useSessionStore()
-  const { getSubjectsByPengampu, getSubjectById } = useSubjectsStore()
-  const { getOfferingsByPengampu, getOffering } = useOfferingsStore()
+  const { getSubjectsByPengampu, getSubjectById, subjects } = useSubjectsStore()
+  const { getOfferingsByPengampu, getOffering, offerings } = useOfferingsStore()
   const { getMahasiswaUsers, getUserById } = useUsersStore()
-  const { getKrsByOffering } = useKrsStore()
+  const { getKrsByOffering, krsItems } = useKrsStore()
   const { getAttendanceBySubject } = useCourseworkStore()
   const { getSubmissionByStudent, getSubmissionsByAssignment } = useSubmissionsStore()
   const { getAssignmentsBySubject } = useCourseworkStore()
+  
+  // Force re-render trigger for reactive updates
+  const [, setForceUpdate] = useState(0)
   
   // Enable real-time sync for Entry Nilai page
   useRealtimeSync({
     enabled: true,
     pollingInterval: 2000, // 2 seconds for real-time updates
   })
+  
+  // Force update when store data changes
+  useEffect(() => {
+    setForceUpdate(prev => prev + 1)
+  }, [subjects.length, offerings.length, krsItems.length])
   
   const [selectedOffering, setSelectedOffering] = useState("")
   const [searchTerm, setSearchTerm] = useState("")
@@ -55,7 +63,7 @@ export default function EntryNilaiPage() {
     }
 
     return subjects
-  }, [session, getSubjectsByPengampu])
+  }, [session, subjects, getSubjectsByPengampu])
 
   const enrolledStudents = useMemo(() => {
     if (!selectedOffering) return []
@@ -124,7 +132,7 @@ export default function EntryNilaiPage() {
         }
       })
       .filter(Boolean)
-  }, [selectedOffering, availableOfferings, getKrsByOffering, getMahasiswaUsers, getAttendanceBySubject, getAssignmentsBySubject, getSubmissionByStudent])
+  }, [selectedOffering, availableOfferings, krsItems, getKrsByOffering, getMahasiswaUsers, getAttendanceBySubject, getAssignmentsBySubject, getSubmissionByStudent])
 
   const selectedOfferingData = availableOfferings.find((s) => s.id === selectedOffering)
 

@@ -27,16 +27,24 @@ import {
 export default function SubjectsPage() {
   const { session } = useSessionStore()
   const { subjects, fetchSubjects, isLoading } = useSubjectsStore()
-  const { fetchOfferings } = useOfferingsStore()
+  const { offerings, fetchOfferings } = useOfferingsStore()
   const [showForm, setShowForm] = useState(false)
   const [editingSubject, setEditingSubject] = useState<Subject | null>(null)
   const [selectedSubjectForOfferings, setSelectedSubjectForOfferings] = useState<Subject | null>(null)
+  
+  // Force re-render trigger for reactive updates
+  const [, setForceUpdate] = useState(0)
 
   // Enable real-time sync for Subjects page
   useRealtimeSync({
     enabled: true,
     pollingInterval: 2000, // 2 seconds for real-time updates
   })
+  
+  // Force update when store data changes
+  useEffect(() => {
+    setForceUpdate(prev => prev + 1)
+  }, [subjects.length, offerings.length])
 
   // Fetch subjects and offerings from API on mount
   useEffect(() => {

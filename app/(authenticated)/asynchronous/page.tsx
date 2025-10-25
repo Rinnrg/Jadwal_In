@@ -22,12 +22,20 @@ export default function AsynchronousPage() {
   const { krsItems, getKrsByUser } = useKrsStore()
   const { markAsRead } = useNotificationStore()
   const [selectedSubject, setSelectedSubject] = useState<Subject | null>(null)
+  
+  // Force re-render trigger for reactive updates
+  const [, setForceUpdate] = useState(0)
 
   // Enable real-time sync for Asynchronous page
   useRealtimeSync({
     enabled: true,
     pollingInterval: 2000, // 2 seconds for real-time updates
   })
+  
+  // Force update when store data changes
+  useEffect(() => {
+    setForceUpdate(prev => prev + 1)
+  }, [subjects.length, krsItems.length])
 
   // Fetch subjects on mount
   useEffect(() => {

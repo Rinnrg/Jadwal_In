@@ -23,6 +23,9 @@ export default function KhsPage() {
   const { getGradesByUser, calculateGPA, calculateSemesterGPA, grades: allGrades } = useGradesStore()
   const { getProfile } = useProfileStore()
   const { markAsRead } = useNotificationStore()
+  
+  // Force re-render trigger for reactive updates
+  const [, setForceUpdate] = useState(0)
 
   // Enable real-time sync for KHS page
   useRealtimeSync({
@@ -31,6 +34,11 @@ export default function KhsPage() {
   })
 
   const [selectedTerm, setSelectedTerm] = useState("Semua Semester")
+  
+  // Force update when store data changes
+  useEffect(() => {
+    setForceUpdate(prev => prev + 1)
+  }, [subjects.length, allGrades.length])
 
   // Fetch subjects on mount
   useEffect(() => {

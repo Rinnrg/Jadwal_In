@@ -38,20 +38,28 @@ type ViewMode = "simple" | "weekly"
 
 export default function JadwalPage() {
   const { session } = useSessionStore()
-  const { getEventsByUser, clearUserSchedule, addEvent, deleteEvent } = useScheduleStore()
+  const { getEventsByUser, clearUserSchedule, addEvent, deleteEvent, events } = useScheduleStore()
   const { subjects, fetchSubjects, isLoading: isLoadingSubjects } = useSubjectsStore()
-  const { getKrsByUser } = useKrsStore()
+  const { getKrsByUser, krsItems } = useKrsStore()
   const { showNowLine, setShowNowLine } = useUIStore()
   const { addReminder } = useRemindersStore()
   const { markAsRead } = useNotificationStore()
   const { getProfile, profiles } = useProfileStore()
   const { getUserById, fetchUsers, users, isLoading: isLoadingUsers } = useUsersStore()
+  
+  // Force re-render trigger for reactive updates
+  const [, setForceUpdate] = useState(0)
 
   // Enable real-time sync for Jadwal page
   useRealtimeSync({
     enabled: true,
     pollingInterval: 2000, // 2 seconds for real-time updates
   })
+  
+  // Force update when store data changes
+  useEffect(() => {
+    setForceUpdate(prev => prev + 1)
+  }, [subjects.length, events.length, krsItems.length])
 
   const [viewMode, setViewMode] = useState<ViewMode>("simple")
   const [searchTerm, setSearchTerm] = useState("")
