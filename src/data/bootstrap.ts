@@ -77,11 +77,6 @@ export function bootstrapData() {
       kelas: "A",
       color: "#3b82f6",
       pengampuIds: [],
-      slotDefault: {
-        day: 1, // Monday
-        startUTC: 8 * 60 * 60 * 1000, // 08:00
-        endUTC: 10 * 60 * 60 * 1000, // 10:00
-      },
     },
     {
       kode: "IF102",
@@ -106,11 +101,6 @@ export function bootstrapData() {
       kelas: "B",
       color: "#f59e0b",
       pengampuIds: [],
-      slotDefault: {
-        day: 2, // Tuesday
-        startUTC: 10 * 60 * 60 * 1000, // 10:00
-        endUTC: 12 * 60 * 60 * 1000, // 12:00
-      },
     },
     {
       kode: "IF202",
