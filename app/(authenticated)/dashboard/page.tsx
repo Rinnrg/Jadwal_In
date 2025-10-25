@@ -542,14 +542,6 @@ export default function DashboardPage() {
           
           <CardContent className="pt-4 md:pt-6 relative z-10 px-3 md:px-6">
             <div className="flex flex-col items-start space-y-2 md:space-y-3.5 w-full">
-                {/* Live Indicator - Moved to top */}
-                {isPolling && (
-                  <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-green-100 dark:bg-green-900/30 border border-green-300 dark:border-green-700 animate-slide-in-left">
-                    <div className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse"></div>
-                    <span className="text-[10px] md:text-xs text-green-700 dark:text-green-400 font-medium">Live</span>
-                  </div>
-                )}
-                
                 {/* Tanggal */}
                 <div className="flex items-center space-x-1.5 md:space-x-2 text-muted-foreground animate-slide-in-left transition-colors duration-500">
                   <Calendar className="h-3.5 w-3.5 md:h-4 md:w-4 flex-shrink-0" />
@@ -569,13 +561,19 @@ export default function DashboardPage() {
                   {getGreeting()}
                 </p>
                 
-                {/* Foto Profile - optimal untuk mobile */}
-                <Avatar className="h-16 w-16 md:h-24 md:w-24 lg:h-28 lg:w-28 border-2 md:border-4 border-primary/20 shadow-lg animate-scale-in transition-all duration-500">
-                  <AvatarImage src={avatarUrl} alt={session.name} />
-                  <AvatarFallback className={`text-lg md:text-2xl lg:text-3xl font-bold bg-gradient-to-br ${timeColors.gradient} text-white transition-all duration-1000`}>
-                    {getInitials(session.name)}
-                  </AvatarFallback>
-                </Avatar>
+                {/* Foto Profile dengan Live Indicator - optimal untuk mobile */}
+                <div className="relative">
+                  <Avatar className="h-16 w-16 md:h-24 md:w-24 lg:h-28 lg:w-28 border-2 md:border-4 border-primary/20 shadow-lg animate-scale-in transition-all duration-500">
+                    <AvatarImage src={avatarUrl} alt={session.name} />
+                    <AvatarFallback className={`text-lg md:text-2xl lg:text-3xl font-bold bg-gradient-to-br ${timeColors.gradient} text-white transition-all duration-1000`}>
+                      {getInitials(session.name)}
+                    </AvatarFallback>
+                  </Avatar>
+                  {/* Live Indicator - positioned at bottom right of avatar */}
+                  {isPolling && (
+                    <div className="absolute bottom-0 right-0 w-4 h-4 md:w-5 md:h-5 lg:w-6 lg:h-6 bg-green-500 rounded-full border-2 border-background shadow-lg animate-pulse" title="Live"></div>
+                  )}
+                </div>
                 
                 {/* Nama */}
                 <h2 className="text-lg md:text-xl lg:text-2xl xl:text-3xl font-bold text-foreground animate-slide-in-left transition-colors duration-500 break-words max-w-full">

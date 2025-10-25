@@ -50,7 +50,21 @@ export function useNotificationManager() {
     )
     
     const count = upcomingReminders.length
-    updateBadge("reminder", userId, count)
+    const prevCount = previousCounts.current.reminder
+    
+    // On initial load, just set the count without triggering notification
+    if (isInitialLoad.current) {
+      previousCounts.current.reminder = count
+      updateBadge("reminder", userId, count)
+      return
+    }
+    
+    // Only update if count increased (new reminders)
+    // Don't trigger notification if count decreased (reminders passed)
+    if (count !== prevCount) {
+      updateBadge("reminder", userId, count)
+      previousCounts.current.reminder = count
+    }
   }, [userId, getActiveReminders, updateBadge])
 
   // Check for new KRS offerings (pending enrollments)

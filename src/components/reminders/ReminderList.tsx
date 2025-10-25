@@ -189,22 +189,20 @@ export function ReminderList({ userId, onEdit }: ReminderListProps) {
                   <div
                     key={reminder.id}
                     className={cn(
-                      "p-4 border rounded-lg transition-all duration-300 hover:shadow-lg hover:scale-[1.02] animate-slide-in-left card-interactive group",
-                      isOverdue && "border-destructive/50 bg-destructive/5 hover:border-destructive/70",
-                      !reminder.isActive && "opacity-60 hover:opacity-80",
+                      "p-4 border rounded-lg transition-colors duration-300 animate-slide-in-left",
+                      isOverdue && "border-destructive/50 bg-destructive/5",
+                      !reminder.isActive && "opacity-60",
                     )}
                   >
                     <div className="flex items-start justify-between gap-4">
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2 mb-2">
-                          <h3 className="font-medium truncate group-hover:text-primary transition-colors duration-200">
+                          <h3 className="font-medium truncate">
                             {reminder.title}
                           </h3>
-                          <div className="hover:scale-110 transition-transform duration-200">
-                            {getStatusBadge(reminder)}
-                          </div>
+                          {getStatusBadge(reminder)}
                           {reminder.sendEmail && (
-                            <Mail className="h-4 w-4 text-muted-foreground hover:scale-125 transition-transform duration-200" />
+                            <Mail className="h-4 w-4 text-muted-foreground" />
                           )}
                         </div>
 
@@ -215,9 +213,7 @@ export function ReminderList({ userId, onEdit }: ReminderListProps) {
                           </p>
                           {relatedSubject && (
                             <p className="flex items-center gap-1">
-                              <div
-                                className="w-3 h-3 rounded-full hover:scale-125 transition-transform duration-200 border"
-                              />
+                              <div className="w-3 h-3 rounded-full border" />
                               {relatedSubject.kode} - {relatedSubject.nama}
                             </p>
                           )}
@@ -225,18 +221,16 @@ export function ReminderList({ userId, onEdit }: ReminderListProps) {
                       </div>
 
                       <div className="flex items-center gap-2">
-                        <div className="hover:scale-110 transition-transform duration-200">
-                          <Switch
-                            checked={reminder.isActive}
-                            onCheckedChange={() => handleToggle(reminder)}
-                          />
-                        </div>
+                        <Switch
+                          checked={reminder.isActive}
+                          onCheckedChange={() => handleToggle(reminder)}
+                        />
                         <DropdownMenu>
                           <DropdownMenuTrigger asChild>
                             <Button
                               variant="ghost"
                               size="sm"
-                              className="h-8 w-8 p-0 hover:scale-110 transition-transform duration-200"
+                              className="h-8 w-8 p-0"
                               onClick={(e) => e.stopPropagation()}
                             >
                               <MoreHorizontal className="h-4 w-4" />
