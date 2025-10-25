@@ -13,6 +13,8 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "No file uploaded" }, { status: 400 })
     }
 
+    console.log(`[Upload] Uploading ${type} file: ${file.name} (${file.size} bytes)`)
+
     // Validate file type
     if (type === "image") {
       if (!file.type.startsWith("image/")) {
@@ -34,8 +36,15 @@ export async function POST(request: NextRequest) {
 
     // Create uploads directory if it doesn't exist
     const uploadsDir = join(process.cwd(), "public", "uploads", type === "image" ? "images" : "pdfs")
-    if (!existsSync(uploadsDir)) {
-      await mkdir(uploadsDir, { recursive: true })
+    
+    try {
+      if (!existsSync(uploadsDir)) {
+        console.log(`[Upload] Creating directory: ${uploadsDir}`)
+        await mkdir(uploadsDir, { recursive: true })
+      }
+    } catch (mkdirError) {
+      console.error("[Upload] Error creating directory:", mkdirError)
+      return NextResponse.json({ error: "Failed to create upload directory" }, { status: 500 })
     }
 
     // Generate unique filename
@@ -44,17 +53,28 @@ export async function POST(request: NextRequest) {
     const filename = `${timestamp}-${originalName}`
     const filepath = join(uploadsDir, filename)
 
+    console.log(`[Upload] Saving file to: ${filepath}`)
+
     // Convert file to buffer and write to disk
-    const bytes = await file.arrayBuffer()
-    const buffer = Buffer.from(bytes)
-    await writeFile(filepath, buffer)
+    try {
+      const bytes = await file.arrayBuffer()
+      const buffer = Buffer.from(bytes)
+      await writeFile(filepath, buffer)
+      console.log(`[Upload] File saved successfully: ${filename}`)
+    } catch (writeError) {
+      console.error("[Upload] Error writing file:", writeError)
+      return NextResponse.json({ error: "Failed to write file to disk" }, { status: 500 })
+    }
 
     // Return the URL
     const url = `/uploads/${type === "image" ? "images" : "pdfs"}/${filename}`
 
-    return NextResponse.json({ url }, { status: 200 })
+    return NextResponse.json({ url, filename }, { status: 200 })
   } catch (error) {
-    console.error("Upload error:", error)
-    return NextResponse.json({ error: "Upload failed" }, { status: 500 })
+    console.error("[Upload] Unexpected error:", error)
+    return NextResponse.json({ 
+      error: "Upload failed", 
+      details: error instanceof Error ? error.message : "Unknown error" 
+    }, { status: 500 })
   }
 }

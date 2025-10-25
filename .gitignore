@@ -60,3 +60,10 @@ prisma/*.db-journal
 # Logs
 logs
 *.log
+
+# User uploads
+/public/uploads/images/*
+/public/uploads/pdfs/*
+# Keep the folder structure
+!/public/uploads/images/.gitkeep
+!/public/uploads/pdfs/.gitkeep

@@ -5,9 +5,10 @@ interface OfferingsState {
   offerings: CourseOffering[]
   isLoading: boolean
   error: string | null
+  lastFetchTime: number
   
   // Actions
-  fetchOfferings: (subjectId?: string) => Promise<void>
+  fetchOfferings: (subjectId?: string, forceRefresh?: boolean) => Promise<void>
   addOffering: (offering: Omit<CourseOffering, "id">) => Promise<void>
   updateOffering: (id: string, updates: Partial<CourseOffering>) => Promise<void>
   removeOffering: (id: string) => Promise<void>
@@ -25,15 +26,31 @@ export const useOfferingsStore = create<OfferingsState>()((set, get) => ({
   offerings: [],
   isLoading: false,
   error: null,
+  lastFetchTime: 0,
 
-  fetchOfferings: async (subjectId?: string) => {
+  fetchOfferings: async (subjectId?: string, forceRefresh = false) => {
+    // Prevent too frequent fetches (minimum 1 second apart) unless force refresh
+    const now = Date.now()
+    if (!forceRefresh && now - get().lastFetchTime < 1000) {
+      return
+    }
+
     set({ isLoading: true, error: null })
     try {
-      const url = subjectId ? `/api/offerings?subjectId=${subjectId}` : '/api/offerings'
-      const response = await fetch(url)
+      // Add cache busting parameter to ensure fresh data
+      const timestamp = Date.now()
+      const url = subjectId 
+        ? `/api/offerings?subjectId=${subjectId}&_t=${timestamp}` 
+        : `/api/offerings?_t=${timestamp}`
+      const response = await fetch(url, {
+        cache: 'no-store', // Prevent browser caching
+        headers: {
+          'Cache-Control': 'no-cache',
+        }
+      })
       if (!response.ok) throw new Error('Failed to fetch offerings')
       const offerings = await response.json()
-      set({ offerings, isLoading: false })
+      set({ offerings, isLoading: false, lastFetchTime: now })
     } catch (error) {
       set({ error: (error as Error).message, isLoading: false })
     }
@@ -56,6 +73,8 @@ export const useOfferingsStore = create<OfferingsState>()((set, get) => ({
         offerings: [...state.offerings, newOffering],
         isLoading: false,
       }))
+      // Force refresh to ensure all clients get updated data
+      setTimeout(() => get().fetchOfferings(undefined, true), 100)
     } catch (error) {
       set({ error: (error as Error).message, isLoading: false })
       throw error
@@ -81,6 +100,8 @@ export const useOfferingsStore = create<OfferingsState>()((set, get) => ({
         ),
         isLoading: false,
       }))
+      // Force refresh to ensure all clients get updated data
+      setTimeout(() => get().fetchOfferings(undefined, true), 100)
     } catch (error) {
       set({ error: (error as Error).message, isLoading: false })
       throw error
@@ -101,6 +122,8 @@ export const useOfferingsStore = create<OfferingsState>()((set, get) => ({
         offerings: state.offerings.filter((offering) => offering.id !== id),
         isLoading: false,
       }))
+      // Force refresh to ensure all clients get updated data
+      setTimeout(() => get().fetchOfferings(undefined, true), 100)
     } catch (error) {
       set({ error: (error as Error).message, isLoading: false })
       throw error

@@ -159,6 +159,8 @@ export default function AnnouncementsPage() {
     setUploadingImage(true)
 
     try {
+      console.log('[Upload] Starting image upload:', file.name, file.size)
+      
       // Create FormData for upload
       const formData = new FormData()
       formData.append('file', file)
@@ -170,13 +172,22 @@ export default function AnnouncementsPage() {
         body: formData,
       })
 
-      if (!response.ok) throw new Error('Upload failed')
+      console.log('[Upload] Response status:', response.status)
+      
+      if (!response.ok) {
+        const errorData = await response.json()
+        console.error('[Upload] Error response:', errorData)
+        throw new Error(errorData.error || 'Upload failed')
+      }
 
       const data = await response.json()
+      console.log('[Upload] Success:', data)
+      
       setFormData(prev => ({ ...prev, imageUrl: data.url }))
       showSuccess("Gambar berhasil diupload")
     } catch (error) {
-      showError("Gagal mengupload gambar")
+      console.error('[Upload] Exception:', error)
+      showError(error instanceof Error ? error.message : "Gagal mengupload gambar")
       setImageFile(null)
     } finally {
       setUploadingImage(false)
@@ -203,6 +214,8 @@ export default function AnnouncementsPage() {
     setUploadingPdf(true)
 
     try {
+      console.log('[Upload] Starting PDF upload:', file.name, file.size)
+      
       // Create FormData for upload
       const formData = new FormData()
       formData.append('file', file)
@@ -214,13 +227,22 @@ export default function AnnouncementsPage() {
         body: formData,
       })
 
-      if (!response.ok) throw new Error('Upload failed')
+      console.log('[Upload] Response status:', response.status)
+      
+      if (!response.ok) {
+        const errorData = await response.json()
+        console.error('[Upload] Error response:', errorData)
+        throw new Error(errorData.error || 'Upload failed')
+      }
 
       const data = await response.json()
+      console.log('[Upload] Success:', data)
+      
       setFormData(prev => ({ ...prev, fileUrl: data.url }))
       showSuccess("PDF berhasil diupload")
     } catch (error) {
-      showError("Gagal mengupload PDF")
+      console.error('[Upload] Exception:', error)
+      showError(error instanceof Error ? error.message : "Gagal mengupload PDF")
       setPdfFile(null)
     } finally {
       setUploadingPdf(false)
