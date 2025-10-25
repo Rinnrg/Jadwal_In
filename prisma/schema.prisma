@@ -462,3 +462,20 @@ model VerificationToken {
   @@map("verification_tokens")
 }
 
+// Announcement model for super admin to broadcast information
+model Announcement {
+  id          String   @id @default(cuid())
+  title       String
+  description String   @db.Text
+  imageUrl    String?  // URL to uploaded image
+  fileUrl     String?  // URL to uploaded PDF
+  targetRoles String[] // Array of roles: ["mahasiswa", "dosen", "kaprodi"]
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  createdById String
+
+  @@index([isActive, createdAt])
+  @@map("announcements")
+}
+

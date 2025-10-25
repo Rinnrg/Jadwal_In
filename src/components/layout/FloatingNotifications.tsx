@@ -37,13 +37,13 @@ export function FloatingNotifications() {
     mountTimestamp.current = Date.now()
     console.log('[FloatingNotifications] Component mounted at:', mountTimestamp.current)
 
-    // CRITICAL: Extended grace period - NO notifications for 3 seconds after mount
+    // CRITICAL: Grace period - NO notifications for 2 seconds after mount
     // This ensures all initial badge updates from useNotificationManager are silent
     isInitializing.current = true
     initializationTimer.current = setTimeout(() => {
       isInitializing.current = false
-      console.log('[FloatingNotifications] Grace period ended at:', Date.now() - mountTimestamp.current, 'ms after mount')
-    }, 3000) // 3 seconds grace period (reduced for faster realtime response)
+      console.log('[FloatingNotifications] Grace period ended - notifications now active')
+    }, 2000) // 2 seconds grace period
 
     // Cleanup timer on unmount
     return () => {
@@ -60,13 +60,9 @@ export function FloatingNotifications() {
   useEffect(() => {
     if (!session?.id) return
     
-    // CRITICAL: During grace period OR within 3s of mount - NO notifications
+    // CRITICAL: During grace period - NO notifications
     const timeSinceMount = Date.now() - mountTimestamp.current
-    if (isInitializing.current || timeSinceMount < 3000) {
-      console.log('[FloatingNotifications] Grace period active - no notifications', {
-        isInitializing: isInitializing.current,
-        timeSinceMount,
-      })
+    if (isInitializing.current || timeSinceMount < 2000) {
       return // Exit early - no notifications during initialization
     }
 
@@ -74,31 +70,21 @@ export function FloatingNotifications() {
     badges.forEach(badge => {
       if (badge.userId !== session.id) return
 
-      // Check if shouldShowNotification exists and is a function
-      if (!shouldShowNotification || typeof shouldShowNotification !== 'function') {
-        console.warn('[FloatingNotifications] shouldShowNotification is not a function:', typeof shouldShowNotification)
-        return
-      }
-
-      try {
-        // Use store's shouldShowNotification to determine if notification needed
-        if (shouldShowNotification(badge.type, session.id)) {
-          // Accumulate the count in pending notifications
-          const existing = pendingNotifications.current.get(badge.type)
-          if (existing) {
-            // Update to latest count
-            existing.count = badge.count
-            existing.timestamp = Date.now()
-          } else {
-            // Create new pending notification for this type
-            pendingNotifications.current.set(badge.type, {
-              count: badge.count,
-              timestamp: Date.now()
-            })
-          }
+      // Use store's shouldShowNotification to determine if notification needed
+      if (shouldShowNotification(badge.type, session.id)) {
+        // Accumulate the count in pending notifications
+        const existing = pendingNotifications.current.get(badge.type)
+        if (existing) {
+          // Update to latest count
+          existing.count = badge.count
+          existing.timestamp = Date.now()
+        } else {
+          // Create new pending notification for this type
+          pendingNotifications.current.set(badge.type, {
+            count: badge.count,
+            timestamp: Date.now()
+          })
         }
-      } catch (err) {
-        console.error('[FloatingNotifications] Error checking shouldShowNotification:', err)
       }
     })
 
@@ -107,7 +93,7 @@ export function FloatingNotifications() {
       clearTimeout(notificationTimeout.current)
     }
 
-    // Debounce: wait 500ms after last change to show notifications (super fast response)
+    // Debounce: wait 300ms after last change to show notifications
     if (pendingNotifications.current.size > 0) {
       notificationTimeout.current = setTimeout(() => {
         // Show all pending notifications with slight delay between each type
@@ -119,23 +105,14 @@ export function FloatingNotifications() {
             showNotification(type, notification.count)
             
             // CRITICAL: Mark notification as shown in store
-            // This updates lastNotifiedCount and hasEverNotified
-            if (markNotificationShown && typeof markNotificationShown === 'function') {
-              try {
-                markNotificationShown(type as NotificationBadge["type"], session.id, notification.count)
-              } catch (err) {
-                console.error('[FloatingNotifications] Error marking notification as shown:', err)
-              }
-            } else {
-              console.warn('[FloatingNotifications] markNotificationShown is not a function:', typeof markNotificationShown)
-            }
+            markNotificationShown(type as NotificationBadge["type"], session.id, notification.count)
           }, delay)
-          delay += 200 // 200ms delay between each notification type
+          delay += 150 // 150ms delay between each notification type
         })
         
         // Clear pending notifications after showing
         pendingNotifications.current.clear()
-      }, 500) // Super fast debounce for realtime feel
+      }, 300) // Fast debounce for realtime feel
     }
   }, [badges, session?.id, shouldShowNotification, markNotificationShown])
 

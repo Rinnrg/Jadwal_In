@@ -61,9 +61,7 @@ export const useNotificationStore = create<NotificationState>()(
             const newBadges = [...state.badges]
             const existingBadge = newBadges[existingIndex]
             
-            // If count increased, mark as unread
-            // If count is 0, mark as read
-            // If count decreased but still > 0, keep current read state
+            // Mark as unread only if count increased from previous count
             const isRead = count === 0 ? true : (count > existingBadge.count ? false : existingBadge.isRead)
             
             newBadges[existingIndex] = {
@@ -83,7 +81,9 @@ export const useNotificationStore = create<NotificationState>()(
                   userId,
                   count,
                   lastUpdated: Date.now(),
-                  isRead: count === 0,
+                  isRead: false, // Changed: Always start as unread if count > 0
+                  lastNotifiedCount: 0,
+                  hasEverNotified: false,
                 },
               ],
             }
@@ -114,8 +114,8 @@ export const useNotificationStore = create<NotificationState>()(
         const badge = get().badges.find(
           (b) => b.type === type && b.userId === userId
         )
-        // Only show count if badge is unread
-        return badge && !badge.isRead ? badge.count : 0
+        // Return count regardless of isRead status - badge should always show if count > 0
+        return badge ? badge.count : 0
       },
       
       hasUnread: (type, userId) => {
