@@ -6,6 +6,7 @@ import { useRemindersStore } from "@/stores/reminders.store"
 import { useKrsStore } from "@/stores/krs.store"
 import { useSubjectsStore } from "@/stores/subjects.store"
 import { useNotificationStore } from "@/stores/notification.store"
+import { useRealtimeSync } from "@/hooks/use-realtime-sync"
 import type { Reminder } from "@/data/schema"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -23,6 +24,12 @@ export default function RemindersPage() {
   const { markAsRead } = useNotificationStore()
   const [editingReminder, setEditingReminder] = useState<Reminder | null>(null)
   const [isFormOpen, setIsFormOpen] = useState(false)
+
+  // Enable real-time sync for Reminders page
+  useRealtimeSync({
+    enabled: true,
+    pollingInterval: 2000, // 2 seconds for real-time updates
+  })
 
   // Mark reminder notification as read when user opens this page
   useEffect(() => {

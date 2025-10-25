@@ -5,6 +5,7 @@ import { useSessionStore } from "@/stores/session.store"
 import { useSubjectsStore } from "@/stores/subjects.store"
 import { useKrsStore } from "@/stores/krs.store"
 import { useNotificationStore } from "@/stores/notification.store"
+import { useRealtimeSync } from "@/hooks/use-realtime-sync"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Badge } from "@/components/ui/badge"
@@ -21,6 +22,12 @@ export default function AsynchronousPage() {
   const { krsItems, getKrsByUser } = useKrsStore()
   const { markAsRead } = useNotificationStore()
   const [selectedSubject, setSelectedSubject] = useState<Subject | null>(null)
+
+  // Enable real-time sync for Asynchronous page
+  useRealtimeSync({
+    enabled: true,
+    pollingInterval: 2000, // 2 seconds for real-time updates
+  })
 
   // Fetch subjects on mount
   useEffect(() => {
