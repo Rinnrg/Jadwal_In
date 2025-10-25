@@ -44,7 +44,7 @@ import {
   ClipboardList,
   FileText as FilesIcon,
 } from "lucide-react"
-import { useState, useEffect } from "react"
+import { useState, useEffect, useMemo } from "react"
 import Link from "next/link"
 import { formatDistanceToNow, format } from "date-fns"
 import { id as idLocale } from "date-fns/locale"
@@ -56,7 +56,7 @@ export default function DashboardPage() {
   const { getActivitiesByUser } = useActivityStore()
   const { getEventsByDay } = useScheduleStore()
   const { getSubjectById, subjects, fetchSubjects } = useSubjectsStore()
-  const { getKrsByUser } = useKrsStore()
+  const { getKrsByUser, krsItems } = useKrsStore()
   const { assignments, materials } = useCourseworkStore()
   const { getActiveReminders } = useRemindersStore()
   const [currentTime, setCurrentTime] = useState(new Date())
@@ -232,10 +232,19 @@ export default function DashboardPage() {
   
   // Get KRS items for current user and term (for mahasiswa)
   // Get taught subjects for dosen/kaprodi
-  const userKrsItems = session ? getKrsByUser(session.id, currentTerm) : []
-  const taughtSubjects = session && (session.role === "dosen" || session.role === "kaprodi")
-    ? subjects.filter(s => s.pengampuIds?.includes(session.id))
-    : []
+  const userKrsItems = useMemo(() => {
+    if (!session) return []
+    const items = getKrsByUser(session.id, currentTerm)
+    console.log(`[Dashboard] User KRS items for ${session.id} in term ${currentTerm}:`, items.length, items)
+    return items
+  }, [session, currentTerm, krsItems]) // Re-calculate when krsItems changes
+  
+  const taughtSubjects = useMemo(() => {
+    if (!session || (session.role !== "dosen" && session.role !== "kaprodi")) return []
+    const taught = subjects.filter(s => s.pengampuIds?.includes(session.id))
+    console.log(`[Dashboard] Taught subjects for ${session.id}:`, taught.length, taught)
+    return taught
+  }, [session, subjects])
   
   // Format time helper
   const formatTime = (utcMinutes: number) => {

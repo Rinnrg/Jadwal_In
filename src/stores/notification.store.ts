@@ -57,9 +57,13 @@ export const useNotificationStore = create<NotificationState>()(
             (b) => b.type === type && b.userId === userId
           )
           
+          console.log(`[NotificationStore] updateBadge called - Type: ${type}, User: ${userId}, Count: ${count}`)
+          
           if (existingIndex >= 0) {
             const newBadges = [...state.badges]
             const existingBadge = newBadges[existingIndex]
+            
+            console.log(`[NotificationStore] Existing badge - Current count: ${existingBadge.count}, New count: ${count}`)
             
             // Mark as unread only if count increased from previous count
             const isRead = count === 0 ? true : (count > existingBadge.count ? false : existingBadge.isRead)
@@ -70,8 +74,13 @@ export const useNotificationStore = create<NotificationState>()(
               lastUpdated: Date.now(),
               isRead,
             }
+            
+            console.log(`[NotificationStore] Updated badge - isRead: ${isRead}, lastNotifiedCount: ${newBadges[existingIndex].lastNotifiedCount}`)
+            
             return { badges: newBadges }
           } else {
+            console.log(`[NotificationStore] Creating new badge - Count: ${count}`)
+            
             return {
               badges: [
                 ...state.badges,
@@ -81,7 +90,7 @@ export const useNotificationStore = create<NotificationState>()(
                   userId,
                   count,
                   lastUpdated: Date.now(),
-                  isRead: false, // Changed: Always start as unread if count > 0
+                  isRead: count === 0, // Only read if count is 0
                   lastNotifiedCount: 0,
                   hasEverNotified: false,
                 },

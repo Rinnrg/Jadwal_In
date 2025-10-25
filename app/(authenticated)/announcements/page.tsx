@@ -247,7 +247,7 @@ export default function AnnouncementsPage() {
       </Card>
 
       {/* Form Dialog */}
-      <Dialog open={isFormOpen} onOpenChange={(open) => !open && handleCloseForm()}>
+      <Dialog open={isFormOpen} onOpenChange={handleCloseForm}>
         <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>
@@ -258,27 +258,33 @@ export default function AnnouncementsPage() {
             </DialogDescription>
           </DialogHeader>
 
-          <form onSubmit={handleSubmit} className="space-y-4">
+          <form onSubmit={handleSubmit} className="space-y-4 mt-4">
             {/* Title */}
             <div className="space-y-2">
-              <Label htmlFor="title">Judul Pengumuman *</Label>
+              <Label htmlFor="title">
+                Judul Pengumuman <span className="text-destructive">*</span>
+              </Label>
               <Input
                 id="title"
                 value={formData.title}
                 onChange={(e) => setFormData({ ...formData, title: e.target.value })}
                 placeholder="Contoh: Pengumuman Libur Semester"
+                required
               />
             </div>
 
             {/* Description */}
             <div className="space-y-2">
-              <Label htmlFor="description">Keterangan *</Label>
+              <Label htmlFor="description">
+                Keterangan <span className="text-destructive">*</span>
+              </Label>
               <Textarea
                 id="description"
                 value={formData.description}
                 onChange={(e) => setFormData({ ...formData, description: e.target.value })}
                 placeholder="Tulis keterangan pengumuman di sini..."
                 rows={5}
+                required
               />
             </div>
 
@@ -286,7 +292,7 @@ export default function AnnouncementsPage() {
             <div className="space-y-2">
               <Label htmlFor="imageUrl" className="flex items-center gap-2">
                 <ImageIcon className="h-4 w-4" />
-                URL Gambar (Opsional)
+                Gambar (JPG/PNG - Opsional)
               </Label>
               <Input
                 id="imageUrl"
@@ -296,7 +302,7 @@ export default function AnnouncementsPage() {
                 type="url"
               />
               <p className="text-xs text-muted-foreground">
-                Upload gambar ke layanan seperti Imgur, kemudian paste URL-nya di sini
+                Upload gambar (JPG/PNG) ke layanan seperti Imgur atau Google Drive, lalu paste URL-nya di sini
               </p>
             </div>
 
@@ -304,7 +310,7 @@ export default function AnnouncementsPage() {
             <div className="space-y-2">
               <Label htmlFor="fileUrl" className="flex items-center gap-2">
                 <FileText className="h-4 w-4" />
-                URL PDF (Opsional)
+                Dokumen PDF (Opsional)
               </Label>
               <Input
                 id="fileUrl"
@@ -314,7 +320,7 @@ export default function AnnouncementsPage() {
                 type="url"
               />
               <p className="text-xs text-muted-foreground">
-                Upload PDF ke Google Drive atau Dropbox, kemudian paste URL-nya di sini
+                Upload file PDF ke Google Drive atau Dropbox, lalu paste URL-nya di sini
               </p>
             </div>
 
@@ -322,60 +328,66 @@ export default function AnnouncementsPage() {
             <div className="space-y-2">
               <Label className="flex items-center gap-2">
                 <Users className="h-4 w-4" />
-                Target Penerima *
+                Target Penerima <span className="text-destructive">*</span>
               </Label>
-              <div className="space-y-2">
-                <div className="flex items-center space-x-2">
+              <div className="space-y-3 p-4 border rounded-lg bg-muted/50">
+                <div className="flex items-center space-x-3">
                   <Checkbox
                     id="mahasiswa"
                     checked={formData.targetRoles.includes("mahasiswa")}
                     onCheckedChange={() => toggleTargetRole("mahasiswa")}
                   />
-                  <Label htmlFor="mahasiswa" className="font-normal cursor-pointer">
+                  <Label htmlFor="mahasiswa" className="font-normal cursor-pointer flex-1">
                     Mahasiswa
                   </Label>
                 </div>
-                <div className="flex items-center space-x-2">
+                <div className="flex items-center space-x-3">
                   <Checkbox
                     id="dosen"
                     checked={formData.targetRoles.includes("dosen")}
                     onCheckedChange={() => toggleTargetRole("dosen")}
                   />
-                  <Label htmlFor="dosen" className="font-normal cursor-pointer">
+                  <Label htmlFor="dosen" className="font-normal cursor-pointer flex-1">
                     Dosen
                   </Label>
                 </div>
-                <div className="flex items-center space-x-2">
+                <div className="flex items-center space-x-3">
                   <Checkbox
                     id="kaprodi"
                     checked={formData.targetRoles.includes("kaprodi")}
                     onCheckedChange={() => toggleTargetRole("kaprodi")}
                   />
-                  <Label htmlFor="kaprodi" className="font-normal cursor-pointer">
+                  <Label htmlFor="kaprodi" className="font-normal cursor-pointer flex-1">
                     Kaprodi
                   </Label>
                 </div>
               </div>
+              {formData.targetRoles.length === 0 && (
+                <p className="text-xs text-destructive">Pilih minimal satu target penerima</p>
+              )}
             </div>
 
             {/* Active Status */}
-            <div className="flex items-center space-x-2">
+            <div className="flex items-center space-x-3 p-4 border rounded-lg bg-muted/50">
               <Switch
                 id="isActive"
                 checked={formData.isActive}
                 onCheckedChange={(checked) => setFormData({ ...formData, isActive: checked })}
               />
-              <Label htmlFor="isActive" className="cursor-pointer">
-                Aktifkan pengumuman (akan muncul saat user login)
+              <Label htmlFor="isActive" className="cursor-pointer flex-1">
+                <span className="font-medium">Aktifkan Pengumuman</span>
+                <p className="text-xs text-muted-foreground font-normal mt-1">
+                  Pengumuman akan muncul saat user login
+                </p>
               </Label>
             </div>
 
             {/* Actions */}
-            <div className="flex gap-2 justify-end pt-4">
+            <div className="flex gap-3 justify-end pt-4 border-t">
               <Button type="button" variant="outline" onClick={handleCloseForm}>
                 Batal
               </Button>
-              <Button type="submit">
+              <Button type="submit" disabled={formData.targetRoles.length === 0}>
                 {editingAnnouncement ? "Simpan Perubahan" : "Buat Pengumuman"}
               </Button>
             </div>
