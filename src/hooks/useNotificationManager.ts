@@ -13,6 +13,9 @@ import { nowUTC } from "@/lib/time"
 /**
  * Hook to automatically manage notification badges based on app state
  * This should be used at the app layout level
+ * 
+ * CRITICAL: This hook initializes badge counts silently on mount to prevent
+ * notifications from appearing on every page refresh
  */
 export function useNotificationManager() {
   const { session } = useSessionStore()
@@ -25,8 +28,9 @@ export function useNotificationManager() {
 
   const userId = session?.id
   
-  // Track if this is the first load
+  // Track if this is the first load - CRITICAL for preventing spam
   const isInitialLoad = useRef(true)
+  const hasInitialized = useRef(false)
   
   // Track previous counts to detect changes
   const previousCounts = useRef<Record<string, number>>({
@@ -200,74 +204,107 @@ export function useNotificationManager() {
   useEffect(() => {
     if (!userId) return
 
-    // Initial checks (silently update counts - NO badge updates)
-    checkReminders()
-    checkKRS()
-    checkKHS()
-    checkAsynchronous()
-    checkSchedule()
+    // Prevent multiple initializations
+    if (hasInitialized.current) return
+    hasInitialized.current = true
 
-    // Mark initial load as complete after all checks
-    const timer = setTimeout(() => {
-      isInitialLoad.current = false
-      
-      // NOW update badges with current counts (after grace period)
-      // This ensures badges show in UI but don't trigger notifications
-      const krsItems = getKrsByUser(userId)
-      const krsCount = krsItems.length
-      updateBadge("krs", userId, krsCount)
-      // CRITICAL: Mark as already notified to prevent showing notification on refresh
-      markNotificationShown("krs", userId, krsCount)
-      
-      const now = nowUTC()
-      const thirtyMinutesLater = now + 30 * 60 * 1000
+    // CRITICAL: Initial silent setup - NO badge updates yet
+    // Just record the current counts
+    const now = nowUTC()
+    const thirtyMinutesLater = now + 30 * 60 * 1000
+    
+    try {
+      // Record initial counts silently
       const activeReminders = getActiveReminders(userId)
       const upcomingReminders = activeReminders.filter(
         (reminder) => reminder.dueUTC > now && reminder.dueUTC <= thirtyMinutesLater
       )
-      const reminderCount = upcomingReminders.length
-      updateBadge("reminder", userId, reminderCount)
-      // CRITICAL: Mark as already notified
-      markNotificationShown("reminder", userId, reminderCount)
+      previousCounts.current.reminder = upcomingReminders.length
+      
+      const krsItems = getKrsByUser(userId)
+      previousCounts.current.krs = krsItems.length
       
       const grades = getGradesByUser(userId)
-      const gradeCount = grades.filter((grade: any) => grade.nilaiHuruf).length
-      updateBadge("khs", userId, gradeCount)
-      // CRITICAL: Mark as already notified
-      markNotificationShown("khs", userId, gradeCount)
-      
-      const schedule = getEventsByUser(userId)
-      const scheduleCount = schedule.length > 0 ? 1 : 0
-      updateBadge("jadwal", userId, scheduleCount)
-      // CRITICAL: Mark as already notified
-      markNotificationShown("jadwal", userId, scheduleCount)
+      previousCounts.current.khs = grades.filter((grade: any) => grade.nilaiHuruf).length
       
       const userAssignments = assignments.filter(a => a.dueUTC && a.dueUTC > nowUTC())
-      const asyncCount = userAssignments.length + materials.length
-      updateBadge("asynchronous", userId, asyncCount)
-      // CRITICAL: Mark as already notified
-      markNotificationShown("asynchronous", userId, asyncCount)
+      previousCounts.current.asynchronous = userAssignments.length + materials.length
       
-      console.log('[NotificationManager] Initial load complete - badges updated and marked as notified')
-    }, 2000) // Wait 2 seconds before allowing notifications
+      const schedule = getEventsByUser(userId)
+      previousCounts.current.jadwal = schedule.length
+    } catch (error) {
+      console.error('[NotificationManager] Error initializing counts:', error)
+    }
 
-    // Check reminders every minute
-    const reminderInterval = setInterval(checkReminders, 60 * 1000)
+    // Wait before updating badges and marking as initialized
+    const initTimer = setTimeout(() => {
+      try {
+        // NOW update badges with current counts (after grace period)
+        // This ensures badges show in UI but don't trigger notifications
+        const krsItems = getKrsByUser(userId)
+        const krsCount = krsItems.length
+        updateBadge("krs", userId, krsCount)
+        // CRITICAL: Mark as already notified to prevent showing notification on refresh
+        markNotificationShown("krs", userId, krsCount)
+        
+        const now = nowUTC()
+        const thirtyMinutesLater = now + 30 * 60 * 1000
+        const activeReminders = getActiveReminders(userId)
+        const upcomingReminders = activeReminders.filter(
+          (reminder) => reminder.dueUTC > now && reminder.dueUTC <= thirtyMinutesLater
+        )
+        const reminderCount = upcomingReminders.length
+        updateBadge("reminder", userId, reminderCount)
+        markNotificationShown("reminder", userId, reminderCount)
+        
+        const grades = getGradesByUser(userId)
+        const gradeCount = grades.filter((grade: any) => grade.nilaiHuruf).length
+        updateBadge("khs", userId, gradeCount)
+        markNotificationShown("khs", userId, gradeCount)
+        
+        const schedule = getEventsByUser(userId)
+        const scheduleCount = schedule.length > 0 ? 1 : 0
+        updateBadge("jadwal", userId, scheduleCount)
+        markNotificationShown("jadwal", userId, scheduleCount)
+        
+        const userAssignments = assignments.filter(a => a.dueUTC && a.dueUTC > nowUTC())
+        const asyncCount = userAssignments.length + materials.length
+        updateBadge("asynchronous", userId, asyncCount)
+        markNotificationShown("asynchronous", userId, asyncCount)
+        
+        console.log('[NotificationManager] Initial badges set and marked as notified')
+        
+        // Mark initial load as complete
+        isInitialLoad.current = false
+      } catch (error) {
+        console.error('[NotificationManager] Error setting initial badges:', error)
+      }
+    }, 2000) // Wait 2 seconds before setting initial badges
 
-    // Check other notifications every 5 minutes
+    // Check reminders every minute (after initial load)
+    const reminderInterval = setInterval(() => {
+      if (!isInitialLoad.current) {
+        checkReminders()
+      }
+    }, 60 * 1000)
+
+    // Check other notifications every 5 minutes (after initial load)
     const generalInterval = setInterval(() => {
-      checkKRS()
-      checkKHS()
-      checkAsynchronous()
-      checkSchedule()
+      if (!isInitialLoad.current) {
+        checkKRS()
+        checkKHS()
+        checkAsynchronous()
+        checkSchedule()
+      }
     }, 5 * 60 * 1000)
 
     return () => {
-      clearTimeout(timer)
+      clearTimeout(initTimer)
       clearInterval(reminderInterval)
       clearInterval(generalInterval)
+      hasInitialized.current = false
     }
-  }, [userId, checkReminders, checkKRS, checkKHS, checkAsynchronous, checkSchedule, getKrsByUser, getActiveReminders, getGradesByUser, getEventsByUser, assignments, materials, updateBadge, markNotificationShown])
+  }, [userId])
 
   return {
     checkReminders,

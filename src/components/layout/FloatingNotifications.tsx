@@ -75,19 +75,21 @@ export function FloatingNotifications() {
       if (badge.userId !== session.id) return
 
       // Use store's shouldShowNotification to determine if notification needed
-      if (shouldShowNotification(badge.type, session.id)) {
-        // Accumulate the count in pending notifications
-        const existing = pendingNotifications.current.get(badge.type)
-        if (existing) {
-          // Update to latest count
-          existing.count = badge.count
-          existing.timestamp = Date.now()
-        } else {
-          // Create new pending notification for this type
-          pendingNotifications.current.set(badge.type, {
-            count: badge.count,
-            timestamp: Date.now()
-          })
+      if (shouldShowNotification && typeof shouldShowNotification === 'function') {
+        if (shouldShowNotification(badge.type, session.id)) {
+          // Accumulate the count in pending notifications
+          const existing = pendingNotifications.current.get(badge.type)
+          if (existing) {
+            // Update to latest count
+            existing.count = badge.count
+            existing.timestamp = Date.now()
+          } else {
+            // Create new pending notification for this type
+            pendingNotifications.current.set(badge.type, {
+              count: badge.count,
+              timestamp: Date.now()
+            })
+          }
         }
       }
     })
@@ -110,7 +112,9 @@ export function FloatingNotifications() {
             
             // CRITICAL: Mark notification as shown in store
             // This updates lastNotifiedCount and hasEverNotified
-            markNotificationShown(type as NotificationBadge["type"], session.id, notification.count)
+            if (markNotificationShown && typeof markNotificationShown === 'function') {
+              markNotificationShown(type as NotificationBadge["type"], session.id, notification.count)
+            }
           }, delay)
           delay += 300 // 300ms delay between each notification type
         })

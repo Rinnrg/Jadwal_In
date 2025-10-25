@@ -3,7 +3,6 @@ import { useSessionStore } from "@/stores/session.store"
 import { useSubjectsStore } from "@/stores/subjects.store"
 import { useKrsStore } from "@/stores/krs.store"
 import { useNotificationStore } from "@/stores/notification.store"
-import { toast } from "sonner"
 
 interface RealtimeSyncOptions {
   enabled?: boolean
@@ -23,12 +22,13 @@ export function useRealtimeSync(options: RealtimeSyncOptions = {}) {
   const { session } = useSessionStore()
   const { subjects, fetchSubjects } = useSubjectsStore()
   const { krsItems } = useKrsStore()
-  const { incrementBadge } = useNotificationStore()
+  const { updateBadge } = useNotificationStore()
 
   const [isPolling, setIsPolling] = useState(false)
   const previousSubjectsCount = useRef(subjects.length)
   const previousKrsCount = useRef(krsItems.length)
   const intervalRef = useRef<NodeJS.Timeout | null>(null)
+  const isInitialMount = useRef(true)
 
   useEffect(() => {
     if (!enabled || !session) {
@@ -45,6 +45,14 @@ export function useRealtimeSync(options: RealtimeSyncOptions = {}) {
         if (response.ok) {
           const latestSubjects = await response.json()
           
+          // On initial mount, just update the count silently
+          if (isInitialMount.current) {
+            previousSubjectsCount.current = latestSubjects.length
+            useSubjectsStore.setState({ subjects: latestSubjects })
+            isInitialMount.current = false
+            return
+          }
+          
           // Check if new subjects were added
           if (latestSubjects.length > previousSubjectsCount.current) {
             const newSubjectsCount = latestSubjects.length - previousSubjectsCount.current
@@ -53,31 +61,22 @@ export function useRealtimeSync(options: RealtimeSyncOptions = {}) {
             // Update the store silently first
             useSubjectsStore.setState({ subjects: latestSubjects })
             
-            // Show notification for each new subject
+            // Notify about new subjects
             newSubjects.forEach((subject: any) => {
-              // Only show notification if it's relevant to the user
+              // Only update badge if it's relevant to the user
               const isRelevant = 
                 session.role === "mahasiswa" || // All students can see new subjects
                 (session.role === "dosen" && subject.pengampuIds?.includes(session.id)) || // Dosen if they teach it
                 session.role === "kaprodi" // Kaprodi can see all
               
               if (isRelevant) {
-                toast.success("Mata Kuliah Baru Ditambahkan!", {
-                  description: `${subject.nama} (${subject.kode}) - ${subject.sks} SKS`,
-                  duration: 5000,
-                  action: {
-                    label: "Lihat",
-                    onClick: () => {
-                      window.location.href = "/subjects"
-                    }
-                  }
-                })
-                
-                // Increment notification badge
+                // Update badge count instead of showing toast
+                // The FloatingNotifications component will handle showing the notification
                 if (session.role === "mahasiswa") {
-                  incrementBadge("krs", session.id)
+                  updateBadge("krs", session.id, previousSubjectsCount.current + 1)
                 }
                 
+                // Call optional callback
                 onSubjectAdded?.(subject)
               }
             })
@@ -89,21 +88,16 @@ export function useRealtimeSync(options: RealtimeSyncOptions = {}) {
             previousSubjectsCount.current = latestSubjects.length
           } else {
             // Check for updates to existing subjects
-            const hasUpdates = latestSubjects.some((newSubject: any, index: number) => {
+            const hasUpdates = latestSubjects.some((newSubject: any) => {
               const oldSubject = subjects.find((s: any) => s.id === newSubject.id)
               if (!oldSubject) return false
               
-              // Simple deep comparison (you might want to use a library for this)
+              // Simple deep comparison
               return JSON.stringify(oldSubject) !== JSON.stringify(newSubject)
             })
             
             if (hasUpdates) {
               useSubjectsStore.setState({ subjects: latestSubjects })
-              
-              toast.info("Data Mata Kuliah Diperbarui", {
-                description: "Beberapa mata kuliah telah diperbarui",
-                duration: 3000,
-              })
             }
           }
         }

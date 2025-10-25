@@ -6,7 +6,6 @@ import { useOfferingsStore } from "@/stores/offerings.store"
 import { useKrsStore } from "@/stores/krs.store"
 import { useProfileStore } from "@/stores/profile.store"
 import { useNotificationStore } from "@/stores/notification.store"
-import { useRealtimeSync } from "@/hooks/use-realtime-sync"
 import { canAccessKRS } from "@/lib/rbac"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -26,11 +25,12 @@ export default function KrsPage() {
   const { getProfile } = useProfileStore()
   const { markAsRead } = useNotificationStore()
 
-  // Enable real-time sync for KRS page
-  useRealtimeSync({
-    enabled: true,
-    pollingInterval: 5000,
-  })
+  // Enable real-time sync for KRS page - disabled to prevent duplicate notifications
+  // Notifications are handled by NotificationManager and FloatingNotifications
+  // useRealtimeSync({
+  //   enabled: true,
+  //   pollingInterval: 5000,
+  // })
 
   // Fetch data on mount
   useEffect(() => {
