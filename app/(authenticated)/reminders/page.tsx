@@ -328,7 +328,12 @@ export default function RemindersPage() {
         </div>
 
         {/* All Reminders List */}
-        <ReminderList userId={session.id} onEdit={handleEdit} />
+        <ReminderList 
+          userId={session.id} 
+          onEdit={handleEdit}
+          onClearAll={handleClearAll}
+          hasReminders={activeReminders.length > 0}
+        />
       </div>
     </div>
   )
