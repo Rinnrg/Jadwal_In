@@ -106,12 +106,12 @@
   
   html {
     overflow-x: hidden;
+    width: 100vw;
     color-scheme: light dark;
     -webkit-text-size-adjust: 100%;
     -moz-text-size-adjust: 100%;
     -ms-text-size-adjust: 100%;
     text-size-adjust: 100%;
-    scrollbar-gutter: stable;
   }
   
   body {
@@ -120,6 +120,9 @@
     transition: background 0.5s cubic-bezier(0.25, 0.46, 0.45, 0.94), 
                 color 0.3s ease-out;
     overflow-x: hidden;
+    width: 100%;
+    max-width: 100vw;
+    position: relative;
     /* Fix for webkit-text-size-adjust compatibility */
     -webkit-text-size-adjust: 100%;
     -moz-text-size-adjust: 100%;
@@ -194,6 +197,17 @@
   /* Ensure containers don't overflow */
   .container, main, section, div {
     max-width: 100%;
+    box-sizing: border-box;
+  }
+  
+  /* Prevent horizontal scrollbar gap */
+  * {
+    box-sizing: border-box;
+  }
+  
+  html, body, #__next {
+    width: 100%;
+    overflow-x: hidden;
   }
   
   /* Optimized theme transition classes */
@@ -375,6 +389,11 @@
 
   .animate-float {
     animation: float 20s ease-in-out infinite;
+  }
+
+  /* Radial gradient utility for realistic sun/moon */
+  .bg-gradient-radial {
+    background-image: radial-gradient(circle, var(--tw-gradient-stops));
   }
 
   /* Shake animation for errors */

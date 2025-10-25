@@ -448,18 +448,30 @@ export default function DashboardPage() {
       {/* Header Section dengan Ucapan, Profile, Nama, Role, dan Tanggal */}
       <div className="animate-slide-up">
         <Card className={`${timeColors.cardBg} border-2 ${timeColors.cardBorder} transition-all duration-1000 ease-in-out relative overflow-hidden`}>
-          {/* Sky Background - Full Card */}
-          <div className={`absolute inset-0 bg-gradient-to-b ${
+          {/* Sky Background - Full Card with realistic colors */}
+          <div className={`absolute inset-0 transition-all duration-1000 ease-in-out ${
             isSunTime 
-              ? 'from-blue-200 via-blue-100 to-blue-50 dark:from-blue-950/40 dark:via-blue-900/30 dark:to-blue-800/20' 
-              : 'from-indigo-950 via-indigo-900 to-indigo-800 dark:from-indigo-950/60 dark:via-indigo-900/40 dark:to-indigo-800/30'
-          } transition-all duration-1000`}></div>
+              ? currentTime.getHours() < 11
+                ? 'bg-gradient-to-b from-yellow-100 via-orange-50 to-yellow-50 dark:from-yellow-900/30 dark:via-orange-900/20 dark:to-yellow-800/20' // Pagi - Kuning
+                : currentTime.getHours() < 15
+                ? 'bg-gradient-to-b from-sky-400 via-blue-300 to-cyan-200 dark:from-sky-900/40 dark:via-blue-800/30 dark:to-cyan-700/20' // Siang - Biru
+                : 'bg-gradient-to-b from-orange-400 via-orange-300 to-yellow-200 dark:from-orange-900/40 dark:via-orange-800/30 dark:to-yellow-700/20' // Sore - Oren
+              : 'bg-gradient-to-b from-slate-900 via-indigo-950 to-blue-950 dark:from-slate-950/60 dark:via-indigo-950/50 dark:to-blue-950/40' // Malam - Biru Kehitaman
+          }`}></div>
           
           {/* Fade gradient overlay - gelap di kiri (teks terlihat), terang di kanan (tata surya terlihat) */}
-          <div className="absolute inset-0 bg-gradient-to-r from-background/95 via-background/40 to-transparent dark:from-background/85 dark:via-background/60 dark:to-transparent md:from-background/100 md:via-background/30 md:dark:from-background/90 md:dark:via-background/70"></div>
+          <div className="absolute inset-0 bg-gradient-to-r from-background/95 via-background/50 to-transparent dark:from-background/90 dark:via-background/70 dark:to-transparent md:from-background/100 md:via-background/40 md:to-transparent md:dark:from-background/95 md:dark:via-background/75 md:dark:to-transparent transition-all duration-1000 ease-in-out"></div>
           
-          {/* Horizon line */}
-          <div className="absolute bottom-0 left-0 right-0 h-1/3 bg-gradient-to-t from-green-200/40 via-green-100/20 to-transparent dark:from-green-950/30 dark:via-green-900/15 dark:to-transparent"></div>
+          {/* Horizon line with dynamic colors */}
+          <div className={`absolute bottom-0 left-0 right-0 h-1/3 transition-all duration-1000 ease-in-out ${
+            isSunTime
+              ? currentTime.getHours() < 11
+                ? 'bg-gradient-to-t from-green-300/50 via-green-200/30 to-transparent dark:from-green-900/40 dark:via-green-800/20 dark:to-transparent' // Pagi
+                : currentTime.getHours() < 15
+                ? 'bg-gradient-to-t from-emerald-200/40 via-green-100/20 to-transparent dark:from-emerald-900/30 dark:via-green-800/15 dark:to-transparent' // Siang
+                : 'bg-gradient-to-t from-amber-300/50 via-orange-200/30 to-transparent dark:from-amber-900/40 dark:via-orange-800/20 dark:to-transparent' // Sore
+              : 'bg-gradient-to-t from-slate-800/50 via-slate-700/30 to-transparent dark:from-slate-950/50 dark:via-slate-900/30 dark:to-transparent' // Malam
+          }`}></div>
           
           {/* Decorative Background Pattern */}
           <div className="absolute inset-0 opacity-5 pointer-events-none">
@@ -473,79 +485,173 @@ export default function DashboardPage() {
             </svg>
           </div>
           
-          {/* Celestial body (Sun/Moon) - Positioned in background, hidden on mobile */}
+          {/* Celestial body (Sun/Moon) - Positioned in background, scaled for mobile, realistic design */}
           <div 
-            className="hidden md:block absolute right-8 top-1/2 transition-all duration-500 ease-out z-0"
+            className="absolute right-4 md:right-8 top-1/2 transition-all duration-1000 ease-in-out z-0"
             style={{
               transform: `translate(${celestialPos.x}%, calc(-50% + ${celestialPos.y}%))`,
             }}
           >
             {isSunTime ? (
-              // Sun
-              <div className="relative">
+              // Realistic Sun
+              <div className="relative transition-all duration-1000 ease-in-out">
+                {/* Sun core with realistic gradient */}
                 <div 
-                  className={`w-32 h-32 lg:w-40 lg:h-40 rounded-full bg-gradient-to-br ${timeColors.gradient} shadow-2xl transition-all duration-1000`}
+                  className={`w-20 h-20 md:w-32 md:h-32 lg:w-40 lg:h-40 rounded-full transition-all duration-1000 ease-in-out ${
+                    currentTime.getHours() < 11
+                      ? 'bg-gradient-radial from-yellow-200 via-yellow-400 to-orange-500' // Pagi - Kuning lembut
+                      : currentTime.getHours() < 15
+                      ? 'bg-gradient-radial from-white via-yellow-100 to-yellow-400' // Siang - Putih terang
+                      : 'bg-gradient-radial from-orange-300 via-orange-500 to-red-500' // Sore - Oren kemerahan
+                  }`}
                   style={{
-                    boxShadow: `0 0 60px ${currentTime.getHours() < 11 ? 'rgba(251, 191, 36, 0.7)' : currentTime.getHours() < 15 ? 'rgba(59, 130, 246, 0.6)' : 'rgba(249, 115, 22, 0.8)'}`
+                    boxShadow: `
+                      0 0 20px ${currentTime.getHours() < 11 ? 'rgba(251, 191, 36, 0.8)' : currentTime.getHours() < 15 ? 'rgba(255, 255, 255, 1)' : 'rgba(249, 115, 22, 0.9)'},
+                      0 0 40px ${currentTime.getHours() < 11 ? 'rgba(251, 191, 36, 0.6)' : currentTime.getHours() < 15 ? 'rgba(251, 191, 36, 0.7)' : 'rgba(249, 115, 22, 0.7)'},
+                      0 0 60px ${currentTime.getHours() < 11 ? 'rgba(251, 191, 36, 0.4)' : currentTime.getHours() < 15 ? 'rgba(251, 191, 36, 0.5)' : 'rgba(249, 115, 22, 0.5)'},
+                      inset 0 -5px 15px rgba(0, 0, 0, 0.1)
+                    `,
+                    transition: 'all 1s ease-in-out'
                   }}
-                ></div>
-                {/* Sun rays */}
-                <div className="absolute inset-0 animate-spin-slow">
+                >
+                  {/* Sun surface texture */}
+                  <div className="absolute inset-0 rounded-full overflow-hidden opacity-20">
+                    <div className="absolute top-2 left-3 w-4 h-4 md:w-6 md:h-6 bg-yellow-600/30 rounded-full blur-sm"></div>
+                    <div className="absolute top-8 right-5 w-3 h-3 md:w-5 md:h-5 bg-orange-600/30 rounded-full blur-sm"></div>
+                    <div className="absolute bottom-5 left-6 w-5 h-5 md:w-7 md:h-7 bg-orange-700/30 rounded-full blur-sm"></div>
+                  </div>
+                </div>
+                
+                {/* Sun rays with smooth animation */}
+                <div className="absolute inset-0 animate-spin-slow transition-opacity duration-1000 ease-in-out">
                   {[...Array(12)].map((_, i) => (
                     <div
                       key={i}
-                      className={`absolute w-2 h-10 lg:w-3 lg:h-12 bg-gradient-to-t ${timeColors.gradient} rounded-full opacity-40`}
+                      className={`absolute w-1.5 h-6 md:w-2 md:h-10 lg:w-3 lg:h-12 rounded-full transition-all duration-1000 ease-in-out ${
+                        currentTime.getHours() < 11
+                          ? 'bg-gradient-to-t from-transparent via-yellow-400/60 to-yellow-300/40' // Pagi
+                          : currentTime.getHours() < 15
+                          ? 'bg-gradient-to-t from-transparent via-yellow-300/70 to-white/50' // Siang
+                          : 'bg-gradient-to-t from-transparent via-orange-500/60 to-orange-400/40' // Sore
+                      }`}
                       style={{
                         left: '50%',
-                        top: '-2.5rem',
+                        top: '-1.5rem',
                         transform: `translateX(-50%) rotate(${i * 30}deg)`,
-                        transformOrigin: '0.25rem 4rem'
+                        transformOrigin: '0.25rem 2.5rem',
+                        opacity: 0.6 + (Math.sin(i) * 0.2),
+                        transition: 'all 1s ease-in-out'
                       }}
                     ></div>
                   ))}
                 </div>
+                
+                {/* Glow effect */}
+                <div 
+                  className={`absolute inset-0 rounded-full transition-all duration-1000 ease-in-out ${
+                    currentTime.getHours() < 11
+                      ? 'bg-yellow-300/20' // Pagi
+                      : currentTime.getHours() < 15
+                      ? 'bg-yellow-200/30' // Siang
+                      : 'bg-orange-400/25' // Sore
+                  }`}
+                  style={{
+                    filter: 'blur(15px)',
+                    transform: 'scale(1.3)',
+                    transition: 'all 1s ease-in-out'
+                  }}
+                ></div>
               </div>
             ) : (
-              // Moon with stars
-              <div className="relative">
+              // Realistic Moon with stars
+              <div className="relative transition-all duration-1000 ease-in-out">
+                {/* Moon with realistic texture */}
                 <div 
-                  className={`w-32 h-32 lg:w-40 lg:h-40 rounded-full bg-gradient-to-br ${timeColors.gradient} shadow-2xl transition-all duration-1000`}
+                  className="w-20 h-20 md:w-32 md:h-32 lg:w-40 lg:h-40 rounded-full bg-gradient-radial from-gray-100 via-gray-200 to-gray-300 dark:from-gray-300 dark:via-gray-400 dark:to-gray-500 transition-all duration-1000 ease-in-out relative overflow-hidden"
                   style={{
-                    boxShadow: '0 0 60px rgba(99, 102, 241, 0.6)'
+                    boxShadow: `
+                      0 0 30px rgba(203, 213, 225, 0.6),
+                      0 0 60px rgba(203, 213, 225, 0.4),
+                      inset -8px -8px 20px rgba(0, 0, 0, 0.3),
+                      inset 5px 5px 15px rgba(255, 255, 255, 0.2)
+                    `,
+                    transition: 'all 1s ease-in-out'
                   }}
                 >
-                  {/* Moon craters */}
-                  <div className="absolute top-6 left-6 w-5 h-5 rounded-full bg-indigo-600/30"></div>
-                  <div className="absolute top-16 left-12 w-6 h-6 rounded-full bg-indigo-600/20"></div>
-                  <div className="absolute top-10 right-8 w-4 h-4 rounded-full bg-indigo-600/25"></div>
-                  <div className="absolute bottom-8 left-8 w-3 h-3 rounded-full bg-indigo-600/20"></div>
+                  {/* Moon craters - more realistic */}
+                  <div className="absolute top-3 left-3 md:top-6 md:left-6 w-3 h-3 md:w-5 md:h-5 rounded-full bg-gray-400/50 dark:bg-gray-600/50 transition-all duration-1000 ease-in-out" style={{ boxShadow: 'inset 2px 2px 4px rgba(0,0,0,0.3)' }}></div>
+                  <div className="absolute top-8 left-6 md:top-16 md:left-12 w-4 h-4 md:w-6 md:h-6 rounded-full bg-gray-400/40 dark:bg-gray-600/40 transition-all duration-1000 ease-in-out" style={{ boxShadow: 'inset 2px 2px 5px rgba(0,0,0,0.3)' }}></div>
+                  <div className="absolute top-5 right-4 md:top-10 md:right-8 w-2.5 h-2.5 md:w-4 md:h-4 rounded-full bg-gray-400/45 dark:bg-gray-600/45 transition-all duration-1000 ease-in-out" style={{ boxShadow: 'inset 1px 1px 3px rgba(0,0,0,0.3)' }}></div>
+                  <div className="absolute bottom-4 left-4 md:bottom-8 md:left-8 w-2 h-2 md:w-3 md:h-3 rounded-full bg-gray-400/40 dark:bg-gray-600/40 transition-all duration-1000 ease-in-out" style={{ boxShadow: 'inset 1px 1px 2px rgba(0,0,0,0.3)' }}></div>
+                  <div className="absolute top-12 right-6 w-2.5 h-2.5 md:w-4 md:h-4 rounded-full bg-gray-400/35 dark:bg-gray-600/35 transition-all duration-1000 ease-in-out" style={{ boxShadow: 'inset 1px 1px 3px rgba(0,0,0,0.3)' }}></div>
+                  
+                  {/* Moon surface texture overlay */}
+                  <div className="absolute inset-0 rounded-full bg-gradient-to-br from-transparent via-gray-300/10 to-gray-500/20 transition-all duration-1000 ease-in-out"></div>
                 </div>
-                {/* Stars scattered around */}
-                <div className="absolute -top-12 -right-16 w-3 h-3 bg-yellow-200 rounded-full animate-twinkle shadow-lg shadow-yellow-200/50"></div>
-                <div className="absolute -top-8 -left-20 w-2 h-2 bg-yellow-100 rounded-full animate-twinkle" style={{ animationDelay: "0.3s" }}></div>
-                <div className="absolute -bottom-10 -right-20 w-3 h-3 bg-yellow-200 rounded-full animate-twinkle" style={{ animationDelay: "0.6s" }}></div>
-                <div className="absolute -bottom-16 left-16 w-2 h-2 bg-yellow-100 rounded-full animate-twinkle" style={{ animationDelay: "0.9s" }}></div>
-                <div className="absolute top-20 -left-16 w-2.5 h-2.5 bg-yellow-200 rounded-full animate-twinkle" style={{ animationDelay: "1.2s" }}></div>
-                <div className="absolute top-4 right-20 w-2 h-2 bg-yellow-100 rounded-full animate-twinkle" style={{ animationDelay: "1.5s" }}></div>
+                
+                {/* Moon glow */}
+                <div 
+                  className="absolute inset-0 rounded-full bg-slate-300/15 dark:bg-slate-200/20 transition-all duration-1000 ease-in-out"
+                  style={{
+                    filter: 'blur(20px)',
+                    transform: 'scale(1.4)',
+                    transition: 'all 1s ease-in-out'
+                  }}
+                ></div>
+                
+                {/* Stars scattered around - twinkling effect */}
+                <div className="absolute -top-6 -right-4 md:-top-10 md:-right-8 w-2 h-2 md:w-3 md:h-3 bg-white rounded-full animate-twinkle transition-all duration-1000 ease-in-out" style={{ boxShadow: '0 0 10px rgba(255, 255, 255, 0.8), 0 0 20px rgba(255, 255, 255, 0.4)' }}></div>
+                <div className="absolute -top-4 -left-6 md:-top-6 md:-left-10 w-1.5 h-1.5 md:w-2 md:h-2 bg-yellow-100 rounded-full animate-twinkle transition-all duration-1000 ease-in-out" style={{ animationDelay: "0.3s", boxShadow: '0 0 8px rgba(254, 243, 199, 0.7)' }}></div>
+                <div className="absolute -bottom-5 -right-6 md:-bottom-8 md:-right-10 w-2 h-2 md:w-3 md:h-3 bg-white rounded-full animate-twinkle transition-all duration-1000 ease-in-out" style={{ animationDelay: "0.6s", boxShadow: '0 0 10px rgba(255, 255, 255, 0.8)' }}></div>
+                <div className="absolute -bottom-6 left-4 md:-bottom-10 md:left-8 w-1.5 h-1.5 md:w-2 md:h-2 bg-blue-100 rounded-full animate-twinkle transition-all duration-1000 ease-in-out" style={{ animationDelay: "0.9s", boxShadow: '0 0 8px rgba(219, 234, 254, 0.7)' }}></div>
+                <div className="absolute top-10 -left-4 md:top-16 md:-left-8 w-2 h-2 md:w-2.5 md:h-2.5 bg-white rounded-full animate-twinkle transition-all duration-1000 ease-in-out" style={{ animationDelay: "1.2s", boxShadow: '0 0 9px rgba(255, 255, 255, 0.75)' }}></div>
+                <div className="absolute top-1 right-6 md:top-2 md:right-12 w-1.5 h-1.5 md:w-2 md:h-2 bg-yellow-50 rounded-full animate-twinkle transition-all duration-1000 ease-in-out" style={{ animationDelay: "1.5s", boxShadow: '0 0 7px rgba(254, 252, 232, 0.6)' }}></div>
               </div>
             )}
           </div>
           
-          {/* Clouds for daytime - scattered across card, hidden on mobile */}
+          {/* Clouds for daytime - scattered across card, visible on mobile, adjusted to prevent overflow, realistic colors */}
           {isSunTime && (
-            <div className="hidden md:block absolute inset-0 pointer-events-none z-0">
-              <div className="absolute top-12 right-32 w-24 h-10 bg-white/50 dark:bg-gray-400/20 rounded-full blur-sm animate-float"></div>
-              <div className="absolute top-24 right-64 w-20 h-8 bg-white/40 dark:bg-gray-400/15 rounded-full blur-sm animate-float" style={{ animationDelay: "0.5s" }}></div>
-              <div className="absolute bottom-20 right-48 w-28 h-12 bg-white/45 dark:bg-gray-400/18 rounded-full blur-sm animate-float" style={{ animationDelay: "1s" }}></div>
+            <div className="absolute inset-0 pointer-events-none z-0 overflow-hidden transition-all duration-1000 ease-in-out">
+              <div 
+                className={`absolute top-8 right-8 md:top-12 md:right-16 w-16 h-6 md:w-24 md:h-10 rounded-full blur-md animate-float transition-all duration-1000 ease-in-out ${
+                  currentTime.getHours() < 11
+                    ? 'bg-white/60 dark:bg-gray-300/30' // Pagi - putih lembut
+                    : currentTime.getHours() < 15
+                    ? 'bg-white/70 dark:bg-gray-200/40' // Siang - putih cerah
+                    : 'bg-orange-100/60 dark:bg-orange-300/30' // Sore - oren lembut
+                }`}
+                style={{ transition: 'all 1s ease-in-out' }}
+              ></div>
+              <div 
+                className={`absolute top-16 right-16 md:top-24 md:right-32 w-12 h-5 md:w-20 md:h-8 rounded-full blur-md animate-float transition-all duration-1000 ease-in-out ${
+                  currentTime.getHours() < 11
+                    ? 'bg-white/50 dark:bg-gray-300/25' // Pagi
+                    : currentTime.getHours() < 15
+                    ? 'bg-white/65 dark:bg-gray-200/35' // Siang
+                    : 'bg-orange-100/50 dark:bg-orange-300/25' // Sore
+                }`}
+                style={{ animationDelay: "0.5s", transition: 'all 1s ease-in-out' }}
+              ></div>
+              <div 
+                className={`absolute bottom-12 right-12 md:bottom-20 md:right-24 w-18 h-7 md:w-28 md:h-12 rounded-full blur-md animate-float transition-all duration-1000 ease-in-out ${
+                  currentTime.getHours() < 11
+                    ? 'bg-white/55 dark:bg-gray-300/28' // Pagi
+                    : currentTime.getHours() < 15
+                    ? 'bg-white/68 dark:bg-gray-200/38' // Siang
+                    : 'bg-orange-100/55 dark:bg-orange-300/28' // Sore
+                }`}
+                style={{ animationDelay: "1s", transition: 'all 1s ease-in-out' }}
+              ></div>
             </div>
           )}
           
           <CardContent className="pt-4 md:pt-6 relative z-10 px-3 md:px-6">
             <div className="flex flex-col items-start space-y-2 md:space-y-3.5 w-full">
                 {/* Tanggal */}
-                <div className="flex items-center space-x-1.5 md:space-x-2 text-muted-foreground animate-slide-in-left transition-colors duration-500">
+                <div className="flex items-center space-x-1.5 md:space-x-2 text-foreground animate-slide-in-left transition-colors duration-500">
                   <Calendar className="h-3.5 w-3.5 md:h-4 md:w-4 flex-shrink-0" />
-                  <p className="text-xs md:text-sm break-words">
+                  <p className="text-xs md:text-sm break-words font-medium">
                     {currentTime.toLocaleDateString("id-ID", {
                       weekday: "long",
                       year: "numeric",
@@ -557,7 +663,7 @@ export default function DashboardPage() {
                 </div>
                 
                 {/* Ucapan Selamat */}
-                <p className="text-base md:text-xl lg:text-2xl text-muted-foreground transition-colors duration-500">
+                <p className="text-base md:text-xl lg:text-2xl text-foreground font-semibold transition-colors duration-500">
                   {getGreeting()}
                 </p>
                 
@@ -570,9 +676,22 @@ export default function DashboardPage() {
                     </AvatarFallback>
                   </Avatar>
                   {/* Live Indicator - positioned at bottom right of avatar */}
-                  {isPolling && (
-                    <div className="absolute bottom-0 right-0 w-4 h-4 md:w-5 md:h-5 lg:w-6 lg:h-6 bg-green-500 rounded-full border-2 border-background shadow-lg animate-pulse" title="Live"></div>
-                  )}
+                  <div 
+                    className={`absolute bottom-0 right-0 w-4 h-4 md:w-5 md:h-5 lg:w-6 lg:h-6 bg-green-500 rounded-full border-2 border-background shadow-lg transition-all duration-500 ease-in-out ${
+                      isPolling 
+                        ? 'opacity-100 scale-100 animate-pulse' 
+                        : 'opacity-0 scale-0'
+                    }`}
+                    title="Live"
+                  >
+                    {/* Ripple effect for live indicator */}
+                    {isPolling && (
+                      <>
+                        <span className="absolute inset-0 rounded-full bg-green-500 opacity-75 animate-ping" />
+                        <span className="absolute inset-0 rounded-full bg-green-400/50 animate-pulse" style={{ animationDelay: '0.15s' }} />
+                      </>
+                    )}
+                  </div>
                 </div>
                 
                 {/* Nama */}
@@ -742,7 +861,7 @@ export default function DashboardPage() {
               <Button
                 variant="outline"
                 size="sm"
-                className="h-6 px-2 text-[10px] md:text-xs border-purple-300 hover:bg-purple-50 dark:hover:bg-purple-900/20 transition-colors"
+                className="h-6 px-2 text-[10px] md:text-xs border-purple-300 text-purple-700 dark:text-purple-300 hover:bg-purple-50 hover:text-purple-900 dark:hover:bg-purple-900/20 dark:hover:text-purple-100 transition-colors"
                 onClick={(e) => {
                   e.stopPropagation()
                   setShowAssignments(!showAssignments)
