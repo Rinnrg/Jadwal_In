@@ -13,7 +13,7 @@ import { Switch } from "@/components/ui/switch"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Badge } from "@/components/ui/badge"
-import { Megaphone, Plus, Edit, Trash2, FileUp, Image as ImageIcon, FileText, Users } from "lucide-react"
+import { Megaphone, Plus, Edit, Trash2, FileUp, Image as ImageIcon, FileText, Users, Bell, CheckCircle, AlertCircle } from "lucide-react"
 import { showSuccess, showError, confirmAction } from "@/lib/alerts"
 import { formatDistanceToNow } from "date-fns"
 import { id as idLocale } from "date-fns/locale"
@@ -34,6 +34,10 @@ export default function AnnouncementsPage() {
     targetRoles: [] as string[],
     isActive: true,
   })
+  const [imageFile, setImageFile] = useState<File | null>(null)
+  const [pdfFile, setPdfFile] = useState<File | null>(null)
+  const [uploadingImage, setUploadingImage] = useState(false)
+  const [uploadingPdf, setUploadingPdf] = useState(false)
 
   useEffect(() => {
     fetchAnnouncements()
@@ -131,6 +135,96 @@ export default function AnnouncementsPage() {
       targetRoles: [],
       isActive: true,
     })
+    setImageFile(null)
+    setPdfFile(null)
+  }
+
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+
+    // Validate file type
+    if (!file.type.startsWith('image/')) {
+      showError("File harus berupa gambar (JPG, PNG, dll)")
+      return
+    }
+
+    // Validate file size (max 5MB)
+    if (file.size > 5 * 1024 * 1024) {
+      showError("Ukuran gambar maksimal 5MB")
+      return
+    }
+
+    setImageFile(file)
+    setUploadingImage(true)
+
+    try {
+      // Create FormData for upload
+      const formData = new FormData()
+      formData.append('file', file)
+      formData.append('type', 'image')
+
+      // Upload to your API endpoint
+      const response = await fetch('/api/upload', {
+        method: 'POST',
+        body: formData,
+      })
+
+      if (!response.ok) throw new Error('Upload failed')
+
+      const data = await response.json()
+      setFormData(prev => ({ ...prev, imageUrl: data.url }))
+      showSuccess("Gambar berhasil diupload")
+    } catch (error) {
+      showError("Gagal mengupload gambar")
+      setImageFile(null)
+    } finally {
+      setUploadingImage(false)
+    }
+  }
+
+  const handlePdfUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+
+    // Validate file type
+    if (file.type !== 'application/pdf') {
+      showError("File harus berupa PDF")
+      return
+    }
+
+    // Validate file size (max 10MB)
+    if (file.size > 10 * 1024 * 1024) {
+      showError("Ukuran PDF maksimal 10MB")
+      return
+    }
+
+    setPdfFile(file)
+    setUploadingPdf(true)
+
+    try {
+      // Create FormData for upload
+      const formData = new FormData()
+      formData.append('file', file)
+      formData.append('type', 'pdf')
+
+      // Upload to your API endpoint
+      const response = await fetch('/api/upload', {
+        method: 'POST',
+        body: formData,
+      })
+
+      if (!response.ok) throw new Error('Upload failed')
+
+      const data = await response.json()
+      setFormData(prev => ({ ...prev, fileUrl: data.url }))
+      showSuccess("PDF berhasil diupload")
+    } catch (error) {
+      showError("Gagal mengupload PDF")
+      setPdfFile(null)
+    } finally {
+      setUploadingPdf(false)
+    }
   }
 
   const toggleTargetRole = (role: string) => {
@@ -247,91 +341,151 @@ export default function AnnouncementsPage() {
       </Card>
 
       {/* Form Dialog */}
-      <Dialog open={isFormOpen} onOpenChange={handleCloseForm}>
-        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>
-              {editingAnnouncement ? "Edit Pengumuman" : "Buat Pengumuman Baru"}
-            </DialogTitle>
-            <DialogDescription>
-              Pengumuman akan ditampilkan sebagai pop-up saat user membuka aplikasi
-            </DialogDescription>
+      <Dialog open={isFormOpen} onOpenChange={(open) => !open && handleCloseForm()}>
+        <DialogContent className="max-w-3xl max-h-[85vh] overflow-y-auto sm:my-8" showCloseButton={false}>
+          <DialogHeader className="space-y-3 pb-4 border-b">
+            <div className="flex items-center gap-3">
+              <div className="p-2 bg-primary/10 rounded-lg">
+                <Megaphone className="h-5 w-5 text-primary" />
+              </div>
+              <div>
+                <DialogTitle className="text-xl">
+                  {editingAnnouncement ? "Edit Pengumuman" : "Buat Pengumuman Baru"}
+                </DialogTitle>
+                <DialogDescription className="text-sm mt-1">
+                  Pengumuman akan ditampilkan sebagai pop-up saat user membuka aplikasi
+                </DialogDescription>
+              </div>
+            </div>
           </DialogHeader>
 
-          <form onSubmit={handleSubmit} className="space-y-4 mt-4">
+          <form onSubmit={handleSubmit} className="space-y-6 pt-4">
             {/* Title */}
             <div className="space-y-2">
-              <Label htmlFor="title">
-                Judul Pengumuman <span className="text-destructive">*</span>
+              <Label htmlFor="title" className="text-sm font-semibold flex items-center gap-2">
+                <span className="text-destructive">*</span>
+                Judul Pengumuman
               </Label>
               <Input
                 id="title"
                 value={formData.title}
                 onChange={(e) => setFormData({ ...formData, title: e.target.value })}
                 placeholder="Contoh: Pengumuman Libur Semester"
-                required
+                className="h-11"
               />
             </div>
 
             {/* Description */}
             <div className="space-y-2">
-              <Label htmlFor="description">
-                Keterangan <span className="text-destructive">*</span>
+              <Label htmlFor="description" className="text-sm font-semibold flex items-center gap-2">
+                <span className="text-destructive">*</span>
+                Keterangan
               </Label>
               <Textarea
                 id="description"
                 value={formData.description}
                 onChange={(e) => setFormData({ ...formData, description: e.target.value })}
                 placeholder="Tulis keterangan pengumuman di sini..."
-                rows={5}
-                required
+                rows={6}
+                className="resize-none"
               />
             </div>
 
-            {/* Image URL */}
-            <div className="space-y-2">
-              <Label htmlFor="imageUrl" className="flex items-center gap-2">
-                <ImageIcon className="h-4 w-4" />
-                Gambar (JPG/PNG - Opsional)
-              </Label>
-              <Input
-                id="imageUrl"
-                value={formData.imageUrl}
-                onChange={(e) => setFormData({ ...formData, imageUrl: e.target.value })}
-                placeholder="https://example.com/image.jpg"
-                type="url"
-              />
-              <p className="text-xs text-muted-foreground">
-                Upload gambar (JPG/PNG) ke layanan seperti Imgur atau Google Drive, lalu paste URL-nya di sini
-              </p>
-            </div>
+            {/* Media Uploads Section */}
+            <div className="space-y-4 p-4 bg-muted/30 rounded-lg border border-dashed">
+              <div className="flex items-center gap-2 text-sm font-semibold">
+                <FileUp className="h-4 w-4 text-muted-foreground" />
+                <span>Media Pendukung (Opsional)</span>
+              </div>
 
-            {/* File URL */}
-            <div className="space-y-2">
-              <Label htmlFor="fileUrl" className="flex items-center gap-2">
-                <FileText className="h-4 w-4" />
-                Dokumen PDF (Opsional)
-              </Label>
-              <Input
-                id="fileUrl"
-                value={formData.fileUrl}
-                onChange={(e) => setFormData({ ...formData, fileUrl: e.target.value })}
-                placeholder="https://example.com/document.pdf"
-                type="url"
-              />
-              <p className="text-xs text-muted-foreground">
-                Upload file PDF ke Google Drive atau Dropbox, lalu paste URL-nya di sini
-              </p>
+              {/* Image Upload */}
+              <div className="space-y-2">
+                <Label htmlFor="imageUpload" className="text-sm flex items-center gap-2">
+                  <ImageIcon className="h-4 w-4 text-blue-500" />
+                  Gambar (JPG/PNG)
+                </Label>
+                <div className="flex items-center gap-2">
+                  <Input
+                    id="imageUpload"
+                    type="file"
+                    accept="image/jpeg,image/jpg,image/png"
+                    onChange={handleImageUpload}
+                    disabled={uploadingImage}
+                    className="flex-1 h-10 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-primary file:text-primary-foreground hover:file:bg-primary/90"
+                  />
+                  {uploadingImage && (
+                    <div className="flex items-center gap-2 text-sm text-primary">
+                      <FileUp className="h-4 w-4 animate-spin" />
+                      <span>Uploading...</span>
+                    </div>
+                  )}
+                </div>
+                {imageFile && (
+                  <div className="flex items-center gap-2 p-2 bg-green-50 dark:bg-green-950/20 border border-green-200 dark:border-green-800 rounded-md">
+                    <CheckCircle className="h-4 w-4 text-green-600" />
+                    <p className="text-xs text-green-700 dark:text-green-400 flex-1">
+                      {imageFile.name} ({(imageFile.size / 1024).toFixed(2)} KB)
+                    </p>
+                  </div>
+                )}
+                <p className="text-xs text-muted-foreground flex items-center gap-1">
+                  <AlertCircle className="h-3 w-3" />
+                  Format: JPG/PNG. Maksimal 5MB
+                </p>
+              </div>
+
+              {/* PDF Upload */}
+              <div className="space-y-2">
+                <Label htmlFor="pdfUpload" className="text-sm flex items-center gap-2">
+                  <FileText className="h-4 w-4 text-red-500" />
+                  Dokumen PDF
+                </Label>
+                <div className="flex items-center gap-2">
+                  <Input
+                    id="pdfUpload"
+                    type="file"
+                    accept="application/pdf"
+                    onChange={handlePdfUpload}
+                    disabled={uploadingPdf}
+                    className="flex-1 h-10 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-primary file:text-primary-foreground hover:file:bg-primary/90"
+                  />
+                  {uploadingPdf && (
+                    <div className="flex items-center gap-2 text-sm text-primary">
+                      <FileUp className="h-4 w-4 animate-spin" />
+                      <span>Uploading...</span>
+                    </div>
+                  )}
+                </div>
+                {pdfFile && (
+                  <div className="flex items-center gap-2 p-2 bg-green-50 dark:bg-green-950/20 border border-green-200 dark:border-green-800 rounded-md">
+                    <CheckCircle className="h-4 w-4 text-green-600" />
+                    <p className="text-xs text-green-700 dark:text-green-400 flex-1">
+                      {pdfFile.name} ({(pdfFile.size / 1024).toFixed(2)} KB)
+                    </p>
+                  </div>
+                )}
+                <p className="text-xs text-muted-foreground flex items-center gap-1">
+                  <AlertCircle className="h-3 w-3" />
+                  Format: PDF. Maksimal 10MB
+                </p>
+              </div>
             </div>
 
             {/* Target Roles */}
-            <div className="space-y-2">
-              <Label className="flex items-center gap-2">
+            <div className="space-y-3">
+              <Label className="text-sm font-semibold flex items-center gap-2">
+                <span className="text-destructive">*</span>
                 <Users className="h-4 w-4" />
-                Target Penerima <span className="text-destructive">*</span>
+                Target Penerima
               </Label>
-              <div className="space-y-3 p-4 border rounded-lg bg-muted/50">
-                <div className="flex items-center space-x-3">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                <div className={`flex items-center space-x-3 p-3 border rounded-lg cursor-pointer transition-all ${
+                  formData.targetRoles.includes("mahasiswa") 
+                    ? "bg-primary/10 border-primary" 
+                    : "hover:bg-muted/50"
+                }`}
+                onClick={() => toggleTargetRole("mahasiswa")}
+                >
                   <Checkbox
                     id="mahasiswa"
                     checked={formData.targetRoles.includes("mahasiswa")}
@@ -341,7 +495,13 @@ export default function AnnouncementsPage() {
                     Mahasiswa
                   </Label>
                 </div>
-                <div className="flex items-center space-x-3">
+                <div className={`flex items-center space-x-3 p-3 border rounded-lg cursor-pointer transition-all ${
+                  formData.targetRoles.includes("dosen") 
+                    ? "bg-primary/10 border-primary" 
+                    : "hover:bg-muted/50"
+                }`}
+                onClick={() => toggleTargetRole("dosen")}
+                >
                   <Checkbox
                     id="dosen"
                     checked={formData.targetRoles.includes("dosen")}
@@ -351,7 +511,13 @@ export default function AnnouncementsPage() {
                     Dosen
                   </Label>
                 </div>
-                <div className="flex items-center space-x-3">
+                <div className={`flex items-center space-x-3 p-3 border rounded-lg cursor-pointer transition-all ${
+                  formData.targetRoles.includes("kaprodi") 
+                    ? "bg-primary/10 border-primary" 
+                    : "hover:bg-muted/50"
+                }`}
+                onClick={() => toggleTargetRole("kaprodi")}
+                >
                   <Checkbox
                     id="kaprodi"
                     checked={formData.targetRoles.includes("kaprodi")}
@@ -362,33 +528,47 @@ export default function AnnouncementsPage() {
                   </Label>
                 </div>
               </div>
-              {formData.targetRoles.length === 0 && (
-                <p className="text-xs text-destructive">Pilih minimal satu target penerima</p>
-              )}
             </div>
 
             {/* Active Status */}
-            <div className="flex items-center space-x-3 p-4 border rounded-lg bg-muted/50">
+            <div className="flex items-center justify-between p-4 bg-muted/30 rounded-lg border">
+              <div className="flex items-center space-x-3">
+                <div className="p-2 bg-background rounded-md">
+                  <Bell className="h-4 w-4 text-muted-foreground" />
+                </div>
+                <div>
+                  <Label htmlFor="isActive" className="cursor-pointer font-medium text-sm">
+                    Status Pengumuman
+                  </Label>
+                  <p className="text-xs text-muted-foreground mt-0.5">
+                    Akan muncul saat user login
+                  </p>
+                </div>
+              </div>
               <Switch
                 id="isActive"
                 checked={formData.isActive}
                 onCheckedChange={(checked) => setFormData({ ...formData, isActive: checked })}
               />
-              <Label htmlFor="isActive" className="cursor-pointer flex-1">
-                <span className="font-medium">Aktifkan Pengumuman</span>
-                <p className="text-xs text-muted-foreground font-normal mt-1">
-                  Pengumuman akan muncul saat user login
-                </p>
-              </Label>
             </div>
 
             {/* Actions */}
             <div className="flex gap-3 justify-end pt-4 border-t">
-              <Button type="button" variant="outline" onClick={handleCloseForm}>
+              <Button type="button" variant="outline" onClick={handleCloseForm} className="min-w-24">
                 Batal
               </Button>
-              <Button type="submit" disabled={formData.targetRoles.length === 0}>
-                {editingAnnouncement ? "Simpan Perubahan" : "Buat Pengumuman"}
+              <Button type="submit" className="min-w-32">
+                {editingAnnouncement ? (
+                  <>
+                    <Edit className="h-4 w-4 mr-2" />
+                    Simpan Perubahan
+                  </>
+                ) : (
+                  <>
+                    <Plus className="h-4 w-4 mr-2" />
+                    Buat Pengumuman
+                  </>
+                )}
               </Button>
             </div>
           </form>

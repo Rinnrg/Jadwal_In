@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, createElement } from "react"
+import { useEffect, useRef, useState } from "react"
 import { useSessionStore } from "@/stores/session.store"
 import { useSubjectsStore } from "@/stores/subjects.store"
 import { useOfferingsStore } from "@/stores/offerings.store"
@@ -8,8 +8,6 @@ import { useGradesStore } from "@/stores/grades.store"
 import { useCourseworkStore } from "@/stores/coursework.store"
 import { useRemindersStore } from "@/stores/reminders.store"
 import { useScheduleStore } from "@/stores/schedule.store"
-import { toast } from "sonner"
-import { BookOpen, FileText, GraduationCap, Bell, Calendar } from "lucide-react"
 import { nowUTC } from "@/lib/time"
 
 interface RealtimeSyncOptions {
@@ -67,13 +65,13 @@ export function useRealtimeSync(options: RealtimeSyncOptions = {}) {
       
       setIsPolling(true)
       try {
-        // Fetch latest subjects data
-        const response = await fetch('/api/subjects')
+        // Fetch latest subjects data with cache busting
+        const response = await fetch(`/api/subjects?_t=${Date.now()}`)
         if (response.ok) {
           const latestSubjects = await response.json()
           
-          // Also fetch offerings to ensure KRS page has latest data
-          const offeringsResponse = await fetch('/api/offerings')
+          // Also fetch offerings to ensure KRS page has latest data with cache busting
+          const offeringsResponse = await fetch(`/api/offerings?_t=${Date.now()}`)
           if (offeringsResponse.ok) {
             const latestOfferings = await offeringsResponse.json()
             useOfferingsStore.setState({ offerings: latestOfferings })
@@ -150,37 +148,12 @@ export function useRealtimeSync(options: RealtimeSyncOptions = {}) {
               const currentKrs = getKrsByUser(session.id, currentTerm)
               const currentKrsLength = currentKrs.length
               
-              console.log(`[RealtimeSync] KRS Update - Previous: ${previousKrsLength}, Current: ${currentKrsLength}`)
-              
-              // If KRS count increased, show notification
+              // If KRS count increased, update badge (FloatingNotifications will show toast)
               if (currentKrsLength > previousKrsLength && !isInitialMount.current && hasShownInitialNotification.current) {
-                const newKrsCount = currentKrsLength - previousKrsLength
-                
-                console.log(`[RealtimeSync] KRS increased by ${newKrsCount}, showing notification`)
-                
-                // Update badge - mark as unread
-                updateBadge("krs", session.id, newKrsCount)
-                
-                // Show toast notification immediately
-                toast("Mata Kuliah Baru Ditambahkan", {
-                  description: newKrsCount === 1 
-                    ? "1 mata kuliah baru telah ditambahkan ke KRS Anda"
-                    : `${newKrsCount} mata kuliah baru telah ditambahkan ke KRS Anda`,
-                  icon: createElement(BookOpen, { className: "h-5 w-5" }),
-                  duration: 6000,
-                  position: "top-right",
-                  action: {
-                    label: "Lihat KRS",
-                    onClick: () => {
-                      if (typeof window !== 'undefined') {
-                        window.location.href = '/krs'
-                      }
-                    },
-                  },
-                })
+                // Update badge - FloatingNotifications will handle the toast
+                updateBadge("krs", session.id, currentKrsLength)
               }
               
-              // ALWAYS update previousKrsCount to current count
               previousKrsCount.current = currentKrsLength
             }
             
@@ -197,26 +170,8 @@ export function useRealtimeSync(options: RealtimeSyncOptions = {}) {
               const previousGradesLength = previousGradesCount.current
               
               if (currentGradesWithValue > previousGradesLength && hasShownInitialNotification.current) {
-                const newGradesCount = currentGradesWithValue - previousGradesLength
-                
+                // Update badge - FloatingNotifications will handle the toast
                 updateBadge("khs", session.id, currentGradesWithValue)
-                
-                toast("Nilai Baru Tersedia", {
-                  description: newGradesCount === 1 
-                    ? "1 nilai baru tersedia di KHS"
-                    : `${newGradesCount} nilai baru tersedia di KHS`,
-                  icon: createElement(GraduationCap, { className: "h-5 w-5" }),
-                  duration: 6000,
-                  position: "top-right",
-                  action: {
-                    label: "Cek Nilai",
-                    onClick: () => {
-                      if (typeof window !== 'undefined') {
-                        window.location.href = '/khs'
-                      }
-                    },
-                  },
-                })
               }
               
               previousGradesCount.current = currentGradesWithValue
@@ -232,26 +187,8 @@ export function useRealtimeSync(options: RealtimeSyncOptions = {}) {
               const previousAsyncCount = previousAssignmentsCount.current + previousMaterialsCount.current
               
               if (totalAsyncCount > previousAsyncCount && hasShownInitialNotification.current) {
-                const newAsyncCount = totalAsyncCount - previousAsyncCount
-                
+                // Update badge - FloatingNotifications will handle the toast
                 updateBadge("asynchronous", session.id, totalAsyncCount)
-                
-                toast("Konten Pembelajaran Baru", {
-                  description: newAsyncCount === 1 
-                    ? "1 materi atau tugas baru telah ditambahkan"
-                    : `${newAsyncCount} materi/tugas baru telah ditambahkan`,
-                  icon: createElement(FileText, { className: "h-5 w-5" }),
-                  duration: 6000,
-                  position: "top-right",
-                  action: {
-                    label: "Buka Asynchronous",
-                    onClick: () => {
-                      if (typeof window !== 'undefined') {
-                        window.location.href = '/asynchronous'
-                      }
-                    },
-                  },
-                })
               }
               
               previousAssignmentsCount.current = currentAssignmentsCount
@@ -271,26 +208,8 @@ export function useRealtimeSync(options: RealtimeSyncOptions = {}) {
               const previousRemindersLength = previousRemindersCount.current
               
               if (currentRemindersCount > previousRemindersLength && hasShownInitialNotification.current) {
-                const newRemindersCount = currentRemindersCount - previousRemindersLength
-                
+                // Update badge - FloatingNotifications will handle the toast
                 updateBadge("reminder", session.id, currentRemindersCount)
-                
-                toast("Pengingat", {
-                  description: newRemindersCount === 1
-                    ? "1 jadwal dalam 30 menit ke depan"
-                    : `${newRemindersCount} jadwal dalam 30 menit ke depan`,
-                  icon: createElement(Bell, { className: "h-5 w-5" }),
-                  duration: 6000,
-                  position: "top-right",
-                  action: {
-                    label: "Lihat Pengingat",
-                    onClick: () => {
-                      if (typeof window !== 'undefined') {
-                        window.location.href = '/reminders'
-                      }
-                    },
-                  },
-                })
               }
               
               previousRemindersCount.current = currentRemindersCount
@@ -304,24 +223,8 @@ export function useRealtimeSync(options: RealtimeSyncOptions = {}) {
               const previousScheduleLength = previousScheduleCount.current
               
               if (currentScheduleCount !== previousScheduleLength && hasShownInitialNotification.current) {
+                // Update badge - FloatingNotifications will handle the toast
                 updateBadge("jadwal", session.id, currentScheduleCount > 0 ? 1 : 0)
-                
-                if (currentScheduleCount > previousScheduleLength) {
-                  toast("Jadwal Diperbarui", {
-                    description: "Jadwal kuliah telah disinkronisasi",
-                    icon: createElement(Calendar, { className: "h-5 w-5" }),
-                    duration: 6000,
-                    position: "top-right",
-                    action: {
-                      label: "Lihat Jadwal",
-                      onClick: () => {
-                        if (typeof window !== 'undefined') {
-                          window.location.href = '/jadwal'
-                        }
-                      },
-                    },
-                  })
-                }
               }
               
               previousScheduleCount.current = currentScheduleCount
@@ -365,50 +268,18 @@ export function useRealtimeSync(options: RealtimeSyncOptions = {}) {
     }
   }, [enabled, session, pollingInterval])
 
-  // Update refs when data changes from other sources (local changes, not from polling)
-  useEffect(() => {
-    if (!isPolling && session?.role === "mahasiswa") {
-      const currentYear = new Date().getFullYear()
-      const currentMonth = new Date().getMonth()
-      const isOddSemester = currentMonth >= 8 || currentMonth <= 1
-      const currentTerm = `${currentYear}/${currentYear + 1}-${isOddSemester ? "Ganjil" : "Genap"}`
-      
-      const { getKrsByUser } = useKrsStore.getState()
-      const currentKrs = getKrsByUser(session.id, currentTerm)
-      const currentKrsLength = currentKrs.length
-      
-      // Check if KRS was updated locally (not from polling)
-      if (currentKrsLength !== previousKrsCount.current && hasShownInitialNotification.current) {
-        const krsChange = currentKrsLength - previousKrsCount.current
-        
-        console.log(`[RealtimeSync] Local KRS change detected: ${previousKrsCount.current} -> ${currentKrsLength} (${krsChange > 0 ? '+' : ''}${krsChange})`)
-        
-        // Only show notification for additions
-        if (krsChange > 0) {
-          // Update badge to show new items
-          updateBadge("krs", session.id, krsChange)
-          
-          // Show toast for local additions
-          toast("Mata Kuliah Ditambahkan", {
-            description: krsChange === 1 
-              ? "1 mata kuliah ditambahkan ke KRS"
-              : `${krsChange} mata kuliah ditambahkan ke KRS`,
-            icon: createElement(BookOpen, { className: "h-5 w-5" }),
-            duration: 4000,
-            position: "top-right",
-          })
-        }
-        
-        previousKrsCount.current = currentKrsLength
-      }
-    }
-  }, [krsItems.length, isPolling, session, hasShownInitialNotification.current])
-
+  // Update refs when data changes from other sources
   useEffect(() => {
     if (subjects.length !== previousSubjectsCount.current && !isPolling) {
       previousSubjectsCount.current = subjects.length
     }
   }, [subjects.length, isPolling])
+
+  useEffect(() => {
+    if (krsItems.length !== previousKrsCount.current && !isPolling) {
+      previousKrsCount.current = krsItems.length
+    }
+  }, [krsItems.length, isPolling])
 
   return {
     isPolling,
