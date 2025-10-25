@@ -18,7 +18,6 @@ import { OfferingForm } from "@/components/subjects/OfferingForm"
 export function OfferingsTable() {
   const { offerings, removeOffering } = useOfferingsStore()
   const { getSubjectById } = useSubjectsStore()
-  const { getUserById } = useUsersStore()
   const { getKrsByOffering } = useKrsStore()
   const [searchTerm, setSearchTerm] = useState("")
   const [statusFilter, setStatusFilter] = useState<"all" | "buka" | "tutup">("all")
@@ -48,15 +47,18 @@ export function OfferingsTable() {
     const newStatus = offering.status === "buka" ? "tutup" : "buka"
     const action = newStatus === "buka" ? "membuka" : "menutup"
     
+    // Always show confirmation dialog
     const confirmed = await confirmAction(
-      `${newStatus === "buka" ? "Buka" : "Tutup"} Penawaran`,
-      `Apakah Anda yakin ingin ${action} penawaran "${subject?.nama}" kelas ${offering.kelas}?${newStatus === "buka" ? "\n\nMata kuliah akan muncul di KRS mahasiswa angkatan " + offering.angkatan : "\n\nMahasiswa tidak akan bisa mengambil mata kuliah ini"}`,
-      `Ya, ${newStatus === "buka" ? "Buka" : "Tutup"}`,
+      `${newStatus === "buka" ? "Buka" : "Tutup"} KRS`,
+      newStatus === "buka"
+        ? `Apakah Anda yakin ingin ${action} KRS "${subject?.nama}" kelas ${offering.kelas}?\n\nMata kuliah akan muncul di KRS mahasiswa angkatan ${offering.angkatan}.`
+        : `Apakah Anda yakin ingin ${action} KRS "${subject?.nama}" kelas ${offering.kelas}?\n\nMahasiswa tidak akan bisa mengambil mata kuliah ini.`,
+      `Ya, ${newStatus === "buka" ? "Buka" : "Tutup"} KRS`,
     )
 
     if (confirmed) {
       await useOfferingsStore.getState().updateOffering(offering.id, { status: newStatus })
-      showSuccess(`Penawaran berhasil di${action}`)
+      showSuccess(`KRS ${subject?.nama} berhasil di${action}`)
     }
   }
 

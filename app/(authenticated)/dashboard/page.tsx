@@ -48,6 +48,7 @@ import { useState, useEffect } from "react"
 import Link from "next/link"
 import { formatDistanceToNow, format } from "date-fns"
 import { id as idLocale } from "date-fns/locale"
+import { useRealtimeSync } from "@/hooks/use-realtime-sync"
 
 export default function DashboardPage() {
   const { session } = useSessionStore()
@@ -65,6 +66,15 @@ export default function DashboardPage() {
   const [dialogData, setDialogData] = useState<any[]>([])
   const [pressTimer, setPressTimer] = useState<NodeJS.Timeout | null>(null)
   const [pressingCard, setPressingCard] = useState<string | null>(null)
+
+  // Enable real-time sync for this page
+  const { isPolling } = useRealtimeSync({
+    enabled: true,
+    pollingInterval: 5000, // Poll every 5 seconds
+    onSubjectAdded: (subject) => {
+      console.log("[Dashboard] New subject detected:", subject)
+    },
+  })
 
   useEffect(() => {
     const timer = setInterval(() => setCurrentTime(new Date()), 1000)
@@ -544,6 +554,12 @@ export default function DashboardPage() {
                     })}{" "}
                     - {currentTime.toLocaleTimeString("id-ID")}
                   </p>
+                  {isPolling && (
+                    <div className="flex items-center gap-1 ml-2 px-2 py-0.5 rounded-full bg-green-100 dark:bg-green-900/30 border border-green-300 dark:border-green-700">
+                      <div className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse"></div>
+                      <span className="text-[10px] text-green-700 dark:text-green-400 font-medium">Live</span>
+                    </div>
+                  )}
                 </div>
                 
                 {/* Ucapan Selamat */}
@@ -590,7 +606,7 @@ export default function DashboardPage() {
       <div className={`grid gap-4 md:gap-6 grid-cols-2 w-full ${session.role === "mahasiswa" ? "lg:grid-cols-4" : "lg:grid-cols-3"}`}>
         <Card
           className={`card-interactive border-2 border-blue-200 dark:border-blue-800 hover:border-blue-400 dark:hover:border-blue-600 group w-full min-w-0 cursor-pointer select-none transition-all duration-200 ${
-            pressingCard === "schedule" ? "animate-bounce scale-105 shadow-2xl border-blue-500" : ""
+            pressingCard === "schedule" ? "scale-105 shadow-2xl border-blue-500" : ""
           }`}
           style={{ animationDelay: "0.1s" }}
           onMouseDown={() => handlePressStart("schedule")}
@@ -621,7 +637,7 @@ export default function DashboardPage() {
 
         <Card
           className={`card-interactive border-2 border-green-200 dark:border-green-800 hover:border-green-400 dark:hover:border-green-600 group w-full min-w-0 cursor-pointer select-none transition-all duration-200 ${
-            pressingCard === "subjects" ? "animate-bounce scale-105 shadow-2xl border-green-500" : ""
+            pressingCard === "subjects" ? "scale-105 shadow-2xl border-green-500" : ""
           }`}
           style={{ animationDelay: "0.2s" }}
           onMouseDown={() => handlePressStart("subjects")}
@@ -643,18 +659,28 @@ export default function DashboardPage() {
             <p className="text-xs md:text-sm text-muted-foreground">
               {session.role === "mahasiswa" ? 'Mata kuliah diambil' : 'Mata kuliah diampu'}
             </p>
-            <div className="mt-2 md:mt-3 flex items-center text-[10px] md:text-xs text-green-600">
-              <Target className="h-3 w-3 mr-1" />
-              {session.role === "mahasiswa" 
-                ? (userKrsItems.length === 0 ? 'Belum ada KRS' : `${userKrsItems.length} di KRS semester ini`)
-                : (taughtSubjects.length === 0 ? 'Belum mengampu' : `${taughtSubjects.length} mata kuliah aktif`)}
+            <div className="mt-2 md:mt-3 flex items-center justify-between gap-2">
+              <div className="flex items-center text-[10px] md:text-xs text-green-600">
+                <Target className="h-3 w-3 mr-1" />
+                {session.role === "mahasiswa" 
+                  ? (userKrsItems.length === 0 ? 'Belum ada KRS' : `${userKrsItems.length} mata kuliah`)
+                  : (taughtSubjects.length === 0 ? 'Belum mengampu' : `${taughtSubjects.length} mata kuliah aktif`)}
+              </div>
+              {session.role === "mahasiswa" && userKrsItems.length > 0 && (
+                <div className="flex items-center text-[10px] md:text-xs font-semibold text-green-600 bg-green-100 dark:bg-green-900/20 px-2 py-1 rounded-full">
+                  {userKrsItems.reduce((total, item) => {
+                    const subject = getSubjectById(item.subjectId)
+                    return total + (subject?.sks || 0)
+                  }, 0)} SKS
+                </div>
+              )}
             </div>
           </CardContent>
         </Card>
 
         <Card
           className={`card-interactive border-2 border-orange-200 dark:border-orange-800 hover:border-orange-400 dark:hover:border-orange-600 group w-full min-w-0 cursor-pointer select-none transition-all duration-200 ${
-            pressingCard === "reminders" ? "animate-bounce scale-105 shadow-2xl border-orange-500" : ""
+            pressingCard === "reminders" ? "scale-105 shadow-2xl border-orange-500" : ""
           }`}
           style={{ animationDelay: "0.3s" }}
           onMouseDown={() => handlePressStart("reminders")}
@@ -679,7 +705,7 @@ export default function DashboardPage() {
         {/* Tugas/Materi Card - Show for all users */}
         <Card
           className={`card-interactive border-2 border-purple-200 dark:border-purple-800 hover:border-purple-400 dark:hover:border-purple-600 group w-full min-w-0 cursor-pointer select-none transition-all duration-200 ${
-            pressingCard === "coursework" ? "animate-bounce scale-105 shadow-2xl border-purple-500" : ""
+            pressingCard === "coursework" ? "scale-105 shadow-2xl border-purple-500" : ""
           }`}
           style={{ animationDelay: "0.4s" }}
           onMouseDown={() => handlePressStart("coursework")}

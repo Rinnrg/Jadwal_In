@@ -113,7 +113,24 @@ export function SubjectTable({ subjects: subjectsProp, onEdit }: SubjectTablePro
         (o) => o.angkatan === angkatan && o.kelas === kelas
       )
 
-      // If no offerings exist, create them first with status "buka"
+      // Check current status - if any is "buka", we'll close all; if all "tutup", we'll open all
+      const hasOpenOfferings = allOfferings.some((o) => o.status === "buka")
+      const newStatus = hasOpenOfferings ? "tutup" : "buka"
+
+      // If closing offerings, show confirmation first
+      if (newStatus === "tutup") {
+        const confirmed = await confirmAction(
+          "Tutup KRS Kelas",
+          `Apakah Anda yakin ingin menutup KRS untuk Angkatan ${angkatan} Kelas ${kelas}?\n\nMahasiswa tidak akan bisa mengambil mata kuliah dari kelas ini.`,
+          "Ya, Tutup KRS"
+        )
+        
+        if (!confirmed) {
+          return
+        }
+      }
+
+      // If no offerings exist, create them first with status based on toggle
       if (allOfferings.length === 0) {
         const currentYear = new Date().getFullYear()
         const currentMonth = new Date().getMonth()
@@ -130,7 +147,7 @@ export function SubjectTable({ subjects: subjectsProp, onEdit }: SubjectTablePro
                 body: JSON.stringify({
                   subjectId: subject.id,
                   semester: subject.semester,
-                  status: 'buka',
+                  status: newStatus, // Use the new status instead of hardcoded 'buka'
                   angkatan: subject.angkatan,
                   kelas: subject.kelas,
                   term: currentTerm,
@@ -147,14 +164,10 @@ export function SubjectTable({ subjects: subjectsProp, onEdit }: SubjectTablePro
         await useOfferingsStore.getState().fetchOfferings()
         
         showSuccess(
-          `Penawaran untuk Angkatan ${angkatan} Kelas ${kelas} telah dibuat dan dibuka`
+          `Penawaran untuk Angkatan ${angkatan} Kelas ${kelas} telah dibuat dan ${newStatus === "buka" ? "dibuka" : "ditutup"}`
         )
         return
       }
-
-      // Check current status - if any is "buka", we'll close all; if all "tutup", we'll open all
-      const hasOpenOfferings = allOfferings.some((o) => o.status === "buka")
-      const newStatus = hasOpenOfferings ? "tutup" : "buka"
 
       // Update all offerings
       await Promise.all(

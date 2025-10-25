@@ -237,16 +237,29 @@ export function ReminderList({ userId, onEdit }: ReminderListProps) {
                               variant="ghost"
                               size="sm"
                               className="h-8 w-8 p-0 hover:scale-110 transition-transform duration-200"
+                              onClick={(e) => e.stopPropagation()}
                             >
                               <MoreHorizontal className="h-4 w-4" />
+                              <span className="sr-only">Menu aksi</span>
                             </Button>
                           </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end">
-                            <DropdownMenuItem onClick={() => onEdit?.(reminder)}>
+                          <DropdownMenuContent align="end" className="w-48">
+                            <DropdownMenuItem 
+                              onClick={(e) => {
+                                e.preventDefault()
+                                onEdit?.(reminder)
+                              }}
+                            >
                               <Edit className="mr-2 h-4 w-4" />
                               Edit
                             </DropdownMenuItem>
-                            <DropdownMenuItem onClick={() => handleDelete(reminder)} className="text-destructive">
+                            <DropdownMenuItem 
+                              variant="destructive"
+                              onClick={(e) => {
+                                e.preventDefault()
+                                handleDelete(reminder)
+                              }}
+                            >
                               <Trash2 className="mr-2 h-4 w-4" />
                               Hapus
                             </DropdownMenuItem>

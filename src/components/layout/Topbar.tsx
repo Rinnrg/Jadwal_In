@@ -6,6 +6,7 @@ import { useSessionStore } from "@/stores/session.store"
 import { useNavigation } from "@/hooks/useNavigation"
 import { Button } from "@/components/ui/button"
 import { UserMenu } from "@/components/layout/UserMenu"
+import { NotificationBell } from "@/components/notification-bell"
 import { ChevronRight, Search, Bell, Sparkles } from "lucide-react"
 import ThemeSwitcher from "@/src/components/landing/theme-switcher"
 import Link from "next/link"
@@ -57,6 +58,7 @@ export function Topbar() {
         </div>
 
         <div className="flex items-center space-x-3">
+          <NotificationBell />
           <ThemeSwitcher />
 
           {session && <UserMenu />}
