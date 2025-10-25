@@ -53,13 +53,26 @@ export function KrsPicker({ userId, term }: KrsPickerProps) {
   const availableOfferings = useMemo(() => {
     // Get ALL offerings for angkatan (tidak filter by kelas, mahasiswa bebas pilih kelas mana saja)
     const offerings = getOfferingsForStudent(userAngkatan)
+    
+    console.log('[KrsPicker] Total offerings for angkatan', userAngkatan, ':', offerings.length)
+    console.log('[KrsPicker] Offerings status breakdown:', {
+      buka: offerings.filter(o => o.status === 'buka').length,
+      tutup: offerings.filter(o => o.status === 'tutup').length,
+    })
 
     return offerings
       .map((offering) => {
         const subject = getSubjectById(offering.subjectId)
 
         // Only show if subject exists and is active
-        if (!subject || subject.status !== "aktif") return null
+        if (!subject || subject.status !== "aktif") {
+          if (!subject) {
+            console.log('[KrsPicker] Skipping offering - subject not found:', offering.subjectId)
+          } else if (subject.status !== "aktif") {
+            console.log('[KrsPicker] Skipping offering - subject not active:', subject.nama, 'status:', subject.status)
+          }
+          return null
+        }
 
         // CRITICAL CHANGE: Check berdasarkan NAMA mata kuliah, bukan hanya subjectId
         // Ini mencegah user mengambil "Manajemen Proyek" di kelas berbeda meskipun kode berbeda

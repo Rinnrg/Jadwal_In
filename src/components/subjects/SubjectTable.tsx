@@ -87,8 +87,69 @@ export function SubjectTable({ subjects: subjectsProp, onEdit }: SubjectTablePro
     try {
       const newStatus = subject.status === "aktif" ? "arsip" : "aktif"
       await updateSubject(subject.id, { status: newStatus })
-      showSuccess(`Mata kuliah "${subject.nama}" diubah menjadi ${newStatus}`)
+      
+      // CRITICAL: When activating subject, also open all offerings for this subject
+      // When archiving subject, close all offerings for this subject
+      const offerings = getOfferingsBySubject(subject.id)
+      const newOfferingStatus = newStatus === "aktif" ? "buka" : "tutup"
+      
+      console.log(`[SubjectTable] Toggling subject "${subject.nama}" to ${newStatus}`)
+      console.log(`[SubjectTable] Found ${offerings.length} offerings for subject`)
+      
+      if (newStatus === "aktif" && offerings.length === 0) {
+        // Auto-create offering if subject is activated but has no offerings
+        console.log(`[SubjectTable] Auto-creating offering for subject "${subject.nama}"`)
+        
+        const { addOffering } = useOfferingsStore.getState()
+        
+        // Get current term
+        const currentYear = new Date().getFullYear()
+        const currentMonth = new Date().getMonth()
+        const isOddSemester = currentMonth >= 8 || currentMonth <= 1
+        const currentTerm = `${currentYear}/${currentYear + 1}-${isOddSemester ? "Ganjil" : "Genap"}`
+        
+        // Create offering for this subject's angkatan and kelas
+        try {
+          await addOffering({
+            subjectId: subject.id,
+            angkatan: subject.angkatan,
+            kelas: subject.kelas || "A", // Default to A if no kelas
+            semester: subject.semester,
+            term: currentTerm,
+            status: "buka",
+            capacity: 40, // Default capacity
+          })
+          
+          showSuccess(
+            `Mata kuliah "${subject.nama}" diaktifkan dan penawaran dibuat untuk Angkatan ${subject.angkatan} Kelas ${subject.kelas || "A"}`
+          )
+        } catch (error) {
+          console.error('[SubjectTable] Error creating offering:', error)
+          showSuccess(`Mata kuliah "${subject.nama}" diaktifkan, tapi gagal membuat penawaran otomatis`)
+        }
+      } else if (offerings.length > 0) {
+        // Update all existing offerings for this subject
+        console.log(`[SubjectTable] Updating ${offerings.length} offerings to ${newOfferingStatus}`)
+        
+        await Promise.all(
+          offerings.map(offering => 
+            updateOffering(offering.id, { status: newOfferingStatus })
+          )
+        )
+        
+        showSuccess(
+          `Mata kuliah "${subject.nama}" diubah menjadi ${newStatus} dan ${offerings.length} penawaran diubah menjadi ${newOfferingStatus}`
+        )
+      } else {
+        // Just update subject status (archiving with no offerings)
+        showSuccess(`Mata kuliah "${subject.nama}" diubah menjadi ${newStatus}`)
+      }
+      
+      // Force refresh offerings and KRS
+      const { fetchOfferings } = useOfferingsStore.getState()
+      setTimeout(() => fetchOfferings(undefined, true), 100)
     } catch (error) {
+      console.error('[SubjectTable] Error toggling subject status:', error)
       showError("Gagal mengubah status mata kuliah")
     }
   }

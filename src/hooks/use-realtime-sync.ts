@@ -71,9 +71,19 @@ export function useRealtimeSync(options: RealtimeSyncOptions = {}) {
           const latestSubjects = await response.json()
           
           // Also fetch offerings to ensure KRS page has latest data with cache busting
-          const offeringsResponse = await fetch(`/api/offerings?_t=${Date.now()}`)
+          const offeringsResponse = await fetch(`/api/offerings?_t=${Date.now()}`, {
+            cache: 'no-store',
+            headers: {
+              'Cache-Control': 'no-cache',
+            }
+          })
           if (offeringsResponse.ok) {
             const latestOfferings = await offeringsResponse.json()
+            console.log('[RealtimeSync] Fetched offerings:', latestOfferings.length)
+            console.log('[RealtimeSync] Offerings status breakdown:', {
+              buka: latestOfferings.filter((o: any) => o.status === 'buka').length,
+              tutup: latestOfferings.filter((o: any) => o.status === 'tutup').length,
+            })
             useOfferingsStore.setState({ offerings: latestOfferings })
           }
           
