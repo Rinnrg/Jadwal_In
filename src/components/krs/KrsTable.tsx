@@ -116,12 +116,18 @@ export function KrsTable({ userId, term, onScheduleSuggestion }: KrsTableProps) 
     )
 
     if (confirmed) {
-      removeKrsItem(krsItem.id, userId, displayName)
-      
-      // Force UI update
-      setForceUpdate(prev => prev + 1)
-      
-      showSuccess(`${displayName} berhasil dihapus dari KRS`)
+      try {
+        await removeKrsItem(krsItem.id, userId, displayName)
+        
+        // Force UI update
+        setForceUpdate(prev => prev + 1)
+        
+        showSuccess(`${displayName} berhasil dihapus dari KRS`)
+      } catch (error) {
+        console.error('[KRS Table] Error removing from KRS:', error)
+        const errorMessage = error instanceof Error ? error.message : "Gagal menghapus dari KRS"
+        showError(errorMessage)
+      }
     }
   }
 

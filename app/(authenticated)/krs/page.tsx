@@ -22,7 +22,7 @@ export default function KrsPage() {
   const { session } = useSessionStore()
   const { subjects, fetchSubjects, isLoading: subjectsLoading } = useSubjectsStore()
   const { fetchOfferings, isLoading: offeringsLoading } = useOfferingsStore()
-  const { getTotalSks, clearKrsByUserAndTerm } = useKrsStore()
+  const { getTotalSks, clearKrsByUserAndTerm, fetchKrsItems, isLoading: krsLoading } = useKrsStore()
   const { getProfile } = useProfileStore()
   const { markAsRead } = useNotificationStore()
 
@@ -34,9 +34,30 @@ export default function KrsPage() {
 
   // Fetch data on mount
   useEffect(() => {
-    fetchSubjects()
-    fetchOfferings()
-  }, [])
+    const loadData = async () => {
+      if (!session) return
+      
+      try {
+        // Fetch subjects and offerings
+        await Promise.all([
+          fetchSubjects(),
+          fetchOfferings(),
+        ])
+        
+        // Fetch KRS items for current user
+        const currentYear = new Date().getFullYear()
+        const currentMonth = new Date().getMonth()
+        const isOddSemester = currentMonth >= 8 || currentMonth <= 1
+        const currentTerm = `${currentYear}/${currentYear + 1}-${isOddSemester ? "Ganjil" : "Genap"}`
+        
+        await fetchKrsItems(session.id, currentTerm)
+      } catch (error) {
+        console.error('[KRS Page] Error loading data:', error)
+      }
+    }
+    
+    loadData()
+  }, [session?.id])
 
   // Mark KRS notification as read when user opens this page
   useEffect(() => {
@@ -62,7 +83,7 @@ export default function KrsPage() {
   const totalSks = getTotalSks(session.id, currentTerm, subjects)
 
   // Show loading state with skeleton
-  if (subjectsLoading || offeringsLoading) {
+  if (subjectsLoading || offeringsLoading || krsLoading) {
     return (
       <div className="space-y-4 md:space-y-6 px-0 md:px-4">
         {/* Header Skeleton */}

@@ -163,8 +163,8 @@ export function KrsPicker({ userId, term }: KrsPickerProps) {
     setAddingOffering(offering.id)
     
     try {
-      // Add to KRS store
-      addKrsItem(userId, offering.subjectId, term, offering.id, subject?.nama, subject?.sks)
+      // Add to KRS store (now async with API call)
+      await addKrsItem(userId, offering.subjectId, term, offering.id, subject?.nama, subject?.sks)
       
       // Force UI update
       setForceUpdate(prev => prev + 1)
@@ -172,7 +172,8 @@ export function KrsPicker({ userId, term }: KrsPickerProps) {
       showSuccess(`${subject?.nama} (Kelas ${offering.kelas}) berhasil ditambahkan ke KRS`)
     } catch (error) {
       console.error('[KRS] Error adding to KRS:', error)
-      showError("Gagal menambahkan mata kuliah ke KRS")
+      const errorMessage = error instanceof Error ? error.message : "Gagal menambahkan mata kuliah ke KRS"
+      showError(errorMessage)
     } finally {
       // Small delay to ensure state update is visible
       setTimeout(() => {

@@ -77,6 +77,20 @@ export function useRealtimeSync(options: RealtimeSyncOptions = {}) {
             useOfferingsStore.setState({ offerings: latestOfferings })
           }
           
+          // Also fetch KRS items for mahasiswa to ensure data is synced with database
+          if (session.role === "mahasiswa") {
+            const currentYear = new Date().getFullYear()
+            const currentMonth = new Date().getMonth()
+            const isOddSemester = currentMonth >= 8 || currentMonth <= 1
+            const currentTerm = `${currentYear}/${currentYear + 1}-${isOddSemester ? "Ganjil" : "Genap"}`
+            
+            const krsResponse = await fetch(`/api/krs?userId=${session.id}&term=${currentTerm}&_t=${Date.now()}`)
+            if (krsResponse.ok) {
+              const latestKrsItems = await krsResponse.json()
+              useKrsStore.setState({ krsItems: latestKrsItems })
+            }
+          }
+          
           // On initial mount, just update the count silently
           if (isInitialMount.current) {
             previousSubjectsCount.current = latestSubjects.length
