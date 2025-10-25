@@ -46,6 +46,7 @@ export function useRealtimeSync(options: RealtimeSyncOptions = {}) {
   const intervalRef = useRef<NodeJS.Timeout | null>(null)
   const isInitialMount = useRef(true)
   const hasShownInitialNotification = useRef(false)
+  const lastPollTime = useRef<number>(0)
 
   useEffect(() => {
     if (!enabled || !session) {
@@ -54,6 +55,13 @@ export function useRealtimeSync(options: RealtimeSyncOptions = {}) {
 
     const pollData = async () => {
       if (isPolling) return // Prevent overlapping polls
+      
+      const now = Date.now()
+      // Prevent polling too frequently (minimum 3 seconds between polls)
+      if (now - lastPollTime.current < 3000) {
+        return
+      }
+      lastPollTime.current = now
       
       setIsPolling(true)
       try {
@@ -103,10 +111,10 @@ export function useRealtimeSync(options: RealtimeSyncOptions = {}) {
             }
             
             isInitialMount.current = false
-            // Wait a bit before allowing notifications
+            // Wait a bit before allowing notifications (increased to 8 seconds)
             setTimeout(() => {
               hasShownInitialNotification.current = true
-            }, 3000) // 3 second grace period
+            }, 8000) // 8 second grace period to prevent spam
             return
           }
           
