@@ -41,6 +41,37 @@ export function useNotificationManager() {
     jadwal: 0,
   })
 
+  // Helper function to safely call store functions
+  const safeUpdateBadge = useCallback((type: string, userId: string, count: number) => {
+    if (updateBadge && typeof updateBadge === 'function') {
+      try {
+        updateBadge(type as any, userId, count)
+      } catch (err) {
+        console.error(`[NotificationManager] Error updating badge ${type}:`, err)
+      }
+    }
+  }, [updateBadge])
+
+  const safeMarkNotificationShown = useCallback((type: string, userId: string, count: number) => {
+    if (markNotificationShown && typeof markNotificationShown === 'function') {
+      try {
+        markNotificationShown(type as any, userId, count)
+      } catch (err) {
+        console.error(`[NotificationManager] Error marking notification ${type}:`, err)
+      }
+    }
+  }, [markNotificationShown])
+
+  const safeClearBadge = useCallback((type: string, userId: string) => {
+    if (clearBadge && typeof clearBadge === 'function') {
+      try {
+        clearBadge(type as any, userId)
+      } catch (err) {
+        console.error(`[NotificationManager] Error clearing badge ${type}:`, err)
+      }
+    }
+  }, [clearBadge])
+
   // Check for upcoming reminders (30 minutes before)
   const checkReminders = useCallback(() => {
     if (!userId) return
@@ -66,10 +97,10 @@ export function useNotificationManager() {
     // Only update if count increased (new reminders)
     // Don't trigger notification if count decreased (reminders passed)
     if (count !== prevCount) {
-      updateBadge("reminder", userId, count)
+      safeUpdateBadge("reminder", userId, count)
       previousCounts.current.reminder = count
     }
-  }, [userId, getActiveReminders, updateBadge])
+  }, [userId, getActiveReminders, safeUpdateBadge])
 
   // Check for new KRS offerings (pending enrollments)
   const checkKRS = useCallback(() => {
@@ -89,17 +120,17 @@ export function useNotificationManager() {
       
       // Only update if count actually changed
       if (count !== prevCount) {
-        updateBadge("krs", userId, count)
+        safeUpdateBadge("krs", userId, count)
         previousCounts.current.krs = count
       }
     } catch (error) {
       // If there's an error, clear the badge
       if (!isInitialLoad.current) {
-        clearBadge("krs", userId)
+        safeClearBadge("krs", userId)
       }
       previousCounts.current.krs = 0
     }
-  }, [userId, getKrsByUser, updateBadge, clearBadge])
+  }, [userId, getKrsByUser, safeUpdateBadge, safeClearBadge])
 
   // Check for new grades in KHS
   const checkKHS = useCallback(() => {
@@ -121,16 +152,16 @@ export function useNotificationManager() {
       
       // Only update if count increased (new grades added)
       if (count !== prevCount) {
-        updateBadge("khs", userId, count)
+        safeUpdateBadge("khs", userId, count)
         previousCounts.current.khs = count
       }
     } catch (error) {
       if (!isInitialLoad.current) {
-        clearBadge("khs", userId)
+        safeClearBadge("khs", userId)
       }
       previousCounts.current.khs = 0
     }
-  }, [userId, getGradesByUser, updateBadge, clearBadge])
+  }, [userId, getGradesByUser, safeUpdateBadge, safeClearBadge])
 
   // Check for new assignments and materials (asynchronous learning)
   const checkAsynchronous = useCallback(() => {
@@ -160,16 +191,16 @@ export function useNotificationManager() {
       
       // Only update if count changed
       if (count !== prevCount) {
-        updateBadge("asynchronous", userId, count)
+        safeUpdateBadge("asynchronous", userId, count)
         previousCounts.current.asynchronous = count
       }
     } catch (error) {
       if (!isInitialLoad.current) {
-        clearBadge("asynchronous", userId)
+        safeClearBadge("asynchronous", userId)
       }
       previousCounts.current.asynchronous = 0
     }
-  }, [userId, assignments, materials, updateBadge, clearBadge])
+  }, [userId, assignments, materials, safeUpdateBadge, safeClearBadge])
 
   // Check for schedule updates (synced schedules)
   const checkSchedule = useCallback(() => {
@@ -189,16 +220,16 @@ export function useNotificationManager() {
       
       // Only update if schedule count changed
       if (count !== prevCount) {
-        updateBadge("jadwal", userId, count > 0 ? 1 : 0)
+        safeUpdateBadge("jadwal", userId, count > 0 ? 1 : 0)
         previousCounts.current.jadwal = count
       }
     } catch (error) {
       if (!isInitialLoad.current) {
-        clearBadge("jadwal", userId)
+        safeClearBadge("jadwal", userId)
       }
       previousCounts.current.jadwal = 0
     }
-  }, [userId, getEventsByUser, updateBadge, clearBadge])
+  }, [userId, getEventsByUser, safeUpdateBadge, safeClearBadge])
 
   // Initial check and set up intervals
   useEffect(() => {
@@ -243,9 +274,9 @@ export function useNotificationManager() {
         // This ensures badges show in UI but don't trigger notifications
         const krsItems = getKrsByUser(userId)
         const krsCount = krsItems.length
-        updateBadge("krs", userId, krsCount)
+        safeUpdateBadge("krs", userId, krsCount)
         // CRITICAL: Mark as already notified to prevent showing notification on refresh
-        markNotificationShown("krs", userId, krsCount)
+        safeMarkNotificationShown("krs", userId, krsCount)
         
         const now = nowUTC()
         const thirtyMinutesLater = now + 30 * 60 * 1000
@@ -254,23 +285,23 @@ export function useNotificationManager() {
           (reminder) => reminder.dueUTC > now && reminder.dueUTC <= thirtyMinutesLater
         )
         const reminderCount = upcomingReminders.length
-        updateBadge("reminder", userId, reminderCount)
-        markNotificationShown("reminder", userId, reminderCount)
+        safeUpdateBadge("reminder", userId, reminderCount)
+        safeMarkNotificationShown("reminder", userId, reminderCount)
         
         const grades = getGradesByUser(userId)
         const gradeCount = grades.filter((grade: any) => grade.nilaiHuruf).length
-        updateBadge("khs", userId, gradeCount)
-        markNotificationShown("khs", userId, gradeCount)
+        safeUpdateBadge("khs", userId, gradeCount)
+        safeMarkNotificationShown("khs", userId, gradeCount)
         
         const schedule = getEventsByUser(userId)
         const scheduleCount = schedule.length > 0 ? 1 : 0
-        updateBadge("jadwal", userId, scheduleCount)
-        markNotificationShown("jadwal", userId, scheduleCount)
+        safeUpdateBadge("jadwal", userId, scheduleCount)
+        safeMarkNotificationShown("jadwal", userId, scheduleCount)
         
         const userAssignments = assignments.filter(a => a.dueUTC && a.dueUTC > nowUTC())
         const asyncCount = userAssignments.length + materials.length
-        updateBadge("asynchronous", userId, asyncCount)
-        markNotificationShown("asynchronous", userId, asyncCount)
+        safeUpdateBadge("asynchronous", userId, asyncCount)
+        safeMarkNotificationShown("asynchronous", userId, asyncCount)
         
         console.log('[NotificationManager] Initial badges set and marked as notified')
         
