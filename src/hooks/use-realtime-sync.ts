@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState, createElement } from "react"
 import { useSessionStore } from "@/stores/session.store"
 import { useSubjectsStore } from "@/stores/subjects.store"
+import { useOfferingsStore } from "@/stores/offerings.store"
 import { useKrsStore } from "@/stores/krs.store"
 import { useNotificationStore } from "@/stores/notification.store"
 import { useGradesStore } from "@/stores/grades.store"
@@ -28,6 +29,7 @@ export function useRealtimeSync(options: RealtimeSyncOptions = {}) {
 
   const { session } = useSessionStore()
   const { subjects, fetchSubjects } = useSubjectsStore()
+  const { fetchOfferings } = useOfferingsStore()
   const { krsItems } = useKrsStore()
   const { grades } = useGradesStore()
   const { assignments, materials } = useCourseworkStore()
@@ -69,6 +71,13 @@ export function useRealtimeSync(options: RealtimeSyncOptions = {}) {
         const response = await fetch('/api/subjects')
         if (response.ok) {
           const latestSubjects = await response.json()
+          
+          // Also fetch offerings to ensure KRS page has latest data
+          const offeringsResponse = await fetch('/api/offerings')
+          if (offeringsResponse.ok) {
+            const latestOfferings = await offeringsResponse.json()
+            useOfferingsStore.setState({ offerings: latestOfferings })
+          }
           
           // On initial mount, just update the count silently
           if (isInitialMount.current) {
@@ -125,6 +134,9 @@ export function useRealtimeSync(options: RealtimeSyncOptions = {}) {
             
             // Update the store silently first
             useSubjectsStore.setState({ subjects: latestSubjects })
+            
+            // Also update previousSubjectsCount to prevent duplicate notifications
+            previousSubjectsCount.current = latestSubjects.length
             
             // For mahasiswa, check if new subjects were added to their KRS
             if (session.role === "mahasiswa") {
@@ -315,26 +327,13 @@ export function useRealtimeSync(options: RealtimeSyncOptions = {}) {
               // Call optional callback
               onSubjectAdded?.(subject)
             })
-            
-            previousSubjectsCount.current = latestSubjects.length
-          } else if (latestSubjects.length !== subjects.length) {
-            // If count changed (deletion), update silently
-            useSubjectsStore.setState({ subjects: latestSubjects })
-            previousSubjectsCount.current = latestSubjects.length
           } else {
-            // Check for updates to existing subjects
-            const hasUpdates = latestSubjects.some((newSubject: any) => {
-              const oldSubject = subjects.find((s: any) => s.id === newSubject.id)
-              if (!oldSubject) return false
-              
-              // Simple deep comparison
-              return JSON.stringify(oldSubject) !== JSON.stringify(newSubject)
-            })
-            
-            if (hasUpdates) {
-              useSubjectsStore.setState({ subjects: latestSubjects })
-            }
+            // Even if count didn't change, update the store to catch offering status changes
+            useSubjectsStore.setState({ subjects: latestSubjects })
           }
+          
+          // Always update previousSubjectsCount at the end
+          previousSubjectsCount.current = latestSubjects.length
         }
         
         // You can add more polling for other data types here
