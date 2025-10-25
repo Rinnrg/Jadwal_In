@@ -132,7 +132,7 @@ export function useNotificationSync() {
     
     const upcomingReminders = reminders.filter(reminder => 
       reminder.userId === session.id &&
-      !reminder.isCompleted &&
+      reminder.isActive &&
       reminder.dueUTC > now &&
       reminder.dueUTC <= thirtyMinutesLater
     )
