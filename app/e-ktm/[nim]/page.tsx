@@ -71,15 +71,6 @@ export default async function EKTMPublicPage({ params }: PageProps) {
       }}
     >
       <div className="w-full max-w-lg">
-        <div className="text-center mb-6">
-          <h1 className="text-2xl font-bold text-gray-900 mb-2 drop-shadow-md">
-            E-KTM Digital
-          </h1>
-          <p className="text-sm text-gray-700 drop-shadow">
-            Kartu Tanda Mahasiswa Elektronik
-          </p>
-        </div>
-        
         <div className="bg-white/90 backdrop-blur-sm rounded-2xl shadow-xl p-6">
           <EKTMCard
             name={profile.user.name}
