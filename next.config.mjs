@@ -2,9 +2,6 @@
 const nextConfig = {
   reactStrictMode: true,
   swcMinify: true,
-  experimental: {
-    optimizeCss: true,
-  },
   // Ensure CSS is properly handled
   webpack: (config) => {
     config.resolve.fallback = {
