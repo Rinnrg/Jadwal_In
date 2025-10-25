@@ -180,22 +180,22 @@ export function SubjectTable({ subjects: subjectsProp, onEdit }: SubjectTablePro
     }
   }
 
-  const handleStoreToKRS = async (angkatan: number | string, kelas: string) => {
+  const handleRefreshKRS = async (angkatan: number | string, kelas: string) => {
     try {
-      // Get all subjects in this group
-      const groupSubjects = subjects.filter(
-        (s) => s.angkatan === angkatan && s.kelas === kelas
+      // Get all ACTIVE subjects in this group
+      const activeSubjects = subjects.filter(
+        (s) => s.angkatan === angkatan && s.kelas === kelas && s.status === "aktif"
       )
 
-      if (groupSubjects.length === 0) {
-        showError("Tidak ada mata kuliah untuk grup ini")
+      if (activeSubjects.length === 0) {
+        showError("Tidak ada mata kuliah aktif untuk grup ini. Pastikan mata kuliah sudah diaktifkan terlebih dahulu.")
         return
       }
 
       const confirmed = await confirmAction(
-        "Store ke KRS Mahasiswa",
-        `Apakah Anda yakin ingin menambahkan semua mata kuliah Angkatan ${angkatan} Kelas ${kelas} ke KRS mahasiswa?\n\nSemua mahasiswa dengan angkatan dan kelas yang sesuai akan mendapatkan mata kuliah ini di KRS mereka.`,
-        "Ya, Store ke KRS"
+        "Refresh KRS Mahasiswa",
+        `Refresh akan menambahkan ${activeSubjects.length} mata kuliah AKTIF ke KRS mahasiswa Angkatan ${angkatan} Kelas ${kelas}.\n\nHanya mata kuliah dengan status AKTIF yang akan ditambahkan.`,
+        "Ya, Refresh KRS"
       )
       
       if (!confirmed) {
@@ -229,9 +229,9 @@ export function SubjectTable({ subjects: subjectsProp, onEdit }: SubjectTablePro
 
       let addedCount = 0
       
-      // Add each subject to each mahasiswa's KRS
+      // Add each ACTIVE subject to each mahasiswa's KRS
       for (const mahasiswa of targetMahasiswa) {
-        for (const subject of groupSubjects) {
+        for (const subject of activeSubjects) {
           // Check if already in KRS
           const { isSubjectInKrs } = useKrsStore.getState()
           if (!isSubjectInKrs(mahasiswa.id, subject.id, currentTerm)) {
@@ -242,11 +242,11 @@ export function SubjectTable({ subjects: subjectsProp, onEdit }: SubjectTablePro
       }
 
       showSuccess(
-        `Berhasil menambahkan ${addedCount} mata kuliah ke KRS ${targetMahasiswa.length} mahasiswa`
+        `Berhasil menambahkan ${addedCount} mata kuliah AKTIF ke KRS ${targetMahasiswa.length} mahasiswa`
       )
     } catch (error) {
-      console.error('Error storing to KRS:', error)
-      showError("Gagal menambahkan ke KRS mahasiswa")
+      console.error('Error refreshing KRS:', error)
+      showError("Gagal refresh KRS mahasiswa")
     }
   }
 
@@ -353,7 +353,7 @@ export function SubjectTable({ subjects: subjectsProp, onEdit }: SubjectTablePro
                           {group.subjects.length} MK
                         </span>
                       </div>
-                      <div className="flex items-center gap-1.5 md:gap-2 sm:ml-auto">
+                      <div className="flex items-center gap-1.5 md:gap-2 sm:ml-auto flex-wrap">
                         <Button
                           size="sm"
                           variant={getGroupOfferingsStatus(group.angkatan, group.kelas) === "buka" ? "default" : "outline"}
@@ -361,6 +361,15 @@ export function SubjectTable({ subjects: subjectsProp, onEdit }: SubjectTablePro
                           className="text-xs md:text-sm h-8 md:h-9"
                         >
                           {getGroupOfferingsStatus(group.angkatan, group.kelas) === "buka" ? "Tutup KRS" : "Buka KRS"}
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="secondary"
+                          onClick={() => handleRefreshKRS(group.angkatan, group.kelas)}
+                          className="text-xs md:text-sm h-8 md:h-9"
+                        >
+                          <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="mr-1"><path d="M21.5 2v6h-6M2.5 22v-6h6M2 11.5a10 10 0 0 1 18.8-4.3M22 12.5a10 10 0 0 1-18.8 4.2"/></svg>
+                          Refresh KRS
                         </Button>
                         <span className="text-[10px] md:text-xs text-muted-foreground">
                           {getGroupOfferingsStatus(group.angkatan, group.kelas) === "buka" ? "Buka" : 
