@@ -68,9 +68,9 @@ export function UserForm({ user, onSuccess, onCancel }: UserFormProps) {
   } | null>(null)
 
   const form = useForm<any>({
-    resolver: zodResolver(
-      selectedRole === "mahasiswa" ? mahasiswaFormSchema : staffFormSchema
-    ) as any,
+    resolver: selectedRole === "mahasiswa" 
+      ? zodResolver(mahasiswaFormSchema) 
+      : zodResolver(staffFormSchema),
     defaultValues: selectedRole === "mahasiswa" 
       ? {
           name: user?.name || "",
