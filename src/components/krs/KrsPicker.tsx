@@ -52,29 +52,29 @@ export function KrsPicker({ userId, term }: KrsPickerProps) {
         // Only show if subject exists and is active
         if (!subject || subject.status !== "aktif") return null
 
-        // CRITICAL: Use real-time check from store, bukan dari cached Set
-        // Ini memastikan UI selalu sinkron dengan data terbaru
-        const isSubjectAlreadyInKrs = isSubjectInKrs(userId, offering.subjectId, term)
-        const isThisOfferingInKrs = isOfferingInKrs(userId, offering.id)
+        // CRITICAL CHANGE: Check berdasarkan NAMA mata kuliah, bukan hanya subjectId
+        // Ini mencegah user mengambil "Manajemen Proyek" di kelas berbeda meskipun kode berbeda
         
-        // Check if this exact offering is already taken (same class)
+        // Cek apakah sudah ada mata kuliah dengan NAMA yang sama di KRS
+        const subjectWithSameName = userKrsItems.find(krsItem => {
+          const krsSubject = getSubjectById(krsItem.subjectId)
+          return krsSubject && krsSubject.nama.toLowerCase() === subject.nama.toLowerCase()
+        })
+        
+        // Check if this exact offering is already taken (same offering ID)
+        const isThisOfferingInKrs = isOfferingInKrs(userId, offering.id)
         const isAlreadyEnrolled = isThisOfferingInKrs
         
-        // Check if subject is already taken in ANOTHER class
-        // Jika subject sudah ada di KRS tapi bukan offering ini, berarti diambil di kelas lain
-        const isSubjectTakenInOtherClass = isSubjectAlreadyInKrs && !isThisOfferingInKrs
+        // Check if subject with SAME NAME is already taken (bisa beda kode, tapi nama sama)
+        const isSubjectTakenInOtherClass = subjectWithSameName && !isThisOfferingInKrs
         
         // Get the class name where this subject was already taken
         let takenInClass = ''
-        if (isSubjectTakenInOtherClass) {
-          const existingKrsItem = userKrsItems.find(item => item.subjectId === offering.subjectId)
-          if (existingKrsItem?.offeringId) {
-            // Find the offering to get the class name
-            const existingOffering = getOfferingsForStudent(userAngkatan).find(
-              o => o.id === existingKrsItem.offeringId
-            )
-            takenInClass = existingOffering?.kelas || ''
-          }
+        if (isSubjectTakenInOtherClass && subjectWithSameName?.offeringId) {
+          const existingOffering = getOfferingsForStudent(userAngkatan).find(
+            o => o.id === subjectWithSameName.offeringId
+          )
+          takenInClass = existingOffering?.kelas || ''
         }
 
         // Check capacity if set
@@ -105,7 +105,7 @@ export function KrsPicker({ userId, term }: KrsPickerProps) {
         }
       })
       .filter((offering): offering is NonNullable<typeof offering> => offering !== null)
-  }, [userAngkatan, getOfferingsForStudent, getSubjectById, getKrsByOffering, searchTerm, isSubjectInKrs, isOfferingInKrs, userId, term, krsItems])
+  }, [userAngkatan, getOfferingsForStudent, getSubjectById, getKrsByOffering, searchTerm, isOfferingInKrs, userId, term, krsItems, userKrsItems])
 
   // Group offerings by kelas
   const groupedOfferings = useMemo(() => {
@@ -131,12 +131,16 @@ export function KrsPicker({ userId, term }: KrsPickerProps) {
     
     const subject = getSubjectById(offering.subjectId)
     
-    // CRITICAL: Check real-time dari store, bukan dari cached Set
-    // Ini mencegah race condition dan double submission
-    const isAlreadyTaken = isSubjectInKrs(userId, offering.subjectId, term)
+    // CRITICAL: Check berdasarkan NAMA mata kuliah, bukan hanya subjectId
+    // Cek apakah sudah ada mata kuliah dengan nama yang sama (case insensitive)
+    const existingSubjectWithSameName = userKrsItems.find(krsItem => {
+      const krsSubject = getSubjectById(krsItem.subjectId)
+      return krsSubject && krsSubject.nama.toLowerCase() === subject?.nama.toLowerCase()
+    })
     
-    if (isAlreadyTaken) {
-      showError(`${subject?.nama} sudah ada di KRS Anda`)
+    if (existingSubjectWithSameName) {
+      const existingSubject = getSubjectById(existingSubjectWithSameName.subjectId)
+      showError(`${subject?.nama} sudah ada di KRS Anda (Kode: ${existingSubject?.kode})`)
       setAddingOffering(null)
       return
     }
@@ -150,10 +154,15 @@ export function KrsPicker({ userId, term }: KrsPickerProps) {
     setAddingOffering(offering.id)
     
     try {
-      // Final check sebelum add (double safety)
-      const finalCheck = isSubjectInKrs(userId, offering.subjectId, term)
+      // Final check sebelum add (double safety berdasarkan nama)
+      const finalCheck = userKrsItems.find(krsItem => {
+        const krsSubject = getSubjectById(krsItem.subjectId)
+        return krsSubject && krsSubject.nama.toLowerCase() === subject?.nama.toLowerCase()
+      })
+      
       if (finalCheck) {
-        showError(`${subject?.nama} sudah ada di KRS Anda`)
+        const existingSubject = getSubjectById(finalCheck.subjectId)
+        showError(`${subject?.nama} sudah ada di KRS Anda (Kode: ${existingSubject?.kode})`)
         return
       }
       
