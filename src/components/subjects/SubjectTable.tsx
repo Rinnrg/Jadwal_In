@@ -357,10 +357,10 @@ export function SubjectTable({ subjects: subjectsProp, onEdit }: SubjectTablePro
                         <Button
                           size="sm"
                           variant={getGroupOfferingsStatus(group.angkatan, group.kelas) === "buka" ? "default" : "outline"}
-                          onClick={() => handleStoreToKRS(group.angkatan, group.kelas)}
+                          onClick={() => handleToggleGroupOfferings(group.angkatan, group.kelas)}
                           className="text-xs md:text-sm h-8 md:h-9"
                         >
-                          Store ke KRS
+                          {getGroupOfferingsStatus(group.angkatan, group.kelas) === "buka" ? "Tutup KRS" : "Buka KRS"}
                         </Button>
                         <span className="text-[10px] md:text-xs text-muted-foreground">
                           {getGroupOfferingsStatus(group.angkatan, group.kelas) === "buka" ? "Buka" : 

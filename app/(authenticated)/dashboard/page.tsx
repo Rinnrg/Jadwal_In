@@ -584,11 +584,11 @@ export default function DashboardPage() {
             )}
           </div>
           
-          {/* Clouds for daytime - scattered across card, visible on mobile, adjusted to prevent overflow, realistic colors, slower movement */}
+          {/* Clouds for daytime - scattered across card, visible on mobile, adjusted to prevent overflow, realistic colors, static */}
           {isSunTime && (
             <div className="absolute inset-0 pointer-events-none z-0 overflow-hidden transition-all duration-1000 ease-in-out">
               <div 
-                className={`absolute top-8 right-8 md:top-12 md:right-16 w-16 h-6 md:w-24 md:h-10 rounded-full blur-md animate-float-slow transition-all duration-1000 ease-in-out ${
+                className={`absolute top-8 right-8 md:top-12 md:right-16 w-16 h-6 md:w-24 md:h-10 rounded-full blur-md transition-all duration-1000 ease-in-out ${
                   currentTime.getHours() < 11
                     ? 'bg-white/60 dark:bg-gray-300/30' // Pagi - putih lembut
                     : currentTime.getHours() < 15
@@ -598,24 +598,24 @@ export default function DashboardPage() {
                 style={{ transition: 'all 1s ease-in-out' }}
               ></div>
               <div 
-                className={`absolute top-16 right-16 md:top-24 md:right-32 w-12 h-5 md:w-20 md:h-8 rounded-full blur-md animate-float-slow transition-all duration-1000 ease-in-out ${
+                className={`absolute top-16 right-16 md:top-24 md:right-32 w-12 h-5 md:w-20 md:h-8 rounded-full blur-md transition-all duration-1000 ease-in-out ${
                   currentTime.getHours() < 11
                     ? 'bg-white/50 dark:bg-gray-300/25' // Pagi
                     : currentTime.getHours() < 15
                     ? 'bg-white/65 dark:bg-gray-200/35' // Siang
                     : 'bg-orange-100/50 dark:bg-orange-300/25' // Sore
                 }`}
-                style={{ animationDelay: "2s", transition: 'all 1s ease-in-out' }}
+                style={{ transition: 'all 1s ease-in-out' }}
               ></div>
               <div 
-                className={`absolute bottom-12 right-12 md:bottom-20 md:right-24 w-18 h-7 md:w-28 md:h-12 rounded-full blur-md animate-float-slow transition-all duration-1000 ease-in-out ${
+                className={`absolute bottom-12 right-12 md:bottom-20 md:right-24 w-18 h-7 md:w-28 md:h-12 rounded-full blur-md transition-all duration-1000 ease-in-out ${
                   currentTime.getHours() < 11
                     ? 'bg-white/55 dark:bg-gray-300/28' // Pagi
                     : currentTime.getHours() < 15
                     ? 'bg-white/68 dark:bg-gray-200/38' // Siang
                     : 'bg-orange-100/55 dark:bg-orange-300/28' // Sore
                 }`}
-                style={{ animationDelay: "4s", transition: 'all 1s ease-in-out' }}
+                style={{ transition: 'all 1s ease-in-out' }}
               ></div>
             </div>
           )}
