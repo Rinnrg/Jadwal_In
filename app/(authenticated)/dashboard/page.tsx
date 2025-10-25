@@ -542,6 +542,14 @@ export default function DashboardPage() {
           
           <CardContent className="pt-4 md:pt-6 relative z-10 px-3 md:px-6">
             <div className="flex flex-col items-start space-y-2 md:space-y-3.5 w-full">
+                {/* Live Indicator - Moved to top */}
+                {isPolling && (
+                  <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-green-100 dark:bg-green-900/30 border border-green-300 dark:border-green-700 animate-slide-in-left">
+                    <div className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse"></div>
+                    <span className="text-[10px] md:text-xs text-green-700 dark:text-green-400 font-medium">Live</span>
+                  </div>
+                )}
+                
                 {/* Tanggal */}
                 <div className="flex items-center space-x-1.5 md:space-x-2 text-muted-foreground animate-slide-in-left transition-colors duration-500">
                   <Calendar className="h-3.5 w-3.5 md:h-4 md:w-4 flex-shrink-0" />
@@ -554,12 +562,6 @@ export default function DashboardPage() {
                     })}{" "}
                     - {currentTime.toLocaleTimeString("id-ID")}
                   </p>
-                  {isPolling && (
-                    <div className="flex items-center gap-1 ml-2 px-2 py-0.5 rounded-full bg-green-100 dark:bg-green-900/30 border border-green-300 dark:border-green-700">
-                      <div className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse"></div>
-                      <span className="text-[10px] text-green-700 dark:text-green-400 font-medium">Live</span>
-                    </div>
-                  )}
                 </div>
                 
                 {/* Ucapan Selamat */}

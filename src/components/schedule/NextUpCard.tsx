@@ -104,9 +104,10 @@ export function NextUpCard({ userId }: NextUpCardProps) {
       </CardHeader>
       <CardContent className="space-y-4 px-4 md:px-6 pb-4 md:pb-6">
         <div className="flex items-start gap-3">
-          {subject && (
-            <div className="w-3 h-3 md:w-4 md:h-4 rounded-full mt-1 flex-shrink-0" style={{ backgroundColor: subject.color }} />
-          )}
+          <div 
+            className="w-3 h-3 md:w-4 md:h-4 rounded-full mt-1 flex-shrink-0" 
+            style={{ backgroundColor: nextEvent.color || subject?.color || "#3b82f6" }} 
+          />
           <div className="flex-1 min-w-0">
             <h3 className="font-medium truncate text-sm md:text-base">{subject ? `${subject.kode} - ${subject.nama}` : "Jadwal Pribadi"}</h3>
             {lecturerNames && (
@@ -131,6 +132,11 @@ export function NextUpCard({ userId }: NextUpCardProps) {
                 <ExternalLink className="h-3 w-3 flex-shrink-0" />
                 Join Meeting
               </a>
+            )}
+            {nextEvent.notes && (
+              <div className="mt-2 p-2 bg-muted/50 rounded-md">
+                <p className="text-xs md:text-sm text-muted-foreground whitespace-pre-wrap">{nextEvent.notes}</p>
+              </div>
             )}
           </div>
         </div>

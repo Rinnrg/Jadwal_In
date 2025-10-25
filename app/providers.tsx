@@ -21,6 +21,17 @@ export function Providers({ children }: { children: React.ReactNode }) {
         closeButton
         expand={false}
         duration={5000}
+        toastOptions={{
+          style: {
+            background: 'var(--background)',
+            color: 'var(--foreground)',
+            border: '1px solid var(--border)',
+          },
+          className: 'group toast group-[.toaster]:shadow-lg',
+          descriptionClassName: 'group-[.toast]:text-muted-foreground',
+        }}
+        className="toaster group"
+        gap={12}
       />
     </NextThemesProvider>
   );

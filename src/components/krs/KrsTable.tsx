@@ -1,6 +1,6 @@
 "use client"
 
-import { useMemo, useState } from "react"
+import { useMemo, useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import { useSubjectsStore } from "@/stores/subjects.store"
 import { useOfferingsStore } from "@/stores/offerings.store"
@@ -32,10 +32,13 @@ export function KrsTable({ userId, term, onScheduleSuggestion }: KrsTableProps) 
   const router = useRouter()
   const { getSubjectById } = useSubjectsStore()
   const { getOffering } = useOfferingsStore()
-  const { getKrsByUser, removeKrsItem } = useKrsStore()
+  const { getKrsByUser, removeKrsItem, krsItems: allKrsItems } = useKrsStore()
   const { addEvent, getEventsByUser } = useScheduleStore()
   const { addReminder } = useRemindersStore()
   const { session } = useSessionStore()
+  
+  // Force re-render trigger
+  const [, setForceUpdate] = useState(0)
   
   const [reminderDialog, setReminderDialog] = useState<{
     open: boolean
@@ -51,7 +54,15 @@ export function KrsTable({ userId, term, onScheduleSuggestion }: KrsTableProps) 
     dueTime: '08:00'
   })
 
-  const krsItems = getKrsByUser(userId, term)
+  // Force update when allKrsItems change
+  useEffect(() => {
+    setForceUpdate(prev => prev + 1)
+  }, [allKrsItems.length])
+
+  const krsItems = useMemo(() => {
+    return getKrsByUser(userId, term)
+  }, [userId, term, allKrsItems]) // React to allKrsItems changes
+  
   const userSchedule = getEventsByUser(userId)
 
   const krsWithDetails = useMemo(() => {
@@ -106,6 +117,10 @@ export function KrsTable({ userId, term, onScheduleSuggestion }: KrsTableProps) 
 
     if (confirmed) {
       removeKrsItem(krsItem.id, userId, displayName)
+      
+      // Force UI update
+      setForceUpdate(prev => prev + 1)
+      
       showSuccess(`${displayName} berhasil dihapus dari KRS`)
     }
   }

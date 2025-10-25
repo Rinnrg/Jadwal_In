@@ -25,6 +25,9 @@ export function useNotificationManager() {
 
   const userId = session?.id
   
+  // Track if this is the first load
+  const isInitialLoad = useRef(true)
+  
   // Track previous counts to detect changes
   const previousCounts = useRef<Record<string, number>>({
     reminder: 0,
@@ -59,6 +62,13 @@ export function useNotificationManager() {
       const count = krsItems.length
       const prevCount = previousCounts.current.krs
       
+      // On initial load, just set the count without triggering notification
+      if (isInitialLoad.current) {
+        previousCounts.current.krs = count
+        updateBadge("krs", userId, count)
+        return
+      }
+      
       // Only update if count actually changed
       if (count !== prevCount) {
         updateBadge("krs", userId, count)
@@ -81,6 +91,13 @@ export function useNotificationManager() {
       // In a real app, you'd track when the user last viewed their grades
       const count = grades.filter((grade: any) => grade.nilaiHuruf).length
       const prevCount = previousCounts.current.khs
+      
+      // On initial load, just set the count without triggering notification
+      if (isInitialLoad.current) {
+        previousCounts.current.khs = count
+        updateBadge("khs", userId, count)
+        return
+      }
       
       // Only update if count increased (new grades added)
       if (count !== prevCount) {
@@ -112,6 +129,13 @@ export function useNotificationManager() {
       const count = userAssignments.length + userMaterials.length
       const prevCount = previousCounts.current.asynchronous
       
+      // On initial load, just set the count without triggering notification
+      if (isInitialLoad.current) {
+        previousCounts.current.asynchronous = count
+        updateBadge("asynchronous", userId, count)
+        return
+      }
+      
       // Only update if count changed
       if (count !== prevCount) {
         updateBadge("asynchronous", userId, count)
@@ -132,6 +156,13 @@ export function useNotificationManager() {
       const count = schedule.length
       const prevCount = previousCounts.current.jadwal
       
+      // On initial load, just set the count without triggering notification
+      if (isInitialLoad.current) {
+        previousCounts.current.jadwal = count
+        updateBadge("jadwal", userId, count > 0 ? 1 : 0)
+        return
+      }
+      
       // Only update if schedule count changed
       if (count !== prevCount) {
         updateBadge("jadwal", userId, count > 0 ? 1 : 0)
@@ -147,12 +178,17 @@ export function useNotificationManager() {
   useEffect(() => {
     if (!userId) return
 
-    // Initial checks
+    // Initial checks (silently update counts)
     checkReminders()
     checkKRS()
     checkKHS()
     checkAsynchronous()
     checkSchedule()
+
+    // Mark initial load as complete after all checks
+    const timer = setTimeout(() => {
+      isInitialLoad.current = false
+    }, 2000) // Wait 2 seconds before allowing notifications
 
     // Check reminders every minute
     const reminderInterval = setInterval(checkReminders, 60 * 1000)
@@ -166,6 +202,7 @@ export function useNotificationManager() {
     }, 5 * 60 * 1000)
 
     return () => {
+      clearTimeout(timer)
       clearInterval(reminderInterval)
       clearInterval(generalInterval)
     }
