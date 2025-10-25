@@ -37,13 +37,13 @@ export function FloatingNotifications() {
     mountTimestamp.current = Date.now()
     console.log('[FloatingNotifications] Component mounted at:', mountTimestamp.current)
 
-    // CRITICAL: Extended grace period - NO notifications for 10 seconds after mount
+    // CRITICAL: Extended grace period - NO notifications for 3 seconds after mount
     // This ensures all initial badge updates from useNotificationManager are silent
     isInitializing.current = true
     initializationTimer.current = setTimeout(() => {
       isInitializing.current = false
       console.log('[FloatingNotifications] Grace period ended at:', Date.now() - mountTimestamp.current, 'ms after mount')
-    }, 10000) // 10 seconds grace period to prevent spam on page load
+    }, 3000) // 3 seconds grace period (reduced for faster realtime response)
 
     // Cleanup timer on unmount
     return () => {
@@ -60,9 +60,9 @@ export function FloatingNotifications() {
   useEffect(() => {
     if (!session?.id) return
     
-    // CRITICAL: During grace period OR within 10s of mount - NO notifications
+    // CRITICAL: During grace period OR within 3s of mount - NO notifications
     const timeSinceMount = Date.now() - mountTimestamp.current
-    if (isInitializing.current || timeSinceMount < 10000) {
+    if (isInitializing.current || timeSinceMount < 3000) {
       console.log('[FloatingNotifications] Grace period active - no notifications', {
         isInitializing: isInitializing.current,
         timeSinceMount,
@@ -99,7 +99,7 @@ export function FloatingNotifications() {
       clearTimeout(notificationTimeout.current)
     }
 
-    // Debounce: wait 1500ms after last change to show notifications
+    // Debounce: wait 500ms after last change to show notifications (super fast response)
     if (pendingNotifications.current.size > 0) {
       notificationTimeout.current = setTimeout(() => {
         // Show all pending notifications with slight delay between each type
@@ -116,12 +116,12 @@ export function FloatingNotifications() {
               markNotificationShown(type as NotificationBadge["type"], session.id, notification.count)
             }
           }, delay)
-          delay += 500 // 500ms delay between each notification type
+          delay += 200 // 200ms delay between each notification type
         })
         
         // Clear pending notifications after showing
         pendingNotifications.current.clear()
-      }, 1500) // Increased debounce time to prevent spam
+      }, 500) // Super fast debounce for realtime feel
     }
   }, [badges, session?.id, shouldShowNotification, markNotificationShown])
 

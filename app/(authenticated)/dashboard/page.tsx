@@ -70,7 +70,7 @@ export default function DashboardPage() {
   // Enable real-time sync for this page
   const { isPolling } = useRealtimeSync({
     enabled: true,
-    pollingInterval: 5000, // Poll every 5 seconds
+    pollingInterval: 1000, // Poll every 1 second for realtime updates
     // Removed onSubjectAdded callback to prevent spam logs
   })
 

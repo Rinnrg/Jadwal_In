@@ -512,7 +512,7 @@ export function SubjectForm({ subject, onSuccess, onCancel }: SubjectFormProps) 
           color: data.color,
           pengampuIds,
           semester: 1, // default semester
-          status: "aktif", // default status
+          status: "arsip", // default status OFF (arsip)
           ...scheduleData,
         }
 
