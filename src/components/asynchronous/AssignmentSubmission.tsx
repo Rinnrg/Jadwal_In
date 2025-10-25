@@ -320,7 +320,7 @@ export function AssignmentSubmission({
                       <Button
                         variant="ghost"
                         size="sm"
-                        onClick={() => removeFile(file.id)}
+                        onClick={() => file.id && removeFile(file.id)}
                         className="h-8 w-8 p-0 text-destructive hover:text-destructive"
                       >
                         <Trash2 className="h-4 w-4" />
