@@ -29,6 +29,8 @@ export function FloatingNotifications() {
   const previousBadges = useRef<Map<string, number>>(new Map())
   const lastNotifiedCounts = useRef<Map<string, number>>(new Map()) // Track what we've already notified
   const hasInitialized = useRef(false)
+  const isInitializing = useRef(true) // New flag for grace period
+  const initializationTimer = useRef<NodeJS.Timeout>()
   const pendingNotifications = useRef<Map<string, { count: number; timestamp: number }>>(new Map())
   const notificationTimeout = useRef<NodeJS.Timeout>()
 
@@ -99,6 +101,21 @@ export function FloatingNotifications() {
     const data = current ? JSON.parse(current) : {}
     data[session.id] = true
     localStorage.setItem(INIT_KEY, JSON.stringify(data))
+
+    // CRITICAL: Grace period - NO notifications for 3 seconds after mount
+    // This ensures all initial badge updates are silent
+    isInitializing.current = true
+    initializationTimer.current = setTimeout(() => {
+      isInitializing.current = false
+      console.log('[FloatingNotifications] Grace period ended - notifications now active')
+    }, 3000) // 3 second grace period
+
+    // Cleanup timer on unmount
+    return () => {
+      if (initializationTimer.current) {
+        clearTimeout(initializationTimer.current)
+      }
+    }
   }, [session?.id]) // Only run on session change, not badges
 
   // Save last counts to localStorage
@@ -133,8 +150,21 @@ export function FloatingNotifications() {
 
   useEffect(() => {
     if (!session?.id || !hasInitialized.current) return
+    
+    // CRITICAL: During grace period, ONLY update counts silently - NO notifications
+    if (isInitializing.current) {
+      badges.forEach(badge => {
+        if (badge.userId !== session.id) return
+        const key = `${badge.type}-${badge.userId}`
+        previousBadges.current.set(key, badge.count)
+        lastNotifiedCounts.current.set(key, badge.count)
+      })
+      saveLastCounts(session.id)
+      saveLastNotified(session.id)
+      return // Exit early - no notifications during initialization
+    }
 
-    // Process badge changes
+    // Process badge changes (only after grace period)
     badges.forEach(badge => {
       if (badge.userId !== session.id) return
 
@@ -294,12 +324,13 @@ export function FloatingNotifications() {
         onClick: notification.action.onClick,
       } : undefined,
       style: {
-        background: 'var(--background)',
+        background: 'hsl(var(--background) / 0.95)',
         color: 'var(--foreground)',
-        border: '1px solid hsl(var(--primary) / 0.2)',
+        border: '1px solid hsl(var(--border))',
+        backdropFilter: 'blur(8px)',
       },
       classNames: {
-        toast: "group-[.toaster]:shadow-xl group-[.toaster]:backdrop-blur-sm",
+        toast: "group-[.toaster]:shadow-xl",
         title: "group-[.toast]:text-foreground group-[.toast]:font-semibold",
         description: "group-[.toast]:text-muted-foreground",
         icon: "group-[.toast]:text-primary",
