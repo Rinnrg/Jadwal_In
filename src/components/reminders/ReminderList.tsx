@@ -9,8 +9,7 @@ import { Badge } from "@/components/ui/badge"
 import { Input } from "@/components/ui/input"
 import { Switch } from "@/components/ui/switch"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
-import { MoreHorizontal, Edit, Trash2, Search, Clock, AlertTriangle, CheckCircle, Mail } from "lucide-react"
+import { Edit, Trash2, Search, Clock, AlertTriangle, CheckCircle, Mail } from "lucide-react"
 import { confirmAction, showSuccess } from "@/lib/alerts"
 import { fmtDateTime, nowUTC } from "@/lib/time"
 import { cn } from "@/lib/utils"
@@ -19,9 +18,11 @@ import { ActivityLogger } from "@/lib/activity-logger"
 interface ReminderListProps {
   userId: string
   onEdit?: (reminder: Reminder) => void
+  onClearAll?: () => void
+  hasReminders?: boolean
 }
 
-export function ReminderList({ userId, onEdit }: ReminderListProps) {
+export function ReminderList({ userId, onEdit, onClearAll, hasReminders = false }: ReminderListProps) {
   const { getRemindersByUser, deleteReminder, toggleReminder } = useRemindersStore()
   const { subjects } = useSubjectsStore()
   const [searchTerm, setSearchTerm] = useState("")
@@ -117,28 +118,42 @@ export function ReminderList({ userId, onEdit }: ReminderListProps) {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Daftar Pengingat</CardTitle>
-        <CardDescription>Kelola pengingat tugas dan kegiatan Anda</CardDescription>
+        <div className="flex items-center justify-between">
+          <div>
+            <CardTitle>Daftar Pengingat</CardTitle>
+            <CardDescription>Kelola pengingat tugas dan kegiatan Anda</CardDescription>
+          </div>
+          {onClearAll && (
+            <Button 
+              variant="outline" 
+              size="sm"
+              onClick={onClearAll} 
+              disabled={!hasReminders}
+            >
+              <Trash2 className="h-4 w-4 mr-2" />
+              Hapus Semua
+            </Button>
+          )}
+        </div>
       </CardHeader>
       <CardContent>
         <div className="space-y-4">
           {/* Filters */}
-          <div className="flex flex-col gap-3 md:gap-4">
-            <div className="relative flex-1">
+          <div className="flex flex-col gap-3">
+            <div className="relative">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
               <Input
                 placeholder="Cari pengingat..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-10 text-xs md:text-sm h-9 md:h-10"
+                className="pl-10"
               />
             </div>
-            <div className="flex gap-2 overflow-x-auto pb-1 snap-x snap-mandatory">
+            <div className="flex gap-2 overflow-x-auto">
               <Button
                 variant={filterStatus === "all" ? "default" : "outline"}
                 size="sm"
                 onClick={() => setFilterStatus("all")}
-                className="hover:scale-105 transition-transform duration-200 text-xs h-8 px-3 whitespace-nowrap snap-start flex-shrink-0"
               >
                 Semua
               </Button>
@@ -146,7 +161,6 @@ export function ReminderList({ userId, onEdit }: ReminderListProps) {
                 variant={filterStatus === "active" ? "default" : "outline"}
                 size="sm"
                 onClick={() => setFilterStatus("active")}
-                className="hover:scale-105 transition-transform duration-200 text-xs h-8 px-3 whitespace-nowrap snap-start flex-shrink-0"
               >
                 Aktif
               </Button>
@@ -154,7 +168,6 @@ export function ReminderList({ userId, onEdit }: ReminderListProps) {
                 variant={filterStatus === "overdue" ? "default" : "outline"}
                 size="sm"
                 onClick={() => setFilterStatus("overdue")}
-                className="hover:scale-105 transition-transform duration-200 text-xs h-8 px-3 whitespace-nowrap snap-start flex-shrink-0"
               >
                 Terlambat
               </Button>
@@ -162,7 +175,6 @@ export function ReminderList({ userId, onEdit }: ReminderListProps) {
                 variant={filterStatus === "upcoming" ? "default" : "outline"}
                 size="sm"
                 onClick={() => setFilterStatus("upcoming")}
-                className="hover:scale-105 transition-transform duration-200 text-xs h-8 px-3 whitespace-nowrap snap-start flex-shrink-0"
               >
                 Mendatang
               </Button>
@@ -179,41 +191,40 @@ export function ReminderList({ userId, onEdit }: ReminderListProps) {
               </p>
             </div>
           ) : (
-            <div className="space-y-3">
-              {filteredReminders.map((reminder, index) => {
+            <div className="space-y-2">
+              {filteredReminders.map((reminder) => {
                 const relatedSubject = getRelatedSubject(reminder.relatedSubjectId)
                 const isOverdue = reminder.isActive && reminder.dueUTC < now
-                const animationDelay = `${index * 0.1}s`
 
                 return (
                   <div
                     key={reminder.id}
                     className={cn(
-                      "p-4 border rounded-lg transition-colors duration-300 animate-slide-in-left",
+                      "p-3 border rounded-lg transition-colors",
                       isOverdue && "border-destructive/50 bg-destructive/5",
                       !reminder.isActive && "opacity-60",
                     )}
                   >
-                    <div className="flex items-start justify-between gap-4">
+                    <div className="flex items-start justify-between gap-3">
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2 mb-2">
-                          <h3 className="font-medium truncate">
+                          <h3 className="font-medium text-sm truncate">
                             {reminder.title}
                           </h3>
                           {getStatusBadge(reminder)}
                           {reminder.sendEmail && (
-                            <Mail className="h-4 w-4 text-muted-foreground" />
+                            <Mail className="h-3 w-3 text-muted-foreground" />
                           )}
                         </div>
 
-                        <div className="space-y-1 text-sm text-muted-foreground">
+                        <div className="space-y-1 text-xs text-muted-foreground">
                           <p>
                             <Clock className="h-3 w-3 inline mr-1" />
                             {fmtDateTime(reminder.dueUTC)}
                           </p>
                           {relatedSubject && (
                             <p className="flex items-center gap-1">
-                              <div className="w-3 h-3 rounded-full border" />
+                              <div className="w-2 h-2 rounded-full border" />
                               {relatedSubject.kode} - {relatedSubject.nama}
                             </p>
                           )}
@@ -225,40 +236,20 @@ export function ReminderList({ userId, onEdit }: ReminderListProps) {
                           checked={reminder.isActive}
                           onCheckedChange={() => handleToggle(reminder)}
                         />
-                        <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              className="h-8 w-8 p-0"
-                              onClick={(e) => e.stopPropagation()}
-                            >
-                              <MoreHorizontal className="h-4 w-4" />
-                              <span className="sr-only">Menu aksi</span>
-                            </Button>
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end" className="w-48">
-                            <DropdownMenuItem 
-                              onClick={(e) => {
-                                e.preventDefault()
-                                onEdit?.(reminder)
-                              }}
-                            >
-                              <Edit className="mr-2 h-4 w-4" />
-                              Edit
-                            </DropdownMenuItem>
-                            <DropdownMenuItem 
-                              variant="destructive"
-                              onClick={(e) => {
-                                e.preventDefault()
-                                handleDelete(reminder)
-                              }}
-                            >
-                              <Trash2 className="mr-2 h-4 w-4" />
-                              Hapus
-                            </DropdownMenuItem>
-                          </DropdownMenuContent>
-                        </DropdownMenu>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => onEdit?.(reminder)}
+                        >
+                          <Edit className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleDelete(reminder)}
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
                       </div>
                     </div>
                   </div>
