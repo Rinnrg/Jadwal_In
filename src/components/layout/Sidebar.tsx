@@ -54,7 +54,7 @@ export function Sidebar() {
   const { session } = useSessionStore()
   const { isActiveRoute } = useNavigation()
   const pathname = usePathname()
-  const { getBadgeCount, hasUnread } = useNotificationStore()
+  const { getBadgeCount, hasUnread, markAsRead } = useNotificationStore()
 
   if (!session) return null
 
@@ -71,6 +71,17 @@ export function Sidebar() {
     if (path.includes("/reminders")) return getBadgeCount("reminder", session.id)
     
     return 0
+  }
+
+  // Helper function to mark badge as read when menu is clicked
+  const handleMenuClick = (path: string) => {
+    if (!session) return
+    
+    if (path.includes("/krs")) markAsRead("krs", session.id)
+    if (path.includes("/jadwal")) markAsRead("jadwal", session.id)
+    if (path.includes("/asynchronous")) markAsRead("asynchronous", session.id)
+    if (path.includes("/khs")) markAsRead("khs", session.id)
+    if (path.includes("/reminders")) markAsRead("reminder", session.id)
   }
 
   const toggleDropdown = (path: string) => {
@@ -217,7 +228,10 @@ export function Sidebar() {
                                         ? "bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300"
                                         : "text-foreground hover:bg-muted"
                                     )}
-                                    onClick={() => setDrawerOpen(false)}
+                                    onClick={() => {
+                                      handleMenuClick(child.path)
+                                      setDrawerOpen(false)
+                                    }}
                                   >
                                     <div className="relative">
                                       <ChildIcon
@@ -250,7 +264,10 @@ export function Sidebar() {
                             ? "bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300"
                             : "text-foreground hover:bg-muted"
                         )}
-                        onClick={() => setDrawerOpen(false)}
+                        onClick={() => {
+                          handleMenuClick(item.path)
+                          setDrawerOpen(false)
+                        }}
                       >
                         <div className="relative">
                           <Icon
@@ -399,6 +416,7 @@ export function Sidebar() {
                                       ? "bg-gradient-to-r from-blue-50 to-blue-100/50 dark:from-blue-900/30 dark:to-blue-800/20 text-blue-700 dark:text-blue-300 shadow-sm border border-blue-200/50 dark:border-blue-700/30"
                                       : "text-gray-600 dark:text-gray-400 hover:bg-gray-50/60 dark:hover:bg-gray-800/30 hover:text-gray-900 dark:hover:text-white hover:shadow-sm hover:scale-[1.02]",
                                   )}
+                                  onClick={() => handleMenuClick(child.path)}
                                 >
                                   <div className="relative">
                                     <ChildIcon
@@ -439,6 +457,7 @@ export function Sidebar() {
                           ? "bg-gradient-to-r from-blue-50 to-blue-100/50 dark:from-blue-900/30 dark:to-blue-800/20 text-blue-700 dark:text-blue-300 shadow-sm border border-blue-200/50 dark:border-blue-700/30"
                           : "text-gray-700 dark:text-gray-300 hover:bg-gray-50/80 dark:hover:bg-gray-800/50 hover:text-gray-900 dark:hover:text-white hover:shadow-sm hover:scale-[1.02]",
                       )}
+                      onClick={() => handleMenuClick(item.path)}
                     >
                       <div className="relative">
                         <Icon
