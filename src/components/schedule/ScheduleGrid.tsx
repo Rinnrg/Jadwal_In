@@ -1,8 +1,9 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { useScheduleStore } from "@/stores/schedule.store"
 import { useSubjectsStore } from "@/stores/subjects.store"
+import { useUsersStore } from "@/stores/users.store"
 import { useUIStore } from "@/stores/ui.store"
 import { useRemindersStore } from "@/stores/reminders.store"
 import type { ScheduleEvent } from "@/data/schema"
@@ -26,10 +27,26 @@ const hours = Array.from({ length: 15 }, (_, i) => i + 7) // 7 AM to 9 PM
 
 export function ScheduleGrid({ userId, onEditEvent, onAddEvent }: ScheduleGridProps) {
   const { getEventsByDay, deleteEvent, duplicateEvent, rescheduleEvent, getConflicts } = useScheduleStore()
-  const { subjects } = useSubjectsStore()
+  const { subjects, fetchSubjects } = useSubjectsStore()
+  const { users, fetchUsers, getUserById } = useUsersStore()
   const { showNowLine } = useUIStore()
   const { addReminder } = useRemindersStore()
   const [selectedDay, setSelectedDay] = useState<number>(new Date().getDay())
+
+  // Ensure subjects and users data are loaded
+  useEffect(() => {
+    const loadData = async () => {
+      try {
+        await Promise.all([
+          subjects.length === 0 ? fetchSubjects() : Promise.resolve(),
+          users.length === 0 ? fetchUsers() : Promise.resolve()
+        ])
+      } catch (error) {
+        console.error('Failed to load schedule data:', error)
+      }
+    }
+    loadData()
+  }, []) // Empty dependency array - only run once on mount
 
   const currentTime = nowUTC()
   const currentDay = new Date().getDay()
@@ -133,17 +150,32 @@ export function ScheduleGrid({ userId, onEditEvent, onAddEvent }: ScheduleGridPr
     const subject = event.subjectId ? subjects.find((s) => s.id === event.subjectId) : null
     const { top, height } = getEventPosition(event)
     const color = subject?.color || event.color || "#3b82f6"
+    
+    // Get lecturer names from subject's pengampuIds
+    let lecturerName = ""
+    if (subject && subject.pengampuIds && subject.pengampuIds.length > 0) {
+      const lecturers = subject.pengampuIds
+        .map(id => getUserById(id))
+        .filter((user): user is NonNullable<typeof user> => Boolean(user))
+        .map(user => user.name || "")
+        .filter(name => name.length > 0)
+      
+      if (lecturers.length > 0) {
+        lecturerName = lecturers.join(", ")
+      }
+    }
 
     return (
       <div
         key={event.id}
-        className="absolute left-1 right-1 rounded-md border shadow-sm overflow-hidden group hover:shadow-md transition-shadow"
+        className="absolute left-1 right-1 rounded-md border shadow-sm overflow-hidden group hover:shadow-md transition-shadow cursor-pointer"
         style={{
           top: `${top}px`,
           height: `${Math.max(height, 30)}px`,
           backgroundColor: color + "20",
           borderColor: color,
         } as React.CSSProperties}
+        title={subject ? `${subject.kode} - ${subject.nama}${lecturerName ? `\nDosen: ${lecturerName}` : ''}${event.location ? `\nRuang: ${event.location}` : ''}` : 'Jadwal Pribadi'}
       >
         <div className="p-2 h-full flex flex-col justify-between">
           <div className="min-w-0 flex-1">
@@ -323,6 +355,20 @@ export function ScheduleGrid({ userId, onEditEvent, onAddEvent }: ScheduleGridPr
                         {hourEvents.map((event) => {
                           const subject = event.subjectId ? subjects.find((s) => s.id === event.subjectId) : null
                           const color = subject?.color || event.color || "#3b82f6"
+                          
+                          // Get lecturer names from subject's pengampuIds
+                          let lecturerNames = ""
+                          if (subject && subject.pengampuIds && subject.pengampuIds.length > 0) {
+                            const lecturers = subject.pengampuIds
+                              .map(id => getUserById(id))
+                              .filter((user): user is NonNullable<typeof user> => Boolean(user))
+                              .map(user => user.name || "")
+                              .filter(name => name.length > 0)
+                            
+                            if (lecturers.length > 0) {
+                              lecturerNames = lecturers.join(", ")
+                            }
+                          }
 
                           return (
                             <div
@@ -346,6 +392,9 @@ export function ScheduleGrid({ userId, onEditEvent, onAddEvent }: ScheduleGridPr
                                   </h4>
                                   {subject && (
                                     <p className="text-xs text-muted-foreground mt-0.5">{subject.kode}</p>
+                                  )}
+                                  {lecturerNames && (
+                                    <p className="text-xs text-muted-foreground mt-0.5">{lecturerNames}</p>
                                   )}
                                 </div>
                                 <Button

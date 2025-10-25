@@ -1,10 +1,12 @@
 "use client"
 
+import { useEffect } from "react"
 import { useScheduleStore } from "@/stores/schedule.store"
 import { useSubjectsStore } from "@/stores/subjects.store"
+import { useUsersStore } from "@/stores/users.store"
 import { useCountdown } from "@/hooks/useCountdown"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Clock, MapPin, ExternalLink } from "lucide-react"
+import { Clock, MapPin, ExternalLink, User } from "lucide-react"
 import { fmt24 } from "@/lib/time"
 
 interface NextUpCardProps {
@@ -15,7 +17,23 @@ const dayNames = ["Minggu", "Senin", "Selasa", "Rabu", "Kamis", "Jumat", "Sabtu"
 
 export function NextUpCard({ userId }: NextUpCardProps) {
   const { getNextUpcoming } = useScheduleStore()
-  const { subjects } = useSubjectsStore()
+  const { subjects, fetchSubjects } = useSubjectsStore()
+  const { users, fetchUsers, getUserById } = useUsersStore()
+
+  // Ensure subjects and users data are loaded
+  useEffect(() => {
+    const loadData = async () => {
+      try {
+        await Promise.all([
+          subjects.length === 0 ? fetchSubjects() : Promise.resolve(),
+          users.length === 0 ? fetchUsers() : Promise.resolve()
+        ])
+      } catch (error) {
+        console.error('Failed to load next up data:', error)
+      }
+    }
+    loadData()
+  }, []) // Empty dependency array - only run once on mount
 
   const nextEvent = getNextUpcoming(userId)
 
@@ -58,6 +76,20 @@ export function NextUpCard({ userId }: NextUpCardProps) {
   }
 
   const subject = nextEvent.subjectId ? subjects.find((s) => s.id === nextEvent.subjectId) : null
+  
+  // Get lecturer names from subject's pengampuIds
+  let lecturerNames = ""
+  if (subject && subject.pengampuIds && subject.pengampuIds.length > 0) {
+    const lecturers = subject.pengampuIds
+      .map(id => getUserById(id))
+      .filter((user): user is NonNullable<typeof user> => Boolean(user))
+      .map(user => user.name || "")
+      .filter(name => name.length > 0)
+    
+    if (lecturers.length > 0) {
+      lecturerNames = lecturers.join(", ")
+    }
+  }
 
   return (
     <Card className="w-full">
@@ -77,6 +109,12 @@ export function NextUpCard({ userId }: NextUpCardProps) {
           )}
           <div className="flex-1 min-w-0">
             <h3 className="font-medium truncate text-sm md:text-base">{subject ? `${subject.kode} - ${subject.nama}` : "Jadwal Pribadi"}</h3>
+            {lecturerNames && (
+              <div className="flex items-center gap-1 text-xs md:text-sm text-muted-foreground mt-1">
+                <User className="h-3 w-3 flex-shrink-0" />
+                <span className="truncate">{lecturerNames}</span>
+              </div>
+            )}
             {nextEvent.location && (
               <div className="flex items-center gap-1 text-xs md:text-sm text-muted-foreground mt-1">
                 <MapPin className="h-3 w-3 flex-shrink-0" />

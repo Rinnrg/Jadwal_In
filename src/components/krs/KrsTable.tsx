@@ -124,7 +124,8 @@ export function KrsTable({ userId, term, onScheduleSuggestion }: KrsTableProps) 
     const slotEndUTC = offering?.slotEndUTC ?? subject?.slotEndUTC
     const location = offering?.slotRuang ?? subject?.slotRuang
 
-    if (slotDay === undefined || !slotStartUTC || !slotEndUTC) {
+    // Validate all required fields
+    if (slotDay === undefined || slotDay === null || !slotStartUTC || !slotEndUTC) {
       showError("Data jadwal tidak tersedia untuk mata kuliah ini")
       return
     }
@@ -135,10 +136,12 @@ export function KrsTable({ userId, term, onScheduleSuggestion }: KrsTableProps) 
       .filter(Boolean) as string[]
     const uniqueColor = generateUniqueColor(usedColors)
 
-    // Add to schedule
+    console.log('Adding schedule with subjectId:', krsItem.subjectId, 'for subject:', subject.nama)
+
+    // Add to schedule - PASTIKAN subjectId tersimpan
     addEvent({
-      userId,
-      subjectId: krsItem.subjectId,
+      userId: userId,
+      subjectId: krsItem.subjectId, // PENTING: Ini harus ada
       dayOfWeek: slotDay,
       startUTC: slotStartUTC,
       endUTC: slotEndUTC,
@@ -147,6 +150,11 @@ export function KrsTable({ userId, term, onScheduleSuggestion }: KrsTableProps) 
     })
 
     showSuccess(`${subject.nama} berhasil ditambahkan ke jadwal`)
+    
+    // Log activity
+    if (session) {
+      ActivityLogger.scheduleAdded(session.id, subject.nama)
+    }
   }
 
   const handleOpenReminderDialog = (subjectId: string, subjectName: string) => {
@@ -222,6 +230,11 @@ export function KrsTable({ userId, term, onScheduleSuggestion }: KrsTableProps) 
         slotEndUTC === undefined || 
         slotEndUTC === null
       ) {
+        console.warn('Missing schedule data for:', item.subject.nama, {
+          slotDay,
+          slotStartUTC,
+          slotEndUTC
+        })
         errorCount++
         return
       }
@@ -232,10 +245,18 @@ export function KrsTable({ userId, term, onScheduleSuggestion }: KrsTableProps) 
         .filter(Boolean) as string[]
       const uniqueColor = generateUniqueColor(usedColors)
 
-      // Add to schedule - now TypeScript knows these are not null
-      addEvent({
-        userId,
+      console.log('Syncing schedule:', {
         subjectId: item.subject.id,
+        subjectName: item.subject.nama,
+        dayOfWeek: slotDay,
+        startUTC: slotStartUTC,
+        endUTC: slotEndUTC
+      })
+
+      // Add to schedule - PASTIKAN subjectId tersimpan dengan benar
+      addEvent({
+        userId: userId,
+        subjectId: item.subject.id, // PENTING: Ini harus ada dan valid
         dayOfWeek: slotDay,
         startUTC: slotStartUTC,
         endUTC: slotEndUTC,
@@ -244,6 +265,11 @@ export function KrsTable({ userId, term, onScheduleSuggestion }: KrsTableProps) 
       })
 
       addedCount++
+      
+      // Log activity
+      if (session) {
+        ActivityLogger.scheduleAdded(session.id, item.subject.nama)
+      }
     })
 
     // Show result
