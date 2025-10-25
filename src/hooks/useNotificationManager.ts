@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useCallback } from "react"
+import { useEffect, useCallback, useRef } from "react"
 import { useNotificationStore } from "@/stores/notification.store"
 import { useSessionStore } from "@/stores/session.store"
 import { useRemindersStore } from "@/stores/reminders.store"
@@ -24,6 +24,15 @@ export function useNotificationManager() {
   const { assignments, materials } = useCourseworkStore()
 
   const userId = session?.id
+  
+  // Track previous counts to detect changes
+  const previousCounts = useRef<Record<string, number>>({
+    reminder: 0,
+    krs: 0,
+    khs: 0,
+    asynchronous: 0,
+    jadwal: 0,
+  })
 
   // Check for upcoming reminders (30 minutes before)
   const checkReminders = useCallback(() => {
@@ -37,7 +46,8 @@ export function useNotificationManager() {
       (reminder) => reminder.dueUTC > now && reminder.dueUTC <= thirtyMinutesLater
     )
     
-    updateBadge("reminder", userId, upcomingReminders.length)
+    const count = upcomingReminders.length
+    updateBadge("reminder", userId, count)
   }, [userId, getActiveReminders, updateBadge])
 
   // Check for new KRS offerings (pending enrollments)
@@ -46,11 +56,18 @@ export function useNotificationManager() {
 
     try {
       const krsItems = getKrsByUser(userId)
-      // Count all KRS items as new (in real app, track viewed items)
-      updateBadge("krs", userId, krsItems.length)
+      const count = krsItems.length
+      const prevCount = previousCounts.current.krs
+      
+      // Only update if count actually changed
+      if (count !== prevCount) {
+        updateBadge("krs", userId, count)
+        previousCounts.current.krs = count
+      }
     } catch (error) {
       // If there's an error, clear the badge
       clearBadge("krs", userId)
+      previousCounts.current.krs = 0
     }
   }, [userId, getKrsByUser, updateBadge, clearBadge])
 
@@ -62,11 +79,17 @@ export function useNotificationManager() {
       const grades = getGradesByUser(userId)
       // Count grades as "new" if they exist
       // In a real app, you'd track when the user last viewed their grades
-      const newGradesCount = grades.filter((grade: any) => grade.nilaiHuruf).length
+      const count = grades.filter((grade: any) => grade.nilaiHuruf).length
+      const prevCount = previousCounts.current.khs
       
-      updateBadge("khs", userId, newGradesCount)
+      // Only update if count increased (new grades added)
+      if (count !== prevCount) {
+        updateBadge("khs", userId, count)
+        previousCounts.current.khs = count
+      }
     } catch (error) {
       clearBadge("khs", userId)
+      previousCounts.current.khs = 0
     }
   }, [userId, getGradesByUser, updateBadge, clearBadge])
 
@@ -86,10 +109,17 @@ export function useNotificationManager() {
         return true // For now, count all materials
       })
       
-      const totalNew = userAssignments.length + userMaterials.length
-      updateBadge("asynchronous", userId, totalNew)
+      const count = userAssignments.length + userMaterials.length
+      const prevCount = previousCounts.current.asynchronous
+      
+      // Only update if count changed
+      if (count !== prevCount) {
+        updateBadge("asynchronous", userId, count)
+        previousCounts.current.asynchronous = count
+      }
     } catch (error) {
       clearBadge("asynchronous", userId)
+      previousCounts.current.asynchronous = 0
     }
   }, [userId, assignments, materials, updateBadge, clearBadge])
 
@@ -99,11 +129,17 @@ export function useNotificationManager() {
 
     try {
       const schedule = getEventsByUser(userId)
-      // In a real scenario, you'd track recently synced schedules
-      // For now, we'll just show a count if there are schedules
-      updateBadge("jadwal", userId, schedule.length > 0 ? 1 : 0)
+      const count = schedule.length
+      const prevCount = previousCounts.current.jadwal
+      
+      // Only update if schedule count changed
+      if (count !== prevCount) {
+        updateBadge("jadwal", userId, count > 0 ? 1 : 0)
+        previousCounts.current.jadwal = count
+      }
     } catch (error) {
       clearBadge("jadwal", userId)
+      previousCounts.current.jadwal = 0
     }
   }, [userId, getEventsByUser, updateBadge, clearBadge])
 

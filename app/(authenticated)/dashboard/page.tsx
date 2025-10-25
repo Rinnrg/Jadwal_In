@@ -54,7 +54,7 @@ export default function DashboardPage() {
   const { getProfile, profiles } = useProfileStore()
   const { getActivitiesByUser } = useActivityStore()
   const { getEventsByDay } = useScheduleStore()
-  const { getSubjectById, subjects } = useSubjectsStore()
+  const { getSubjectById, subjects, fetchSubjects } = useSubjectsStore()
   const { getKrsByUser } = useKrsStore()
   const { assignments, materials } = useCourseworkStore()
   const { getActiveReminders } = useRemindersStore()
@@ -64,16 +64,25 @@ export default function DashboardPage() {
   const [dialogType, setDialogType] = useState<"schedule" | "subjects" | "reminders" | "coursework">("schedule")
   const [dialogData, setDialogData] = useState<any[]>([])
   const [pressTimer, setPressTimer] = useState<NodeJS.Timeout | null>(null)
+  const [pressingCard, setPressingCard] = useState<string | null>(null)
 
   useEffect(() => {
     const timer = setInterval(() => setCurrentTime(new Date()), 1000)
     return () => clearInterval(timer)
   }, [])
   
+  // Fetch subjects on mount to ensure data is available
+  useEffect(() => {
+    if (subjects.length === 0) {
+      fetchSubjects()
+    }
+  }, [])
+  
   // Debug log
   useEffect(() => {
     console.log('[Dashboard] Session state:', session)
-  }, [session])
+    console.log('[Dashboard] Subjects count:', subjects.length)
+  }, [session, subjects])
 
   // Fungsi untuk menentukan ucapan berdasarkan waktu
   const getGreeting = () => {
@@ -336,8 +345,10 @@ export default function DashboardPage() {
 
   // Handle long press
   const handlePressStart = (type: "schedule" | "subjects" | "reminders" | "coursework") => {
+    setPressingCard(type) // Trigger bounce animation
     const timer = setTimeout(() => {
       handleOpenDialog(type)
+      setPressingCard(null) // Remove animation when dialog opens
     }, 500) // 500ms hold
     setPressTimer(timer)
   }
@@ -347,24 +358,35 @@ export default function DashboardPage() {
       clearTimeout(pressTimer)
       setPressTimer(null)
     }
+    setPressingCard(null) // Remove animation when released early
   }
 
   const handleOpenDialog = (type: "schedule" | "subjects" | "reminders" | "coursework") => {
     setDialogType(type)
     
+    console.log('[Dashboard Dialog] Opening dialog:', type)
+    console.log('[Dashboard Dialog] Session:', session)
+    console.log('[Dashboard Dialog] Subjects available:', subjects.length)
+    console.log('[Dashboard Dialog] User KRS items:', userKrsItems.length)
+    console.log('[Dashboard Dialog] Taught subjects:', taughtSubjects.length)
+    
     switch (type) {
       case "schedule":
-        setDialogData(todayEvents.map(event => ({
+        const scheduleData = todayEvents.map(event => ({
           ...event,
           subject: event.subjectId ? getSubjectById(event.subjectId) : null
-        })))
+        }))
+        console.log('[Dashboard Dialog] Schedule data:', scheduleData)
+        setDialogData(scheduleData)
         break
       case "subjects":
         // Get subjects from user's KRS (mahasiswa) or taught subjects (dosen/kaprodi)
         if (session?.role === "mahasiswa") {
+          console.log('[Dashboard Dialog] User KRS Items:', userKrsItems)
           const krsSubjects = userKrsItems
             .map(krsItem => {
               const subject = getSubjectById(krsItem.subjectId)
+              console.log(`[Dashboard Dialog] KRS Item ${krsItem.id} - Subject ID: ${krsItem.subjectId}, Found:`, subject)
               if (!subject) return null
               return {
                 ...subject,
@@ -374,28 +396,36 @@ export default function DashboardPage() {
               }
             })
             .filter(Boolean)
+          console.log('[Dashboard Dialog] KRS Subjects data:', krsSubjects)
           setDialogData(krsSubjects)
         } else {
+          console.log('[Dashboard Dialog] Taught Subjects data:', taughtSubjects)
           setDialogData(taughtSubjects)
         }
         break
       case "reminders":
-        setDialogData(activeReminders.map(r => ({
+        const remindersData = activeReminders.map(r => ({
           ...r,
           subject: r.relatedSubjectId ? getSubjectById(r.relatedSubjectId) : null
-        })))
+        }))
+        console.log('[Dashboard Dialog] Reminders data:', remindersData)
+        setDialogData(remindersData)
         break
       case "coursework":
         if (showAssignments) {
-          setDialogData(allAssignments.map(a => ({
+          const assignmentsData = allAssignments.map(a => ({
             ...a,
             subject: getSubjectById(a.subjectId)
-          })))
+          }))
+          console.log('[Dashboard Dialog] Assignments data:', assignmentsData)
+          setDialogData(assignmentsData)
         } else {
-          setDialogData(allMaterials.map(m => ({
+          const materialsData = allMaterials.map(m => ({
             ...m,
             subject: getSubjectById(m.subjectId)
-          })))
+          }))
+          console.log('[Dashboard Dialog] Materials data:', materialsData)
+          setDialogData(materialsData)
         }
         break
     }
@@ -559,7 +589,9 @@ export default function DashboardPage() {
 
       <div className={`grid gap-4 md:gap-6 grid-cols-2 w-full ${session.role === "mahasiswa" ? "lg:grid-cols-4" : "lg:grid-cols-3"}`}>
         <Card
-          className="card-interactive border-2 border-blue-200 dark:border-blue-800 hover:border-blue-400 dark:hover:border-blue-600 group w-full min-w-0 cursor-pointer select-none"
+          className={`card-interactive border-2 border-blue-200 dark:border-blue-800 hover:border-blue-400 dark:hover:border-blue-600 group w-full min-w-0 cursor-pointer select-none transition-all duration-200 ${
+            pressingCard === "schedule" ? "animate-bounce scale-105 shadow-2xl border-blue-500" : ""
+          }`}
           style={{ animationDelay: "0.1s" }}
           onMouseDown={() => handlePressStart("schedule")}
           onMouseUp={handlePressEnd}
@@ -588,7 +620,9 @@ export default function DashboardPage() {
         </Card>
 
         <Card
-          className="card-interactive border-2 border-green-200 dark:border-green-800 hover:border-green-400 dark:hover:border-green-600 group w-full min-w-0 cursor-pointer select-none"
+          className={`card-interactive border-2 border-green-200 dark:border-green-800 hover:border-green-400 dark:hover:border-green-600 group w-full min-w-0 cursor-pointer select-none transition-all duration-200 ${
+            pressingCard === "subjects" ? "animate-bounce scale-105 shadow-2xl border-green-500" : ""
+          }`}
           style={{ animationDelay: "0.2s" }}
           onMouseDown={() => handlePressStart("subjects")}
           onMouseUp={handlePressEnd}
@@ -619,7 +653,9 @@ export default function DashboardPage() {
         </Card>
 
         <Card
-          className="card-interactive border-2 border-orange-200 dark:border-orange-800 hover:border-orange-400 dark:hover:border-orange-600 group w-full min-w-0 cursor-pointer select-none"
+          className={`card-interactive border-2 border-orange-200 dark:border-orange-800 hover:border-orange-400 dark:hover:border-orange-600 group w-full min-w-0 cursor-pointer select-none transition-all duration-200 ${
+            pressingCard === "reminders" ? "animate-bounce scale-105 shadow-2xl border-orange-500" : ""
+          }`}
           style={{ animationDelay: "0.3s" }}
           onMouseDown={() => handlePressStart("reminders")}
           onMouseUp={handlePressEnd}
@@ -642,7 +678,9 @@ export default function DashboardPage() {
 
         {/* Tugas/Materi Card - Show for all users */}
         <Card
-          className="card-interactive border-2 border-purple-200 dark:border-purple-800 hover:border-purple-400 dark:hover:border-purple-600 group w-full min-w-0 cursor-pointer select-none"
+          className={`card-interactive border-2 border-purple-200 dark:border-purple-800 hover:border-purple-400 dark:hover:border-purple-600 group w-full min-w-0 cursor-pointer select-none transition-all duration-200 ${
+            pressingCard === "coursework" ? "animate-bounce scale-105 shadow-2xl border-purple-500" : ""
+          }`}
           style={{ animationDelay: "0.4s" }}
           onMouseDown={() => handlePressStart("coursework")}
           onMouseUp={handlePressEnd}
@@ -820,15 +858,15 @@ export default function DashboardPage() {
 
       {/* Detail Dialog */}
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+        <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto animate-slide-up">
           <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              {dialogType === "schedule" && <Calendar className="h-5 w-5 text-blue-500" />}
-              {dialogType === "subjects" && <BookOpen className="h-5 w-5 text-green-500" />}
-              {dialogType === "reminders" && <Clock className="h-5 w-5 text-orange-500" />}
+            <DialogTitle className="flex items-center gap-2 animate-fade-in">
+              {dialogType === "schedule" && <Calendar className="h-5 w-5 text-blue-500 animate-scale-in" />}
+              {dialogType === "subjects" && <BookOpen className="h-5 w-5 text-green-500 animate-scale-in" />}
+              {dialogType === "reminders" && <Clock className="h-5 w-5 text-orange-500 animate-scale-in" />}
               {dialogType === "coursework" && (showAssignments ? 
-                <ClipboardList className="h-5 w-5 text-purple-500" /> : 
-                <FilesIcon className="h-5 w-5 text-purple-500" />
+                <ClipboardList className="h-5 w-5 text-purple-500 animate-scale-in" /> : 
+                <FilesIcon className="h-5 w-5 text-purple-500 animate-scale-in" />
               )}
               <span>
                 {dialogType === "schedule" && "Jadwal Hari Ini"}

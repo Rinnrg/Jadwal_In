@@ -39,7 +39,7 @@ type ViewMode = "simple" | "weekly"
 export default function JadwalPage() {
   const { session } = useSessionStore()
   const { getEventsByUser, clearUserSchedule, addEvent, deleteEvent } = useScheduleStore()
-  const { subjects } = useSubjectsStore()
+  const { subjects, fetchSubjects, isLoading: isLoadingSubjects } = useSubjectsStore()
   const { getKrsByUser } = useKrsStore()
   const { showNowLine, showLegend, setShowNowLine, setShowLegend } = useUIStore()
   const { addReminder } = useRemindersStore()
@@ -55,14 +55,25 @@ export default function JadwalPage() {
   const [defaultDay, setDefaultDay] = useState<number | undefined>()
   const [showImportDialog, setShowImportDialog] = useState(false)
   const [importFile, setImportFile] = useState<File | null>(null)
-  const [hasFetchedUsers, setHasFetchedUsers] = useState(false)
 
-  // Fetch users on mount to ensure lecturer data is available
+  // Fetch subjects and users on mount to ensure data is available
   useEffect(() => {
-    if (!hasFetchedUsers) {
-      fetchUsers().finally(() => setHasFetchedUsers(true))
+    const loadData = async () => {
+      try {
+        await Promise.all([
+          fetchSubjects(),
+          fetchUsers()
+        ])
+      } catch (error) {
+        console.error('Failed to load data:', error)
+      }
     }
-  }, [hasFetchedUsers, fetchUsers])
+    
+    // Only fetch if data is empty (to avoid unnecessary re-fetches)
+    if (subjects.length === 0 || users.length === 0) {
+      loadData()
+    }
+  }, []) // Empty dependency array - only run once on mount
 
   const userEvents = session ? getEventsByUser(session.id) : []
   const userKrsItems = session ? getKrsByUser(session.id) : []
@@ -284,11 +295,20 @@ export default function JadwalPage() {
   }
 
   const eventsWithDetails = useMemo(() => {
+    console.log('Rebuilding events with details. Total events:', userEvents.length)
+    console.log('Total subjects:', subjects.length)
+    console.log('Total users:', users.length)
+    
     return userEvents.map((event) => {
       const subject = subjects.find((s) => s.id === event.subjectId)
       const startTime = new Date(event.startUTC)
       const endTime = new Date(event.endUTC)
       const dayName = Object.keys(dayMap).find(key => dayMap[key] === event.dayOfWeek) || "Unknown"
+      
+      // Debug logging
+      if (event.subjectId && !subject) {
+        console.warn('Subject not found for event:', event.subjectId, event)
+      }
       
       // Get lecturer names from pengampuIds
       let lecturerNames = "-"

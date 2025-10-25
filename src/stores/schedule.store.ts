@@ -34,9 +34,12 @@ export const useScheduleStore = create<ScheduleState>()(
           ...event,
           id: generateId(),
         }
-        set((state) => ({
-          events: [...state.events, newEvent],
-        }))
+        console.log('Adding event to schedule store:', newEvent)
+        set((state) => {
+          const updated = [...state.events, newEvent]
+          console.log('Total events after add:', updated.length)
+          return { events: updated }
+        })
       },
       updateEvent: (id, updates) => {
         set((state) => ({
@@ -49,7 +52,12 @@ export const useScheduleStore = create<ScheduleState>()(
         }))
       },
       getEventsByUser: (userId) => {
-        return get().events.filter((event) => event.userId === userId)
+        const events = get().events.filter((event) => event.userId === userId)
+        console.log(`Getting events for user ${userId}:`, events.length, 'events found')
+        if (events.length > 0) {
+          console.log('First event:', events[0])
+        }
+        return events
       },
       getEventsByDay: (userId, dayOfWeek) => {
         return get()
@@ -129,6 +137,20 @@ export const useScheduleStore = create<ScheduleState>()(
         }
         return persistedState
       },
+      onRehydrateStorage: () => {
+        console.log('Schedule store: Starting rehydration from localStorage')
+        return (state, error) => {
+          if (error) {
+            console.error('Schedule store: Rehydration failed', error)
+          } else {
+            console.log('Schedule store: Rehydration complete. Events count:', state?.events?.length || 0)
+            if (state?.events && state.events.length > 0) {
+              console.log('Schedule store: First event:', state.events[0])
+            }
+          }
+        }
+      },
     },
   ),
 )
+
