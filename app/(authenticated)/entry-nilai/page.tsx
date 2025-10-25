@@ -84,7 +84,7 @@ export default function EntryNilaiPage() {
 
         // Calculate attendance percentage
         const studentAttendance = attendanceSessions.map(session => 
-          session.records.find(r => r.studentUserId === student.id)
+          session.records.find(r => r.studentId === student.id)
         )
         const hadirCount = studentAttendance.filter(a => a?.status === "hadir").length
         const attendancePercentage = attendanceSessions.length > 0 

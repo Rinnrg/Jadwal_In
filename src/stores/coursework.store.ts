@@ -22,7 +22,7 @@ interface CourseworkState {
 
   // Attendance methods
   addAttendanceSession: (session: Omit<AttendanceSession, "id">) => void
-  setAttendanceRecord: (sessionId: string, studentUserId: string, status: "hadir" | "alfa" | "izin") => void
+  setAttendanceRecord: (sessionId: string, studentId: string, status: "hadir" | "alfa" | "izin") => void
   removeAttendanceSession: (id: string) => void
   getAttendanceBySubject: (subjectId: string) => AttendanceSession[]
   initializeAttendanceSessions: (subjectId: string, enrolledStudents: Array<{ id: string }>) => void
@@ -97,20 +97,20 @@ export const useCourseworkStore = create<CourseworkState>()(
           attendance: [...state.attendance, newSession],
         }))
       },
-      setAttendanceRecord: (sessionId, studentUserId, status) => {
+      setAttendanceRecord: (sessionId, studentId, status) => {
         set((state) => ({
           attendance: state.attendance.map((session) => {
             if (session.id === sessionId) {
-              const existingRecordIndex = session.records.findIndex((record) => record.studentUserId === studentUserId)
+              const existingRecordIndex = session.records.findIndex((record) => record.studentId === studentId)
 
               if (existingRecordIndex >= 0) {
                 const updatedRecords = [...session.records]
-                updatedRecords[existingRecordIndex] = { studentUserId, status }
+                updatedRecords[existingRecordIndex] = { studentId, status }
                 return { ...session, records: updatedRecords }
               } else {
                 return {
                   ...session,
-                  records: [...session.records, { studentUserId, status }],
+                  records: [...session.records, { studentId, status }],
                 }
               }
             }
@@ -148,7 +148,7 @@ export const useCourseworkStore = create<CourseworkState>()(
               meetingNumber: i,
               sessionType,
               records: enrolledStudents.map((student) => ({
-                studentUserId: student.id,
+                studentId: student.id,
                 status: "alfa" as const,
               })),
             }

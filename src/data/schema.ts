@@ -135,7 +135,7 @@ export const AttendanceSessionSchema = z.object({
   sessionType: z.enum(["regular", "UTS", "UAS"]).default("regular").optional(), // Added session type
   records: z.array(
     z.object({
-      studentUserId: z.string(),
+      studentId: z.string(),
       status: z.enum(["hadir", "alfa", "izin", "sakit"]).default("alfa"), // Added sakit status
     }),
   ),

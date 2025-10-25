@@ -96,7 +96,7 @@ export function AttendanceTab({ subjectId, canManage, userRole }: AttendanceTabP
         dateUTC,
         meetingNumber,
         records: enrolledStudents.map((student) => ({
-          studentUserId: student!.id,
+          studentId: student!.id,
           status: "alfa" as const, // Default to alfa
         })),
       })
@@ -275,7 +275,7 @@ export function AttendanceTab({ subjectId, canManage, userRole }: AttendanceTabP
                         </TableHeader>
                         <TableBody>
                           {enrolledStudents.map((student) => {
-                            const record = session.records.find((r: any) => r.studentUserId === student!.id)
+                            const record = session.records.find((r: any) => r.studentId === student!.id)
                             const status = record?.status || "alfa" // Use status instead of present
 
                             return (
