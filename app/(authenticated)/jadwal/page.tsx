@@ -42,7 +42,7 @@ export default function JadwalPage() {
   const { getKrsByUser } = useKrsStore()
   const { showNowLine, setShowNowLine } = useUIStore()
   const { addReminder } = useRemindersStore()
-  const { clearBadge } = useNotificationStore()
+  const { markAsRead } = useNotificationStore()
   const { getProfile, profiles } = useProfileStore()
   const { getUserById, fetchUsers, users, isLoading: isLoadingUsers } = useUsersStore()
 
@@ -86,12 +86,12 @@ export default function JadwalPage() {
     ? userKrsItems.length > 0 
     : taughtSubjects.length > 0
 
-  // Clear jadwal notification badge when user opens this page
+  // Mark jadwal notification as read when user opens this page
   useEffect(() => {
     if (session?.id) {
-      clearBadge("jadwal", session.id)
+      markAsRead("jadwal", session.id)
     }
-  }, [session?.id, clearBadge])
+  }, [session?.id, markAsRead])
 
   const handleAddEvent = (day?: number, hour?: number) => {
     if (!hasKrsItems) {

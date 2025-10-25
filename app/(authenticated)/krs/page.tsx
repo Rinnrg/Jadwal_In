@@ -24,7 +24,7 @@ export default function KrsPage() {
   const { fetchOfferings, isLoading: offeringsLoading } = useOfferingsStore()
   const { getTotalSks, clearKrsByUserAndTerm } = useKrsStore()
   const { getProfile } = useProfileStore()
-  const { clearBadge } = useNotificationStore()
+  const { markAsRead } = useNotificationStore()
 
   // Enable real-time sync for KRS page
   useRealtimeSync({
@@ -38,12 +38,12 @@ export default function KrsPage() {
     fetchOfferings()
   }, [])
 
-  // Clear KRS notification badge when user opens this page
+  // Mark KRS notification as read when user opens this page
   useEffect(() => {
     if (session?.id) {
-      clearBadge("krs", session.id)
+      markAsRead("krs", session.id)
     }
-  }, [session?.id, clearBadge])
+  }, [session?.id, markAsRead])
 
   const currentYear = new Date().getFullYear()
   const currentMonth = new Date().getMonth()

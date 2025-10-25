@@ -20,16 +20,16 @@ export default function RemindersPage() {
   const { getActiveReminders, getUpcomingReminders, getOverdueReminders, clearUserReminders } = useRemindersStore()
   const { getKrsByUser } = useKrsStore()
   const { subjects } = useSubjectsStore()
-  const { clearBadge } = useNotificationStore()
+  const { markAsRead } = useNotificationStore()
   const [editingReminder, setEditingReminder] = useState<Reminder | null>(null)
   const [isFormOpen, setIsFormOpen] = useState(false)
 
-  // Clear reminder notification badge when user opens this page
+  // Mark reminder notification as read when user opens this page
   useEffect(() => {
     if (session?.id) {
-      clearBadge("reminder", session.id)
+      markAsRead("reminder", session.id)
     }
-  }, [session?.id, clearBadge])
+  }, [session?.id, markAsRead])
 
   if (!session) return null
 
