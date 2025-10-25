@@ -68,7 +68,20 @@ export function useNotificationSync() {
     const prevCount = prevCounts.current.krs
 
     if (currentCount !== prevCount) {
-      updateBadge("krs", session.id, currentCount)
+      console.log(`[NotificationSync] KRS changed: ${prevCount} -> ${currentCount}`)
+      
+      // Calculate the difference for badge display
+      const difference = currentCount - prevCount
+      
+      // If count increased, update badge with the new count (not difference)
+      // This triggers shouldShowNotification in the store
+      if (difference > 0) {
+        updateBadge("krs", session.id, currentCount)
+      } else if (difference < 0) {
+        // If count decreased, just update badge without triggering notification
+        updateBadge("krs", session.id, 0) // Clear badge when items removed
+      }
+      
       prevCounts.current.krs = currentCount
     }
   }, [krsItems, session?.id, updateBadge])

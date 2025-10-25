@@ -150,18 +150,22 @@ export function useRealtimeSync(options: RealtimeSyncOptions = {}) {
               const currentKrs = getKrsByUser(session.id, currentTerm)
               const currentKrsLength = currentKrs.length
               
+              console.log(`[RealtimeSync] KRS Update - Previous: ${previousKrsLength}, Current: ${currentKrsLength}`)
+              
               // If KRS count increased, show notification
               if (currentKrsLength > previousKrsLength && !isInitialMount.current && hasShownInitialNotification.current) {
                 const newKrsCount = currentKrsLength - previousKrsLength
                 
-                // Update badge
-                updateBadge("krs", session.id, currentKrsLength)
+                console.log(`[RealtimeSync] KRS increased by ${newKrsCount}, showing notification`)
+                
+                // Update badge - mark as unread
+                updateBadge("krs", session.id, newKrsCount)
                 
                 // Show toast notification immediately
-                toast("Mata Kuliah Baru Tersedia", {
+                toast("Mata Kuliah Baru Ditambahkan", {
                   description: newKrsCount === 1 
-                    ? "1 mata kuliah baru telah ditambahkan ke KRS"
-                    : `${newKrsCount} mata kuliah baru telah ditambahkan ke KRS`,
+                    ? "1 mata kuliah baru telah ditambahkan ke KRS Anda"
+                    : `${newKrsCount} mata kuliah baru telah ditambahkan ke KRS Anda`,
                   icon: createElement(BookOpen, { className: "h-5 w-5" }),
                   duration: 6000,
                   position: "top-right",
@@ -176,6 +180,7 @@ export function useRealtimeSync(options: RealtimeSyncOptions = {}) {
                 })
               }
               
+              // ALWAYS update previousKrsCount to current count
               previousKrsCount.current = currentKrsLength
             }
             
@@ -360,18 +365,50 @@ export function useRealtimeSync(options: RealtimeSyncOptions = {}) {
     }
   }, [enabled, session, pollingInterval])
 
-  // Update refs when data changes from other sources
+  // Update refs when data changes from other sources (local changes, not from polling)
+  useEffect(() => {
+    if (!isPolling && session?.role === "mahasiswa") {
+      const currentYear = new Date().getFullYear()
+      const currentMonth = new Date().getMonth()
+      const isOddSemester = currentMonth >= 8 || currentMonth <= 1
+      const currentTerm = `${currentYear}/${currentYear + 1}-${isOddSemester ? "Ganjil" : "Genap"}`
+      
+      const { getKrsByUser } = useKrsStore.getState()
+      const currentKrs = getKrsByUser(session.id, currentTerm)
+      const currentKrsLength = currentKrs.length
+      
+      // Check if KRS was updated locally (not from polling)
+      if (currentKrsLength !== previousKrsCount.current && hasShownInitialNotification.current) {
+        const krsChange = currentKrsLength - previousKrsCount.current
+        
+        console.log(`[RealtimeSync] Local KRS change detected: ${previousKrsCount.current} -> ${currentKrsLength} (${krsChange > 0 ? '+' : ''}${krsChange})`)
+        
+        // Only show notification for additions
+        if (krsChange > 0) {
+          // Update badge to show new items
+          updateBadge("krs", session.id, krsChange)
+          
+          // Show toast for local additions
+          toast("Mata Kuliah Ditambahkan", {
+            description: krsChange === 1 
+              ? "1 mata kuliah ditambahkan ke KRS"
+              : `${krsChange} mata kuliah ditambahkan ke KRS`,
+            icon: createElement(BookOpen, { className: "h-5 w-5" }),
+            duration: 4000,
+            position: "top-right",
+          })
+        }
+        
+        previousKrsCount.current = currentKrsLength
+      }
+    }
+  }, [krsItems.length, isPolling, session, hasShownInitialNotification.current])
+
   useEffect(() => {
     if (subjects.length !== previousSubjectsCount.current && !isPolling) {
       previousSubjectsCount.current = subjects.length
     }
   }, [subjects.length, isPolling])
-
-  useEffect(() => {
-    if (krsItems.length !== previousKrsCount.current && !isPolling) {
-      previousKrsCount.current = krsItems.length
-    }
-  }, [krsItems.length, isPolling])
 
   return {
     isPolling,
