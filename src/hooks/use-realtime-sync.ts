@@ -84,9 +84,15 @@ export function useRealtimeSync(options: RealtimeSyncOptions = {}) {
             const isOddSemester = currentMonth >= 8 || currentMonth <= 1
             const currentTerm = `${currentYear}/${currentYear + 1}-${isOddSemester ? "Ganjil" : "Genap"}`
             
-            const krsResponse = await fetch(`/api/krs?userId=${session.id}&term=${currentTerm}&_t=${Date.now()}`)
+            const krsResponse = await fetch(`/api/krs?userId=${session.id}&term=${currentTerm}&_t=${Date.now()}`, {
+              cache: 'no-store',
+              headers: {
+                'Cache-Control': 'no-cache',
+              }
+            })
             if (krsResponse.ok) {
               const latestKrsItems = await krsResponse.json()
+              console.log('[RealtimeSync] Synced KRS items:', latestKrsItems.length, 'items')
               useKrsStore.setState({ krsItems: latestKrsItems })
             }
           }
