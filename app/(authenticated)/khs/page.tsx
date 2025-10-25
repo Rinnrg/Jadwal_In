@@ -21,7 +21,7 @@ export default function KhsPage() {
   const { subjects, fetchSubjects } = useSubjectsStore()
   const { getGradesByUser, calculateGPA, calculateSemesterGPA, grades: allGrades } = useGradesStore()
   const { getProfile } = useProfileStore()
-  const { clearBadge } = useNotificationStore()
+  const { markAsRead } = useNotificationStore()
 
   const [selectedTerm, setSelectedTerm] = useState("Semua Semester")
 
@@ -30,12 +30,12 @@ export default function KhsPage() {
     fetchSubjects()
   }, [fetchSubjects])
 
-  // Clear KHS notification badge when user opens this page
+  // Mark KHS notification as read when user opens this page
   useEffect(() => {
     if (session?.id) {
-      clearBadge("khs", session.id)
+      markAsRead("khs", session.id)
     }
-  }, [session?.id, clearBadge])
+  }, [session?.id, markAsRead])
 
   // Get all unique semesters from user's grades
   const userGrades = getGradesByUser(session?.id || "")

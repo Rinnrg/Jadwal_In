@@ -19,7 +19,7 @@ export default function AsynchronousPage() {
   const { session } = useSessionStore()
   const { subjects, getSubjectsByPengampu, getActiveSubjects, getSubjectById, fetchSubjects, isLoading } = useSubjectsStore()
   const { krsItems, getKrsByUser } = useKrsStore()
-  const { clearBadge } = useNotificationStore()
+  const { markAsRead } = useNotificationStore()
   const [selectedSubject, setSelectedSubject] = useState<Subject | null>(null)
 
   // Fetch subjects on mount
@@ -29,12 +29,12 @@ export default function AsynchronousPage() {
     }
   }, [fetchSubjects, subjects.length])
 
-  // Clear asynchronous notification badge when user opens this page
+  // Mark asynchronous notification as read when user opens this page
   useEffect(() => {
     if (session?.id) {
-      clearBadge("asynchronous", session.id)
+      markAsRead("asynchronous", session.id)
     }
-  }, [session?.id, clearBadge])
+  }, [session?.id, markAsRead])
 
   const availableSubjects = useMemo(() => {
     if (!session) return []

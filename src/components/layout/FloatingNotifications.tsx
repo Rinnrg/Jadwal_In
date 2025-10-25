@@ -31,12 +31,17 @@ export function FloatingNotifications() {
   const hasInitialized = useRef(false)
   const isInitializing = useRef(true) // New flag for grace period
   const initializationTimer = useRef<NodeJS.Timeout>()
+  const mountTimestamp = useRef<number>(0) // Track when component mounted
   const pendingNotifications = useRef<Map<string, { count: number; timestamp: number }>>(new Map())
   const notificationTimeout = useRef<NodeJS.Timeout>()
 
   // Load initialization state from localStorage
   useEffect(() => {
     if (!session?.id) return
+
+    // Record mount time
+    mountTimestamp.current = Date.now()
+    console.log('[FloatingNotifications] Component mounted at:', mountTimestamp.current)
 
     const initData = localStorage.getItem(INIT_KEY)
     const lastCountsData = localStorage.getItem(LAST_COUNTS_KEY)
@@ -102,13 +107,14 @@ export function FloatingNotifications() {
     data[session.id] = true
     localStorage.setItem(INIT_KEY, JSON.stringify(data))
 
-    // CRITICAL: Grace period - NO notifications for 3 seconds after mount
-    // This ensures all initial badge updates are silent
+    // CRITICAL: Extended grace period - NO notifications for 5 seconds after mount
+    // This ensures all initial badge updates from useNotificationManager are silent
+    // useNotificationManager updates badges at 2s, so we need > 2s grace period
     isInitializing.current = true
     initializationTimer.current = setTimeout(() => {
       isInitializing.current = false
-      console.log('[FloatingNotifications] Grace period ended - notifications now active')
-    }, 3000) // 3 second grace period
+      console.log('[FloatingNotifications] Grace period ended at:', Date.now() - mountTimestamp.current, 'ms after mount')
+    }, 5000) // Extended to 5 seconds (was 3s)
 
     // Cleanup timer on unmount
     return () => {
@@ -161,10 +167,26 @@ export function FloatingNotifications() {
       })
       saveLastCounts(session.id)
       saveLastNotified(session.id)
+      console.log('[FloatingNotifications] Badge update during grace period - silent update only')
       return // Exit early - no notifications during initialization
     }
 
-    // Process badge changes (only after grace period)
+    // ADDITIONAL CHECK: Timestamp-based - ignore badge updates within 5s of mount
+    const timeSinceMount = Date.now() - mountTimestamp.current
+    if (timeSinceMount < 5000) {
+      badges.forEach(badge => {
+        if (badge.userId !== session.id) return
+        const key = `${badge.type}-${badge.userId}`
+        previousBadges.current.set(key, badge.count)
+        lastNotifiedCounts.current.set(key, badge.count)
+      })
+      saveLastCounts(session.id)
+      saveLastNotified(session.id)
+      console.log('[FloatingNotifications] Badge update within 5s of mount - silent update only (timestamp check)')
+      return // Exit early - ignore early updates
+    }
+
+    // Process badge changes (only after grace period AND 5s timestamp check)
     badges.forEach(badge => {
       if (badge.userId !== session.id) return
 
