@@ -76,77 +76,54 @@ export default function RemindersPage() {
   }
 
   return (
-    <div className="min-h-screen pb-6">
-      {/* Header Section */}
-      <div className="sticky top-0 z-10 bg-background/95 backdrop-blur-sm border-b mb-4 md:mb-6 -mx-2 md:-mx-4 px-4 md:px-6 py-4">
-        <div className="max-w-7xl mx-auto">
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-            <div>
-              <h1 className="text-2xl md:text-3xl lg:text-4xl font-bold tracking-tight bg-gradient-to-r from-primary to-primary/60 bg-clip-text text-transparent">
-                Pengingat
-              </h1>
-              <p className="text-muted-foreground text-sm md:text-base mt-1">
-                Kelola pengingat tugas dan kegiatan Anda
-              </p>
-            </div>
-            <div className="flex gap-2 md:gap-3">
-              <Button 
-                onClick={() => setIsFormOpen(true)} 
-                size="lg"
-                className="flex-1 sm:flex-none shadow-md hover:shadow-lg transition-all"
-              >
-                <Plus className="h-4 w-4 md:h-5 md:w-5 mr-2" />
-                <span className="hidden sm:inline">Tambah Pengingat</span>
-                <span className="sm:hidden">Tambah</span>
-              </Button>
-              <Button 
-                variant="outline" 
-                size="lg"
-                onClick={handleClearAll} 
-                disabled={activeReminders.length === 0}
-                className="flex-1 sm:flex-none"
-              >
-                <Trash2 className="h-4 w-4 md:h-5 md:w-5 sm:mr-2" />
-                <span className="hidden sm:inline">Hapus Semua</span>
-              </Button>
-            </div>
-          </div>
-
-          {/* Stats Cards - Desktop only */}
-          <div className="hidden md:grid md:grid-cols-3 gap-4 mt-6">
-            <div className="bg-gradient-to-br from-blue-50 to-blue-100/50 dark:from-blue-950/40 dark:to-blue-900/20 rounded-lg p-4 border border-blue-200 dark:border-blue-800">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm text-muted-foreground">Total Aktif</p>
-                  <p className="text-3xl font-bold text-blue-600 dark:text-blue-400 mt-1">{activeReminders.length}</p>
-                </div>
-                <Bell className="h-10 w-10 text-blue-500/30" />
-              </div>
-            </div>
-            <div className="bg-gradient-to-br from-yellow-50 to-yellow-100/50 dark:from-yellow-950/40 dark:to-yellow-900/20 rounded-lg p-4 border border-yellow-200 dark:border-yellow-800">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm text-muted-foreground">Mendatang (24h)</p>
-                  <p className="text-3xl font-bold text-yellow-600 dark:text-yellow-400 mt-1">{upcomingReminders.length}</p>
-                </div>
-                <Bell className="h-10 w-10 text-yellow-500/30 animate-pulse" />
-              </div>
-            </div>
-            <div className="bg-gradient-to-br from-red-50 to-red-100/50 dark:from-red-950/40 dark:to-red-900/20 rounded-lg p-4 border border-red-200 dark:border-red-800">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm text-muted-foreground">Terlambat</p>
-                  <p className="text-3xl font-bold text-red-600 dark:text-red-400 mt-1">{overdueReminders.length}</p>
-                </div>
-                <AlertTriangle className="h-10 w-10 text-red-500/30" />
-              </div>
-            </div>
-          </div>
+    <div className="space-y-4 md:space-y-6 px-2 md:px-4">
+      {/* Header */}
+      <div className="px-1 md:px-0 flex items-center justify-between">
+        <div>
+          <h1 className="text-2xl md:text-3xl font-bold">Pengingat</h1>
+          <p className="text-muted-foreground text-sm mt-1">
+            Kelola pengingat tugas dan kegiatan Anda
+          </p>
         </div>
+        <Button onClick={() => setIsFormOpen(true)}>
+          <Plus className="h-4 w-4 mr-2" />
+          Tambah
+        </Button>
+      </div>
+
+      {/* Stats Cards */}
+      <div className="grid grid-cols-3 gap-3 md:gap-4">
+        <Card>
+          <CardContent className="pt-6">
+            <div className="text-center">
+              <Bell className="h-8 w-8 mx-auto text-blue-500 mb-2" />
+              <div className="text-2xl font-bold">{activeReminders.length}</div>
+              <p className="text-xs text-muted-foreground">Total Aktif</p>
+            </div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="pt-6">
+            <div className="text-center">
+              <Bell className="h-8 w-8 mx-auto text-yellow-500 mb-2" />
+              <div className="text-2xl font-bold">{upcomingReminders.length}</div>
+              <p className="text-xs text-muted-foreground">Mendatang (24h)</p>
+            </div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="pt-6">
+            <div className="text-center">
+              <AlertTriangle className="h-8 w-8 mx-auto text-red-500 mb-2" />
+              <div className="text-2xl font-bold">{overdueReminders.length}</div>
+              <p className="text-xs text-muted-foreground">Terlambat</p>
+            </div>
+          </CardContent>
+        </Card>
       </div>
 
       {/* Main Content */}
-      <div className="max-w-7xl mx-auto px-2 md:px-4 space-y-4 md:space-y-6">
+      <div className="space-y-4 md:space-y-6">
         {/* Dialog Form */}
         <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>
           <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">

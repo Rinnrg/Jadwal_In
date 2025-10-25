@@ -355,7 +355,7 @@ export function SubjectTable({ subjects: subjectsProp, onEdit }: SubjectTablePro
                                 <Button
                                   variant="ghost"
                                   size="sm"
-                                  className="h-8 px-3 cursor-pointer hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors duration-200"
+                                  className="h-8 px-3 cursor-pointer text-blue-600 hover:bg-blue-50 hover:text-blue-700 dark:text-blue-400 dark:hover:bg-blue-900/20 dark:hover:text-blue-300 transition-colors duration-200"
                                   onClick={() => onEdit?.(subject)}
                                 >
                                   <Edit className="h-4 w-4 mr-1.5" />
@@ -364,7 +364,7 @@ export function SubjectTable({ subjects: subjectsProp, onEdit }: SubjectTablePro
                                 <Button
                                   variant="ghost"
                                   size="sm"
-                                  className="h-8 w-8 p-0 cursor-pointer hover:bg-destructive/10 text-destructive transition-colors duration-200"
+                                  className="h-8 w-8 p-0 cursor-pointer hover:bg-destructive/10 text-destructive hover:text-destructive transition-colors duration-200"
                                   onClick={() => handleDelete(subject)}
                                 >
                                   <Trash2 className="h-4 w-4" />
@@ -439,7 +439,7 @@ export function SubjectTable({ subjects: subjectsProp, onEdit }: SubjectTablePro
                             <Button
                               variant="ghost"
                               size="sm"
-                              className="h-7 w-7 p-0 text-destructive hover:bg-destructive/10"
+                              className="h-7 w-7 p-0 text-destructive hover:bg-destructive/10 hover:text-destructive"
                               onClick={() => handleDelete(subject)}
                             >
                               <Trash2 className="h-3 w-3" />

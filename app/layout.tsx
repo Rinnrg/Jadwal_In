@@ -126,8 +126,8 @@ export default function RootLayout({
   children: React.ReactNode
 }>) {
   return (
-    <html lang="id" suppressHydrationWarning>
-      <body className={`${montserrat.className} antialiased`}>
+    <html lang="id" suppressHydrationWarning className="overflow-x-hidden w-full">
+      <body className={`${montserrat.className} antialiased overflow-x-hidden w-full max-w-full`}>
         <Providers>
           <Suspense fallback={<GlobalLoading />}>
             {children}
