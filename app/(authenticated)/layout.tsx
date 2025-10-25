@@ -4,7 +4,6 @@ import { Topbar } from "@/components/layout/Topbar"
 import { Sidebar } from "@/components/layout/Sidebar"
 import { NotificationManager } from "@/components/layout/NotificationManager"
 import { FloatingNotifications } from "@/components/layout/FloatingNotifications"
-import { Toaster } from "sonner"
 import "@/utils/notification-test" // Load test utilities in development
 
 export default function AppLayout({
@@ -17,7 +16,6 @@ export default function AppLayout({
       <Protected>
         <NotificationManager />
         <FloatingNotifications />
-        <Toaster />
         <div className="min-h-screen bg-gray-50 dark:bg-gray-900 transition-colors duration-300">
           <Topbar />
           <div className="flex pt-16">

@@ -196,7 +196,7 @@ export function ScheduleForm({ userId, event, onSuccess, onCancel, defaultDay, v
       location: data.location || undefined,
       joinUrl: data.joinUrl || undefined,
       notes: data.notes || undefined,
-      color: data.subjectId && data.subjectId !== "defaultSubjectId" ? undefined : selectedColor,
+      color: selectedColor, // Always save the selected color
     }
 
     try {
@@ -362,37 +362,35 @@ export function ScheduleForm({ userId, event, onSuccess, onCancel, defaultDay, v
             <Textarea id="notes" placeholder="Catatan tambahan..." {...form.register("notes")} />
           </div>
 
-          {/* Color picker - only show in weekly view */}
-          {viewMode === "weekly" && (
-            <div className="space-y-2">
-              <Label>Warna Jadwal</Label>
-              <div className="flex flex-wrap gap-2">
-                {getColorPalette().map((color) => (
-                  <button
-                    key={color}
-                    type="button"
-                    className="w-10 h-10 rounded-md border-2 transition-all hover:scale-110 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary"
-                    style={{ 
-                      backgroundColor: color,
-                      borderColor: selectedColor === color ? "#000" : "transparent"
-                    }}
-                    onClick={() => {
-                      setSelectedColor(color)
-                      form.setValue("color", color)
-                    }}
-                    title={color}
-                  >
-                    {selectedColor === color && (
-                      <Check className="h-5 w-5 text-white mx-auto drop-shadow-lg" />
-                    )}
-                  </button>
-                ))}
-              </div>
-              <p className="text-xs text-muted-foreground">
-                Pilih warna untuk membedakan jadwal di kalender
-              </p>
+          {/* Color picker - show for all schedules */}
+          <div className="space-y-2">
+            <Label>Warna Jadwal</Label>
+            <div className="flex flex-wrap gap-2">
+              {getColorPalette().map((color) => (
+                <button
+                  key={color}
+                  type="button"
+                  className="w-10 h-10 rounded-md border-2 transition-all hover:scale-110 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary"
+                  style={{ 
+                    backgroundColor: color,
+                    borderColor: selectedColor === color ? "#000" : "transparent"
+                  }}
+                  onClick={() => {
+                    setSelectedColor(color)
+                    form.setValue("color", color)
+                  }}
+                  title={color}
+                >
+                  {selectedColor === color && (
+                    <Check className="h-5 w-5 text-white mx-auto drop-shadow-lg" />
+                  )}
+                </button>
+              ))}
             </div>
-          )}
+            <p className="text-xs text-muted-foreground">
+              Pilih warna untuk membedakan jadwal di kalender
+            </p>
+          </div>
 
           {conflicts.length > 0 && (
             <div className="p-3 bg-destructive/10 border border-destructive/20 rounded-lg">

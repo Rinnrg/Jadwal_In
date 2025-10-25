@@ -149,7 +149,8 @@ export function ScheduleGrid({ userId, onEditEvent, onAddEvent }: ScheduleGridPr
   const renderEvent = (event: ScheduleEvent) => {
     const subject = event.subjectId ? subjects.find((s) => s.id === event.subjectId) : null
     const { top, height } = getEventPosition(event)
-    const color = subject?.color || event.color || "#3b82f6"
+    // Prioritize event.color (user's custom choice) over subject.color (default)
+    const color = event.color || subject?.color || "#3b82f6"
     
     // Get lecturer names from subject's pengampuIds
     let lecturerName = ""
@@ -175,7 +176,7 @@ export function ScheduleGrid({ userId, onEditEvent, onAddEvent }: ScheduleGridPr
           backgroundColor: color + "20",
           borderColor: color,
         } as React.CSSProperties}
-        title={subject ? `${subject.kode} - ${subject.nama}${lecturerName ? `\nDosen: ${lecturerName}` : ''}${event.location ? `\nRuang: ${event.location}` : ''}` : 'Jadwal Pribadi'}
+        title={`${subject ? `${subject.kode} - ${subject.nama}` : 'Jadwal Pribadi'}${lecturerName ? `\nDosen: ${lecturerName}` : ''}${event.location ? `\nRuang: ${event.location}` : ''}${event.joinUrl ? `\nMeeting: ${event.joinUrl}` : ''}${event.notes ? `\nCatatan: ${event.notes}` : ''}`}
       >
         <div className="p-2 h-full flex flex-col justify-between">
           <div className="min-w-0 flex-1">
@@ -265,8 +266,30 @@ export function ScheduleGrid({ userId, onEditEvent, onAddEvent }: ScheduleGridPr
               {fmt24(event.startUTC)} - {fmt24(event.endUTC)}
             </span>
             <div className="flex items-center gap-1">
-              {event.location && <MapPin className="h-3 w-3 text-muted-foreground" />}
-              {event.joinUrl && <ExternalLink className="h-3 w-3 text-muted-foreground" />}
+              {event.location && (
+                <div className="flex items-center gap-0.5" title={event.location}>
+                  <MapPin className="h-3 w-3 text-muted-foreground" />
+                </div>
+              )}
+              {event.joinUrl && (
+                <a
+                  href={event.joinUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center gap-0.5 hover:text-primary transition-colors"
+                  onClick={(e) => e.stopPropagation()}
+                  title="Join Meeting"
+                >
+                  <ExternalLink className="h-3 w-3" />
+                </a>
+              )}
+              {event.notes && (
+                <div className="flex items-center gap-0.5" title={event.notes}>
+                  <svg className="h-3 w-3 text-muted-foreground" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 8h10M7 12h4m1 8l-4-4H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-3l-4 4z" />
+                  </svg>
+                </div>
+              )}
             </div>
           </div>
         </div>
@@ -354,7 +377,8 @@ export function ScheduleGrid({ userId, onEditEvent, onAddEvent }: ScheduleGridPr
                       <div className="space-y-2">
                         {hourEvents.map((event) => {
                           const subject = event.subjectId ? subjects.find((s) => s.id === event.subjectId) : null
-                          const color = subject?.color || event.color || "#3b82f6"
+                          // Prioritize event.color (user's custom choice) over subject.color (default)
+                          const color = event.color || subject?.color || "#3b82f6"
                           
                           // Get lecturer names from subject's pengampuIds
                           let lecturerNames = ""
@@ -420,7 +444,24 @@ export function ScheduleGrid({ userId, onEditEvent, onAddEvent }: ScheduleGridPr
                                     <span className="text-[11px] truncate">{event.location}</span>
                                   </div>
                                 )}
+                                {event.joinUrl && (
+                                  <a
+                                    href={event.joinUrl}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="flex items-center gap-1 text-primary hover:underline"
+                                    onClick={(e) => e.stopPropagation()}
+                                  >
+                                    <ExternalLink className="h-3 w-3 flex-shrink-0" />
+                                    <span className="text-[11px]">Join Meeting</span>
+                                  </a>
+                                )}
                               </div>
+                              {event.notes && (
+                                <div className="mt-1.5 p-2 bg-muted/50 rounded text-[11px] text-muted-foreground">
+                                  {event.notes}
+                                </div>
+                              )}
                             </div>
                           )
                         })}

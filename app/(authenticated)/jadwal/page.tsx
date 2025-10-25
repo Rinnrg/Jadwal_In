@@ -28,7 +28,6 @@ import type { ScheduleEvent } from "@/data/schema"
 import { ScheduleGrid } from "@/components/schedule/ScheduleGrid"
 import { ScheduleForm } from "@/components/schedule/ScheduleForm"
 import { NextUpCard } from "@/components/schedule/NextUpCard"
-import { Legend } from "@/components/schedule/Legend"
 import { confirmAction, showSuccess, showError } from "@/lib/alerts"
 import { exportICS, parseICS } from "@/lib/ics"
 import { toUTC } from "@/lib/time"
@@ -41,7 +40,7 @@ export default function JadwalPage() {
   const { getEventsByUser, clearUserSchedule, addEvent, deleteEvent } = useScheduleStore()
   const { subjects, fetchSubjects, isLoading: isLoadingSubjects } = useSubjectsStore()
   const { getKrsByUser } = useKrsStore()
-  const { showNowLine, showLegend, setShowNowLine, setShowLegend } = useUIStore()
+  const { showNowLine, setShowNowLine } = useUIStore()
   const { addReminder } = useRemindersStore()
   const { clearBadge } = useNotificationStore()
   const { getProfile, profiles } = useProfileStore()
@@ -519,11 +518,6 @@ export default function JadwalPage() {
         <div className="animate-slide-in-right">
           <NextUpCard userId={session.id} />
         </div>
-        {showLegend && (
-          <div className="animate-slide-in-right">
-            <Legend userId={session.id} />
-          </div>
-        )}
       </div>
     </div>
   )

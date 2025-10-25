@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useMemo } from "react"
+import { useState, useMemo, useEffect } from "react"
 import { useSubjectsStore } from "@/stores/subjects.store"
 import { useOfferingsStore } from "@/stores/offerings.store"
 import { useKrsStore } from "@/stores/krs.store"
@@ -30,6 +30,8 @@ export function KrsPicker({ userId, term }: KrsPickerProps) {
   const [searchTerm, setSearchTerm] = useState("")
   const [openKelas, setOpenKelas] = useState<string | null>(null)
   const [addingOffering, setAddingOffering] = useState<string | null>(null)
+  // Force re-render trigger
+  const [, setForceUpdate] = useState(0)
 
   const profile = getProfile(userId)
   
@@ -38,8 +40,15 @@ export function KrsPicker({ userId, term }: KrsPickerProps) {
   const userAngkatan = profile?.angkatan || studentInfo.angkatan
   const userKelas = profile?.kelas?.trim() || studentInfo.kelas
 
+  // Force update when krsItems change
+  useEffect(() => {
+    setForceUpdate(prev => prev + 1)
+  }, [krsItems.length])
+
   // Get user's current KRS items - reactive to changes
-  const userKrsItems = useMemo(() => getKrsByUser(userId, term), [getKrsByUser, userId, term, krsItems])
+  const userKrsItems = useMemo(() => {
+    return getKrsByUser(userId, term)
+  }, [userId, term, krsItems]) // Add krsItems to trigger re-computation
 
   const availableOfferings = useMemo(() => {
     // Get ALL offerings for angkatan (tidak filter by kelas, mahasiswa bebas pilih kelas mana saja)
@@ -105,7 +114,7 @@ export function KrsPicker({ userId, term }: KrsPickerProps) {
         }
       })
       .filter((offering): offering is NonNullable<typeof offering> => offering !== null)
-  }, [userAngkatan, getOfferingsForStudent, getSubjectById, getKrsByOffering, searchTerm, isOfferingInKrs, userId, term, krsItems, userKrsItems])
+  }, [userAngkatan, getOfferingsForStudent, getSubjectById, getKrsByOffering, searchTerm, isOfferingInKrs, userId, userKrsItems]) // Use userKrsItems instead of direct krsItems
 
   // Group offerings by kelas
   const groupedOfferings = useMemo(() => {
@@ -154,24 +163,21 @@ export function KrsPicker({ userId, term }: KrsPickerProps) {
     setAddingOffering(offering.id)
     
     try {
-      // Final check sebelum add (double safety berdasarkan nama)
-      const finalCheck = userKrsItems.find(krsItem => {
-        const krsSubject = getSubjectById(krsItem.subjectId)
-        return krsSubject && krsSubject.nama.toLowerCase() === subject?.nama.toLowerCase()
-      })
-      
-      if (finalCheck) {
-        const existingSubject = getSubjectById(finalCheck.subjectId)
-        showError(`${subject?.nama} sudah ada di KRS Anda (Kode: ${existingSubject?.kode})`)
-        return
-      }
-      
+      // Add to KRS store
       addKrsItem(userId, offering.subjectId, term, offering.id, subject?.nama, subject?.sks)
+      
+      // Force UI update
+      setForceUpdate(prev => prev + 1)
+      
       showSuccess(`${subject?.nama} (Kelas ${offering.kelas}) berhasil ditambahkan ke KRS`)
     } catch (error) {
+      console.error('[KRS] Error adding to KRS:', error)
       showError("Gagal menambahkan mata kuliah ke KRS")
     } finally {
-      setAddingOffering(null)
+      // Small delay to ensure state update is visible
+      setTimeout(() => {
+        setAddingOffering(null)
+      }, 100)
     }
   }
 
