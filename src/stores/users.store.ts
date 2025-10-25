@@ -16,6 +16,7 @@ interface UsersState {
   getUsersByRole: (role: User["role"]) => User[]
   getDosenUsers: () => User[]
   getMahasiswaUsers: () => User[]
+  getDosenAndKaprodiUsers: () => User[] // New function for pengampu selection
   clearCredentials: () => void
 }
 
@@ -131,6 +132,10 @@ export const useUsersStore = create<UsersState>()(
       },
       getMahasiswaUsers: () => {
         return get().users.filter((user) => user.role === "mahasiswa")
+      },
+      // Get all users who can be pengampu (dosen + kaprodi)
+      getDosenAndKaprodiUsers: () => {
+        return get().users.filter((user) => user.role === "dosen" || user.role === "kaprodi")
       },
       clearCredentials: () => {
         set({ lastCreatedCredentials: null })

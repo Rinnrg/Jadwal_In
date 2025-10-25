@@ -24,18 +24,18 @@ interface AssigneePickerProps {
 }
 
 export function AssigneePicker({ value, onChange, placeholder = "Pilih dosen pengampu..." }: AssigneePickerProps) {
-  const { users, getDosenUsers, fetchUsers } = useUsersStore()
+  const { users, getDosenAndKaprodiUsers, fetchUsers } = useUsersStore()
   const [selectedDosenId, setSelectedDosenId] = useState<string>("")
 
   useEffect(() => {
     // Fetch users from database if empty
-    const dosenCount = users.filter(u => u.role === "dosen").length
+    const dosenCount = users.filter(u => u.role === "dosen" || u.role === "kaprodi").length
     if (dosenCount === 0) {
       fetchUsers()
     }
   }, [users, fetchUsers])
 
-  const dosenUsers = getDosenUsers()
+  const dosenUsers = getDosenAndKaprodiUsers() // Now includes both dosen and kaprodi
   const selectedDosen = dosenUsers.filter(user => value.includes(user.id))
 
   // Handle selecting dosen from dropdown
@@ -66,19 +66,21 @@ export function AssigneePicker({ value, onChange, placeholder = "Pilih dosen pen
         </SelectTrigger>
         <SelectContent>
           <SelectGroup>
-            <SelectLabel>Daftar Dosen</SelectLabel>
+            <SelectLabel>Daftar Dosen & Kaprodi</SelectLabel>
             {availableDosen.length === 0 ? (
               <div className="py-6 text-center text-sm text-muted-foreground">
                 {dosenUsers.length === 0 
-                  ? "Belum ada data dosen" 
-                  : "Semua dosen sudah dipilih"}
+                  ? "Belum ada data dosen/kaprodi" 
+                  : "Semua dosen/kaprodi sudah dipilih"}
               </div>
             ) : (
               availableDosen.map((user) => (
                 <SelectItem key={user.id} value={user.id}>
                   <div className="flex flex-col">
                     <span className="font-medium">{user.name}</span>
-                    <span className="text-xs text-muted-foreground">{user.email}</span>
+                    <span className="text-xs text-muted-foreground">
+                      {user.email} • {user.role === "kaprodi" ? "Kaprodi" : "Dosen"}
+                    </span>
                   </div>
                 </SelectItem>
               ))
@@ -114,7 +116,9 @@ export function AssigneePicker({ value, onChange, placeholder = "Pilih dosen pen
                 >
                   <div className="flex flex-col items-start">
                     <span className="font-medium text-xs">{user.name}</span>
-                    <span className="text-[10px] text-muted-foreground">{user.email}</span>
+                    <span className="text-[10px] text-muted-foreground">
+                      {user.email} • {user.role === "kaprodi" ? "Kaprodi" : "Dosen"}
+                    </span>
                   </div>
                   <Button
                     variant="ghost"
@@ -133,7 +137,7 @@ export function AssigneePicker({ value, onChange, placeholder = "Pilih dosen pen
 
       {dosenUsers.length === 0 && (
         <p className="text-sm text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-900/20 p-3 rounded-lg border border-amber-200 dark:border-amber-800">
-          ⚠️ Belum ada data dosen. Data dosen akan ditambahkan secara otomatis saat halaman dimuat ulang.
+          ⚠️ Belum ada data dosen/kaprodi. Data akan ditambahkan secara otomatis saat halaman dimuat ulang.
         </p>
       )}
     </div>
