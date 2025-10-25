@@ -93,93 +93,6 @@ export function SubjectTable({ subjects: subjectsProp, onEdit }: SubjectTablePro
     }
   }
 
-  const handleToggleGroupOfferings = async (angkatan: number | string, kelas: string) => {
-    try {
-      // Get all subjects in this group
-      const groupSubjects = subjects.filter(
-        (s) => s.angkatan === angkatan && s.kelas === kelas
-      )
-
-      if (groupSubjects.length === 0) {
-        showError("Tidak ada mata kuliah untuk grup ini")
-        return
-      }
-
-      // Get all offerings for this angkatan and kelas
-      const allOfferings = useOfferingsStore.getState().offerings.filter(
-        (o) => o.angkatan === angkatan && o.kelas === kelas
-      )
-
-      // Check current status - if any is "buka", we'll close all; if all "tutup", we'll open all
-      const hasOpenOfferings = allOfferings.some((o) => o.status === "buka")
-      const newStatus = hasOpenOfferings ? "tutup" : "buka"
-
-      // If closing offerings, show confirmation first
-      if (newStatus === "tutup") {
-        const confirmed = await confirmAction(
-          "Tutup KRS Kelas",
-          `Apakah Anda yakin ingin menutup KRS untuk Angkatan ${angkatan} Kelas ${kelas}?\n\nMahasiswa tidak akan bisa mengambil mata kuliah dari kelas ini.`,
-          "Ya, Tutup KRS"
-        )
-        
-        if (!confirmed) {
-          return
-        }
-      }
-
-      // If no offerings exist, create them first with status based on toggle
-      if (allOfferings.length === 0) {
-        const currentYear = new Date().getFullYear()
-        const currentMonth = new Date().getMonth()
-        const isOddSemester = currentMonth >= 8 || currentMonth <= 1
-        const currentTerm = `${currentYear}/${currentYear + 1}-${isOddSemester ? "Ganjil" : "Genap"}`
-
-        // Create offerings for all subjects in this group
-        await Promise.all(
-          groupSubjects.map(async (subject) => {
-            try {
-              await fetch('/api/offerings', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                  subjectId: subject.id,
-                  semester: subject.semester,
-                  status: newStatus, // Use the new status instead of hardcoded 'buka'
-                  angkatan: subject.angkatan,
-                  kelas: subject.kelas,
-                  term: currentTerm,
-                  capacity: 40,
-                }),
-              })
-            } catch (err) {
-              console.error(`Failed to create offering for ${subject.kode}:`, err)
-            }
-          })
-        )
-
-        // Refresh offerings
-        await useOfferingsStore.getState().fetchOfferings()
-        
-        showSuccess(
-          `Penawaran untuk Angkatan ${angkatan} Kelas ${kelas} telah dibuat dan ${newStatus === "buka" ? "dibuka" : "ditutup"}`
-        )
-        return
-      }
-
-      // Update all offerings
-      await Promise.all(
-        allOfferings.map((offering) => updateOffering(offering.id, { status: newStatus }))
-      )
-
-      showSuccess(
-        `Semua penawaran untuk Angkatan ${angkatan} Kelas ${kelas} telah ${newStatus === "buka" ? "dibuka" : "ditutup"}`
-      )
-    } catch (error) {
-      console.error('Error toggling group offerings:', error)
-      showError("Gagal mengubah status penawaran")
-    }
-  }
-
   const handleRefreshKRS = async (angkatan: number | string, kelas: string) => {
     try {
       // Get all ACTIVE subjects in this group
@@ -354,14 +267,6 @@ export function SubjectTable({ subjects: subjectsProp, onEdit }: SubjectTablePro
                         </span>
                       </div>
                       <div className="flex items-center gap-1.5 md:gap-2 sm:ml-auto flex-wrap">
-                        <Button
-                          size="sm"
-                          variant={getGroupOfferingsStatus(group.angkatan, group.kelas) === "buka" ? "default" : "outline"}
-                          onClick={() => handleToggleGroupOfferings(group.angkatan, group.kelas)}
-                          className="text-xs md:text-sm h-8 md:h-9"
-                        >
-                          {getGroupOfferingsStatus(group.angkatan, group.kelas) === "buka" ? "Tutup KRS" : "Buka KRS"}
-                        </Button>
                         <Button
                           size="sm"
                           variant="secondary"

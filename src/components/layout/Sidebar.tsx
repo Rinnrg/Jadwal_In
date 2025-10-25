@@ -25,6 +25,7 @@ import {
   Library,
   UserCog,
   Settings,
+  Megaphone,
 } from "lucide-react"
 import { useState } from "react"
 import { motion, AnimatePresence } from "framer-motion"
@@ -45,6 +46,7 @@ const iconMap = {
   library: Library,
   "user-cog": UserCog,
   settings: Settings,
+  megaphone: Megaphone,
 }
 
 export function Sidebar() {

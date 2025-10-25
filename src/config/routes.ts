@@ -24,6 +24,7 @@ export const APP_ROUTES = {
   PROFILE: "/profile",
   REMINDERS: "/reminders",
   ROLE_MANAGEMENT: "/role-management",
+  ANNOUNCEMENTS: "/announcements",
 } as const
 
 export const ROUTE_CONFIGS: Record<string, RouteConfig> = {
@@ -114,6 +115,14 @@ export const ROUTE_CONFIGS: Record<string, RouteConfig> = {
     title: "Role Management",
     description: "Manajemen pengguna dan role",
     icon: "user-cog",
+    requiresAuth: true,
+    roles: ["super_admin"],
+  },
+  [APP_ROUTES.ANNOUNCEMENTS]: {
+    path: APP_ROUTES.ANNOUNCEMENTS,
+    title: "Pengumuman",
+    description: "Kelola pengumuman untuk mahasiswa dan dosen",
+    icon: "megaphone",
     requiresAuth: true,
     roles: ["super_admin"],
   },

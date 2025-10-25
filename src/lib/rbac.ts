@@ -107,6 +107,7 @@ export function getMenuItems(role: UserSession["role"]): ExtendedRouteConfig[] {
         ]
       },
       { path: APP_ROUTES.ROLE_MANAGEMENT, title: "Role Management", icon: "user-cog", requiresAuth: true },
+      { path: APP_ROUTES.ANNOUNCEMENTS, title: "Pengumuman", icon: "megaphone", requiresAuth: true },
     ],
   }
 
