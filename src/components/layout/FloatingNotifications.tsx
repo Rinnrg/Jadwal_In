@@ -74,8 +74,14 @@ export function FloatingNotifications() {
     badges.forEach(badge => {
       if (badge.userId !== session.id) return
 
-      // Use store's shouldShowNotification to determine if notification needed
-      if (shouldShowNotification && typeof shouldShowNotification === 'function') {
+      // Check if shouldShowNotification exists and is a function
+      if (!shouldShowNotification || typeof shouldShowNotification !== 'function') {
+        console.warn('[FloatingNotifications] shouldShowNotification is not a function:', typeof shouldShowNotification)
+        return
+      }
+
+      try {
+        // Use store's shouldShowNotification to determine if notification needed
         if (shouldShowNotification(badge.type, session.id)) {
           // Accumulate the count in pending notifications
           const existing = pendingNotifications.current.get(badge.type)
@@ -91,6 +97,8 @@ export function FloatingNotifications() {
             })
           }
         }
+      } catch (err) {
+        console.error('[FloatingNotifications] Error checking shouldShowNotification:', err)
       }
     })
 
@@ -113,7 +121,13 @@ export function FloatingNotifications() {
             // CRITICAL: Mark notification as shown in store
             // This updates lastNotifiedCount and hasEverNotified
             if (markNotificationShown && typeof markNotificationShown === 'function') {
-              markNotificationShown(type as NotificationBadge["type"], session.id, notification.count)
+              try {
+                markNotificationShown(type as NotificationBadge["type"], session.id, notification.count)
+              } catch (err) {
+                console.error('[FloatingNotifications] Error marking notification as shown:', err)
+              }
+            } else {
+              console.warn('[FloatingNotifications] markNotificationShown is not a function:', typeof markNotificationShown)
             }
           }, delay)
           delay += 200 // 200ms delay between each notification type

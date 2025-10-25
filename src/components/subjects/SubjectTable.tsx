@@ -215,12 +215,31 @@ export function SubjectTable({ subjects: subjectsProp, onEdit }: SubjectTablePro
       const users = useUsersStore.getState().users
       const { addKrsItem } = useKrsStore.getState()
       
-      // Filter mahasiswa with matching angkatan and kelas from profile
-      const targetMahasiswa = users.filter(u => 
-        u.role === 'mahasiswa' && 
-        u.profile?.angkatan === angkatan &&
-        u.profile?.kelas === kelas
-      )
+      // Filter mahasiswa with matching angkatan and kelas from profile OR user properties
+      const targetMahasiswa = users.filter(u => {
+        if (u.role !== 'mahasiswa') return false
+        
+        // Check both profile and direct user properties for angkatan and kelas
+        const userAngkatan = u.profile?.angkatan || u.angkatan
+        const userKelas = u.profile?.kelas || u.kelas
+        
+        // Convert to same type for comparison
+        const targetAngkatan = typeof angkatan === 'string' ? parseInt(angkatan) : angkatan
+        const userAngkatanNum = typeof userAngkatan === 'string' ? parseInt(userAngkatan) : userAngkatan
+        
+        console.log(`[RefreshKRS] Checking user ${u.name}:`, {
+          userAngkatan,
+          userKelas,
+          targetAngkatan: angkatan,
+          targetKelas: kelas,
+          matches: userAngkatanNum === targetAngkatan && userKelas?.toLowerCase() === String(kelas).toLowerCase()
+        })
+        
+        return userAngkatanNum === targetAngkatan && 
+               userKelas?.toLowerCase() === String(kelas).toLowerCase()
+      })
+
+      console.log(`[RefreshKRS] Found ${targetMahasiswa.length} mahasiswa for Angkatan ${angkatan} Kelas ${kelas}`)
 
       if (targetMahasiswa.length === 0) {
         showError(`Tidak ada mahasiswa dengan Angkatan ${angkatan} Kelas ${kelas}`)
