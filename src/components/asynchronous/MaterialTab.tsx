@@ -2,7 +2,7 @@
 
 import type React from "react"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { useCourseworkStore } from "@/stores/coursework.store"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -30,7 +30,7 @@ interface MaterialTabProps {
 }
 
 export function MaterialTab({ subjectId, canManage, userRole }: MaterialTabProps) {
-  const { getMaterialsBySubject, addMaterial, updateMaterial, removeMaterial } = useCourseworkStore()
+  const { getMaterialsBySubject, addMaterial, updateMaterial, removeMaterial, fetchMaterials, isFetching } = useCourseworkStore()
   const [isDialogOpen, setIsDialogOpen] = useState(false)
   const [editingMaterial, setEditingMaterial] = useState<any>(null)
   const [formData, setFormData] = useState({
@@ -41,7 +41,12 @@ export function MaterialTab({ subjectId, canManage, userRole }: MaterialTabProps
 
   const materials = arr(getMaterialsBySubject(subjectId)).sort((a, b) => b.createdAt - a.createdAt)
 
-  const handleSubmit = (e: React.FormEvent) => {
+  // Fetch materials on mount
+  useEffect(() => {
+    fetchMaterials(subjectId)
+  }, [subjectId, fetchMaterials])
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
 
     if (!formData.title.trim()) {
@@ -57,10 +62,10 @@ export function MaterialTab({ subjectId, canManage, userRole }: MaterialTabProps
       }
 
       if (editingMaterial) {
-        updateMaterial(editingMaterial.id, materialData)
+        await updateMaterial(editingMaterial.id, materialData)
         showSuccess("Materi berhasil diperbarui")
       } else {
-        addMaterial({
+        await addMaterial({
           subjectId,
           ...materialData,
         })
@@ -72,6 +77,7 @@ export function MaterialTab({ subjectId, canManage, userRole }: MaterialTabProps
       setFormData({ title: "", content: "", attachments: [] })
     } catch (error) {
       showError("Terjadi kesalahan saat menyimpan materi")
+      console.error(error)
     }
   }
 
@@ -93,8 +99,13 @@ export function MaterialTab({ subjectId, canManage, userRole }: MaterialTabProps
     )
 
     if (confirmed) {
-      removeMaterial(material.id)
-      showSuccess("Materi berhasil dihapus")
+      try {
+        await removeMaterial(material.id)
+        showSuccess("Materi berhasil dihapus")
+      } catch (error) {
+        showError("Gagal menghapus materi")
+        console.error(error)
+      }
     }
   }
 

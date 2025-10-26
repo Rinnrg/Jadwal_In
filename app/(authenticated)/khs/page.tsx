@@ -20,9 +20,9 @@ import { showSuccess, showError } from "@/lib/alerts"
 
 export default function KhsPage() {
   const { session } = useSessionStore()
-  const { subjects, fetchSubjects } = useSubjectsStore()
+  const { subjects, fetchSubjects, getSubjectById } = useSubjectsStore()
   const { getGradesByUser, calculateGPA, calculateSemesterGPA, grades: allGrades } = useGradesStore()
-  const { fetchKrsItems, krsItems } = useKrsStore()
+  const { fetchKrsItems, krsItems, getKrsByUser } = useKrsStore()
   const { getProfile } = useProfileStore()
   const { markAsRead } = useNotificationStore()
   
@@ -70,12 +70,59 @@ export default function KhsPage() {
   }
 
   const profile = getProfile(session.id)
+  
+  // Get user's KRS items for the selected term (similar to dashboard)
+  const currentYear = new Date().getFullYear()
+  const currentMonth = new Date().getMonth()
+  const isOddSemester = currentMonth >= 8 || currentMonth <= 1
+  const currentTermDefault = `${currentYear}/${currentYear + 1}-${isOddSemester ? "Ganjil" : "Genap"}`
+  
+  // Get KRS items for the selected term
+  const userKrsItems = session ? getKrsByUser(session.id, selectedTerm === "Semua Semester" ? currentTermDefault : selectedTerm) : []
+  
+  // Get grades for the user
   const grades = getGradesByUser(session.id, selectedTerm === "Semua Semester" ? undefined : selectedTerm)
+  
+  // Combine KRS items with grades to show all enrolled subjects
+  // For subjects in KRS but not yet graded, show "Belum Dinilai"
+  const allSubjectsWithGrades = userKrsItems.map(krsItem => {
+    const subject = getSubjectById(krsItem.subjectId)
+    const existingGrade = grades.find(g => g.subjectId === krsItem.subjectId)
+    
+    if (existingGrade) {
+      return existingGrade
+    } else if (subject && subject.status === "aktif") {
+      // Create a placeholder grade entry for subjects in KRS but not yet graded
+      return {
+        id: `placeholder-${krsItem.id}`,
+        userId: session.id,
+        subjectId: krsItem.subjectId,
+        term: krsItem.term,
+        nilaiAngka: null,
+        nilaiHuruf: null,
+        createdAt: krsItem.createdAt,
+        updatedAt: krsItem.createdAt,
+      }
+    }
+    return null
+  }).filter(Boolean)
+  
+  // Also include grades that might not be in current KRS (for "Semua Semester" view)
+  if (selectedTerm === "Semua Semester") {
+    grades.forEach(grade => {
+      if (!allSubjectsWithGrades.find(g => g?.id === grade.id)) {
+        allSubjectsWithGrades.push(grade)
+      }
+    })
+  }
+  
+  const displayGrades = allSubjectsWithGrades as typeof grades
+  
   const cumulativeGPA = calculateGPA(session.id, undefined, subjects)
   const semesterGPA = selectedTerm !== "Semua Semester" ? calculateSemesterGPA(session.id, selectedTerm, subjects) : 0
 
   // Group grades by semester for better organization
-  const gradesBySemester = grades.reduce(
+  const gradesBySemester = displayGrades.reduce(
     (acc, grade) => {
       if (!acc[grade.term]) {
         acc[grade.term] = []
@@ -83,7 +130,7 @@ export default function KhsPage() {
       acc[grade.term].push(grade)
       return acc
     },
-    {} as Record<string, typeof grades>,
+    {} as Record<string, typeof displayGrades>,
   )
 
   const getGradeColor = (nilaiHuruf?: string) => {
@@ -128,7 +175,7 @@ export default function KhsPage() {
         studentNIM: profile?.nim || "Belum diisi",
         studentProdi: profile?.prodi || "Belum diisi",
         studentAngkatan: profile?.angkatan?.toString() || "Belum diisi",
-        grades: grades,
+        grades: displayGrades,
         subjects: subjects,
         cumulativeGPA: cumulativeGPA
       })
@@ -147,7 +194,7 @@ export default function KhsPage() {
           <h1 className="text-xl md:text-2xl lg:text-3xl font-bold tracking-tight">KHS (Kartu Hasil Studi)</h1>
           <p className="text-muted-foreground text-sm md:text-base">Lihat hasil studi dan prestasi akademik Anda</p>
         </div>
-        <Button onClick={handleExportTranscript} disabled={grades.length === 0} className="text-xs md:text-sm w-full sm:w-auto">
+        <Button onClick={handleExportTranscript} disabled={displayGrades.length === 0} className="text-xs md:text-sm w-full sm:w-auto">
           <Printer className="h-3.5 w-3.5 md:h-4 md:w-4 mr-1.5 md:mr-2" />
           Cetak Transkrip
         </Button>
@@ -162,7 +209,7 @@ export default function KhsPage() {
           </CardHeader>
           <CardContent className="px-4 md:px-6 pb-4 md:pb-6">
             <div className="text-xl md:text-2xl font-bold text-primary">{cumulativeGPA.toFixed(2)}</div>
-            <p className="text-[10px] md:text-xs text-muted-foreground">Dari {grades.length} mata kuliah</p>
+            <p className="text-[10px] md:text-xs text-muted-foreground">Dari {displayGrades.length} mata kuliah</p>
           </CardContent>
         </Card>
 
@@ -185,7 +232,7 @@ export default function KhsPage() {
           </CardHeader>
           <CardContent className="px-4 md:px-6 pb-4 md:pb-6">
             <div className="text-xl md:text-2xl font-bold">
-              {grades.reduce((total, grade) => {
+              {displayGrades.reduce((total, grade) => {
                 const subject = subjects.find((s) => s.id === grade.subjectId)
                 return total + (subject?.sks || 0)
               }, 0)}
@@ -210,7 +257,7 @@ export default function KhsPage() {
       </Card>
 
       {/* Grades Table */}
-      {grades.length === 0 ? (
+      {displayGrades.length === 0 ? (
         <Card>
           <CardHeader className="px-3 md:px-6 pt-3 md:pt-6 pb-2 md:pb-4">
             <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
@@ -236,9 +283,9 @@ export default function KhsPage() {
           </CardHeader>
           <CardContent className="px-3 md:px-6 pb-3 md:pb-6">
             <div className="text-center py-6 md:py-8">
-              <p className="text-muted-foreground text-xs md:text-sm">Belum ada nilai yang tersedia.</p>
+              <p className="text-muted-foreground text-xs md:text-sm">Belum ada mata kuliah yang diambil di KRS.</p>
               <p className="text-[10px] md:text-xs text-muted-foreground mt-1">
-                Nilai akan muncul setelah dosen memasukkan hasil evaluasi.
+                Silakan tambahkan mata kuliah di halaman KRS terlebih dahulu.
               </p>
             </div>
           </CardContent>
@@ -352,7 +399,7 @@ export default function KhsPage() {
               <div className="flex-1">
                 <CardTitle className="text-sm md:text-base">Hasil Studi - {selectedTerm}</CardTitle>
                 <CardDescription className="text-[10px] md:text-xs mt-1">
-                  {grades.length} mata kuliah dengan IPS {semesterGPA.toFixed(2)}
+                  {displayGrades.length} mata kuliah dengan IPS {semesterGPA.toFixed(2)}
                 </CardDescription>
               </div>
               <div className="w-full sm:w-auto sm:min-w-[200px]">
@@ -385,7 +432,7 @@ export default function KhsPage() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {grades.map((grade) => {
+                  {displayGrades.map((grade) => {
                     const subject = subjects.find((s) => s.id === grade.subjectId)
                     // Get grade bobot from gradeOptions
                     let gradeBobot = 0

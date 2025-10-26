@@ -430,20 +430,35 @@
     animation: shake 0.5s ease-in-out;
   }
 
-  /* Slide up animation */
-  @keyframes slide-up {
+  /* Dialog animations - Modern scale + fade */
+  @keyframes dialog-scale-in {
     from {
       opacity: 0;
-      transform: translateY(20px);
+      transform: scale(0.95) translateY(-10px);
     }
     to {
       opacity: 1;
-      transform: translateY(0);
+      transform: scale(1) translateY(0);
     }
   }
 
-  .animate-slide-up {
-    animation: slide-up 0.5s ease-out;
+  @keyframes dialog-scale-out {
+    from {
+      opacity: 1;
+      transform: scale(1) translateY(0);
+    }
+    to {
+      opacity: 0;
+      transform: scale(0.95) translateY(-10px);
+    }
+  }
+
+  .animate-dialog-in {
+    animation: dialog-scale-in 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+
+  .animate-dialog-out {
+    animation: dialog-scale-out 0.2s cubic-bezier(0.4, 0, 1, 1);
   }
 
 

@@ -70,7 +70,8 @@ export function KrsTable({ userId, term, onScheduleSuggestion }: KrsTableProps) 
       .map((krsItem) => {
         const subject = getSubjectById(krsItem.subjectId)
         const offering = krsItem.offeringId ? getOffering(krsItem.offeringId) : null
-        return subject ? { ...krsItem, subject, offering } : null
+        // Filter: Only include if subject exists AND is active
+        return subject && subject.status === "aktif" ? { ...krsItem, subject, offering } : null
       })
       .filter(Boolean)
       .sort((a, b) => a!.subject.semester - b!.subject.semester)

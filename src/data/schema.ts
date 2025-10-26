@@ -89,6 +89,8 @@ export const AssignmentSchema = z.object({
   description: z.string().optional(),
   dueUTC: z.number().optional(),
   createdAt: z.number(),
+  imageUrl: z.string().optional(),
+  fileUrl: z.string().optional(),
   attachments: z.array(FileAttachmentSchema).default([]),
   allowedFileTypes: z.array(z.string()).default([".pdf", ".doc", ".docx"]),
   maxFileSize: z.number().default(10 * 1024 * 1024), // 10MB default

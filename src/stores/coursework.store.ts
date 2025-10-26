@@ -7,17 +7,23 @@ interface CourseworkState {
   assignments: Assignment[]
   materials: Material[]
   attendance: AttendanceSession[]
+  isLoading: boolean
+  isFetching: boolean
+
+  // Fetch methods
+  fetchAssignments: (subjectId?: string) => Promise<void>
+  fetchMaterials: (subjectId?: string) => Promise<void>
 
   // Assignment methods
-  addAssignment: (assignment: Omit<Assignment, "id" | "createdAt">) => void
-  updateAssignment: (id: string, updates: Partial<Assignment>) => void
-  removeAssignment: (id: string) => void
+  addAssignment: (assignment: Omit<Assignment, "id" | "createdAt">) => Promise<void>
+  updateAssignment: (id: string, updates: Partial<Assignment>) => Promise<void>
+  removeAssignment: (id: string) => Promise<void>
   getAssignmentsBySubject: (subjectId: string) => Assignment[]
 
   // Material methods
-  addMaterial: (material: Omit<Material, "id" | "createdAt">) => void
-  updateMaterial: (id: string, updates: Partial<Material>) => void
-  removeMaterial: (id: string) => void
+  addMaterial: (material: Omit<Material, "id" | "createdAt">) => Promise<void>
+  updateMaterial: (id: string, updates: Partial<Material>) => Promise<void>
+  removeMaterial: (id: string) => Promise<void>
   getMaterialsBySubject: (subjectId: string) => Material[]
 
   // Attendance methods
@@ -34,106 +40,331 @@ export const useCourseworkStore = create<CourseworkState>()(
       assignments: [],
       materials: [],
       attendance: [],
+      isLoading: false,
+      isFetching: false,
+
+      // Fetch methods
+      fetchAssignments: async (subjectId) => {
+        try {
+          set({ isFetching: true })
+          const url = subjectId 
+            ? `/api/assignments?subjectId=${subjectId}&_t=${Date.now()}` 
+            : `/api/assignments?_t=${Date.now()}`
+          
+          const response = await fetch(url, {
+            cache: 'no-store',
+            headers: {
+              'Cache-Control': 'no-cache',
+            }
+          })
+          
+          if (!response.ok) {
+            throw new Error('Failed to fetch assignments')
+          }
+          
+          const data = await response.json()
+          
+          // Convert BigInt dueUTC to number
+          const assignments = data.map((a: any) => ({
+            ...a,
+            dueUTC: a.dueUTC ? Number(a.dueUTC) : undefined,
+            createdAt: new Date(a.createdAt).getTime(),
+          }))
+          
+          set({ assignments, isFetching: false })
+          console.log('[Coursework Store] Fetched assignments:', assignments.length)
+        } catch (error) {
+          console.error('[Coursework Store] Error fetching assignments:', error)
+          set({ isFetching: false })
+        }
+      },
+
+      fetchMaterials: async (subjectId) => {
+        try {
+          set({ isFetching: true })
+          const url = subjectId 
+            ? `/api/materials?subjectId=${subjectId}&_t=${Date.now()}` 
+            : `/api/materials?_t=${Date.now()}`
+          
+          const response = await fetch(url, {
+            cache: 'no-store',
+            headers: {
+              'Cache-Control': 'no-cache',
+            }
+          })
+          
+          if (!response.ok) {
+            throw new Error('Failed to fetch materials')
+          }
+          
+          const data = await response.json()
+          
+          // Convert timestamps
+          const materials = data.map((m: any) => ({
+            ...m,
+            createdAt: new Date(m.createdAt).getTime(),
+          }))
+          
+          set({ materials, isFetching: false })
+          console.log('[Coursework Store] Fetched materials:', materials.length)
+        } catch (error) {
+          console.error('[Coursework Store] Error fetching materials:', error)
+          set({ isFetching: false })
+        }
+      },
 
       // Assignment methods
-      addAssignment: (assignment) => {
-        const newAssignment: Assignment = {
-          ...assignment,
-          id: generateId(),
-          createdAt: Date.now(),
-        }
-        set((state) => ({
-          assignments: [...state.assignments, newAssignment],
-        }))
-        
-        // Trigger notification for students enrolled in this subject
+      addAssignment: async (assignment) => {
         try {
-          ;(async () => {
-            const { useNotificationStore } = await import('./notification.store')
-            const { useKrsStore } = await import('./krs.store')
-            const { triggerNotification } = useNotificationStore.getState()
-            const { getKrsBySubject } = useKrsStore.getState()
-            
-            // Get all students enrolled in this subject
-            const enrolledStudents = getKrsBySubject(assignment.subjectId)
-            
-            const message = assignment.title 
-              ? `Tugas baru: "${assignment.title}"` 
-              : 'Tugas baru telah ditambahkan'
-            
-            // Notify each enrolled student
-            enrolledStudents.forEach(krsItem => {
-              triggerNotification('asynchronous', krsItem.userId, message, 1)
-            })
-            
-            console.log('[Coursework Store] Assignment notification triggered for', enrolledStudents.length, 'students')
-          })()
+          // Call API to create assignment
+          const response = await fetch('/api/assignments', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              subjectId: assignment.subjectId,
+              title: assignment.title,
+              description: assignment.description,
+              dueUTC: assignment.dueUTC,
+              allowedFileTypes: assignment.allowedFileTypes || ['.pdf', '.doc', '.docx'],
+              maxFileSize: assignment.maxFileSize || 10485760,
+              maxFiles: assignment.maxFiles || 3,
+            }),
+          })
+
+          if (!response.ok) {
+            throw new Error('Failed to create assignment')
+          }
+
+          const data = await response.json()
+          
+          // Convert to local format
+          const newAssignment: Assignment = {
+            ...assignment,
+            id: data.id,
+            createdAt: new Date(data.createdAt).getTime(),
+            dueUTC: data.dueUTC ? Number(data.dueUTC) : undefined,
+          }
+
+          set((state) => ({
+            assignments: [...state.assignments, newAssignment],
+          }))
+          
+          console.log('[Coursework Store] Assignment created successfully:', newAssignment.id)
+          
+          // Trigger notification for students enrolled in this subject
+          try {
+            ;(async () => {
+              const { useNotificationStore } = await import('./notification.store')
+              const { useKrsStore } = await import('./krs.store')
+              const { triggerNotification } = useNotificationStore.getState()
+              const { getKrsBySubject } = useKrsStore.getState()
+              
+              // Get all students enrolled in this subject
+              const enrolledStudents = getKrsBySubject(assignment.subjectId)
+              
+              const message = assignment.title 
+                ? `Tugas baru: "${assignment.title}"` 
+                : 'Tugas baru telah ditambahkan'
+              
+              // Notify each enrolled student
+              enrolledStudents.forEach(krsItem => {
+                triggerNotification('asynchronous', krsItem.userId, message, 1)
+              })
+              
+              console.log('[Coursework Store] Assignment notification triggered for', enrolledStudents.length, 'students')
+            })()
+          } catch (error) {
+            console.error('[Coursework Store] Failed to trigger assignment notification:', error)
+          }
         } catch (error) {
-          console.error('[Coursework Store] Failed to trigger assignment notification:', error)
+          console.error('[Coursework Store] Error adding assignment:', error)
+          throw error
         }
       },
-      updateAssignment: (id, updates) => {
-        set((state) => ({
-          assignments: state.assignments.map((assignment) =>
-            assignment.id === id ? { ...assignment, ...updates } : assignment,
-          ),
-        }))
+      updateAssignment: async (id, updates) => {
+        try {
+          // Call API to update assignment
+          const response = await fetch('/api/assignments', {
+            method: 'PUT',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              id,
+              ...updates,
+            }),
+          })
+
+          if (!response.ok) {
+            throw new Error('Failed to update assignment')
+          }
+
+          const data = await response.json()
+          
+          // Update local state
+          set((state) => ({
+            assignments: state.assignments.map((assignment) =>
+              assignment.id === id 
+                ? { 
+                    ...assignment, 
+                    ...updates,
+                    dueUTC: data.dueUTC ? Number(data.dueUTC) : undefined,
+                  } 
+                : assignment
+            ),
+          }))
+          
+          console.log('[Coursework Store] Assignment updated successfully:', id)
+        } catch (error) {
+          console.error('[Coursework Store] Error updating assignment:', error)
+          throw error
+        }
       },
-      removeAssignment: (id) => {
-        set((state) => ({
-          assignments: state.assignments.filter((assignment) => assignment.id !== id),
-        }))
+      removeAssignment: async (id) => {
+        try {
+          // Call API to delete assignment
+          const response = await fetch(`/api/assignments?id=${id}`, {
+            method: 'DELETE',
+          })
+
+          if (!response.ok) {
+            throw new Error('Failed to delete assignment')
+          }
+
+          // Update local state
+          set((state) => ({
+            assignments: state.assignments.filter((assignment) => assignment.id !== id),
+          }))
+          
+          console.log('[Coursework Store] Assignment deleted successfully:', id)
+        } catch (error) {
+          console.error('[Coursework Store] Error deleting assignment:', error)
+          throw error
+        }
       },
       getAssignmentsBySubject: (subjectId) => {
         return get().assignments.filter((assignment) => assignment.subjectId === subjectId)
       },
 
       // Material methods
-      addMaterial: (material) => {
-        const newMaterial: Material = {
-          ...material,
-          id: generateId(),
-          createdAt: Date.now(),
-        }
-        set((state) => ({
-          materials: [...state.materials, newMaterial],
-        }))
-        
-        // Trigger notification for students enrolled in this subject
+      addMaterial: async (material) => {
         try {
-          ;(async () => {
-            const { useNotificationStore } = await import('./notification.store')
-            const { useKrsStore } = await import('./krs.store')
-            const { triggerNotification } = useNotificationStore.getState()
-            const { getKrsBySubject } = useKrsStore.getState()
-            
-            // Get all students enrolled in this subject
-            const enrolledStudents = getKrsBySubject(material.subjectId)
-            
-            const message = material.title 
-              ? `Materi baru: "${material.title}"` 
-              : 'Materi baru telah ditambahkan'
-            
-            // Notify each enrolled student
-            enrolledStudents.forEach(krsItem => {
-              triggerNotification('asynchronous', krsItem.userId, message, 1)
-            })
-            
-            console.log('[Coursework Store] Material notification triggered for', enrolledStudents.length, 'students')
-          })()
+          // Call API to create material
+          const response = await fetch('/api/materials', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              subjectId: material.subjectId,
+              title: material.title,
+              content: material.content,
+            }),
+          })
+
+          if (!response.ok) {
+            throw new Error('Failed to create material')
+          }
+
+          const data = await response.json()
+          
+          // Convert to local format
+          const newMaterial: Material = {
+            ...material,
+            id: data.id,
+            createdAt: new Date(data.createdAt).getTime(),
+          }
+
+          set((state) => ({
+            materials: [...state.materials, newMaterial],
+          }))
+          
+          console.log('[Coursework Store] Material created successfully:', newMaterial.id)
+          
+          // Trigger notification for students enrolled in this subject
+          try {
+            ;(async () => {
+              const { useNotificationStore } = await import('./notification.store')
+              const { useKrsStore } = await import('./krs.store')
+              const { triggerNotification } = useNotificationStore.getState()
+              const { getKrsBySubject } = useKrsStore.getState()
+              
+              // Get all students enrolled in this subject
+              const enrolledStudents = getKrsBySubject(material.subjectId)
+              
+              const message = material.title 
+                ? `Materi baru: "${material.title}"` 
+                : 'Materi baru telah ditambahkan'
+              
+              // Notify each enrolled student
+              enrolledStudents.forEach(krsItem => {
+                triggerNotification('asynchronous', krsItem.userId, message, 1)
+              })
+              
+              console.log('[Coursework Store] Material notification triggered for', enrolledStudents.length, 'students')
+            })()
+          } catch (error) {
+            console.error('[Coursework Store] Failed to trigger material notification:', error)
+          }
         } catch (error) {
-          console.error('[Coursework Store] Failed to trigger material notification:', error)
+          console.error('[Coursework Store] Error adding material:', error)
+          throw error
         }
       },
-      updateMaterial: (id, updates) => {
-        set((state) => ({
-          materials: state.materials.map((material) => (material.id === id ? { ...material, ...updates } : material)),
-        }))
+      updateMaterial: async (id, updates) => {
+        try {
+          // Call API to update material
+          const response = await fetch('/api/materials', {
+            method: 'PUT',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              id,
+              ...updates,
+            }),
+          })
+
+          if (!response.ok) {
+            throw new Error('Failed to update material')
+          }
+
+          // Update local state
+          set((state) => ({
+            materials: state.materials.map((material) => 
+              material.id === id ? { ...material, ...updates } : material
+            ),
+          }))
+          
+          console.log('[Coursework Store] Material updated successfully:', id)
+        } catch (error) {
+          console.error('[Coursework Store] Error updating material:', error)
+          throw error
+        }
       },
-      removeMaterial: (id) => {
-        set((state) => ({
-          materials: state.materials.filter((material) => material.id !== id),
-        }))
+      removeMaterial: async (id) => {
+        try {
+          // Call API to delete material
+          const response = await fetch(`/api/materials?id=${id}`, {
+            method: 'DELETE',
+          })
+
+          if (!response.ok) {
+            throw new Error('Failed to delete material')
+          }
+
+          // Update local state
+          set((state) => ({
+            materials: state.materials.filter((material) => material.id !== id),
+          }))
+          
+          console.log('[Coursework Store] Material deleted successfully:', id)
+        } catch (error) {
+          console.error('[Coursework Store] Error deleting material:', error)
+          throw error
+        }
       },
       getMaterialsBySubject: (subjectId) => {
         return get().materials.filter((material) => material.subjectId === subjectId)

@@ -948,7 +948,7 @@ export default function DashboardPage() {
 
       {/* Detail Dialog */}
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <DialogContent className="max-w-2xl max-h-[calc(100vh-4rem)] animate-slide-up">
+        <DialogContent className="max-w-2xl max-h-[calc(100vh-4rem)] animate-dialog-in data-[state=closed]:animate-dialog-out">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2 animate-fade-in">
               {dialogType === "schedule" && <Calendar className="h-5 w-5 text-blue-500 animate-scale-in" />}

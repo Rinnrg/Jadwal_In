@@ -102,17 +102,11 @@ export function AnnouncementPopup() {
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
       <DialogContent className="max-w-2xl max-h-[85vh] overflow-hidden flex flex-col gap-0 p-0">
-        <DialogHeader className="px-6 pt-6 pb-4">
+        <DialogHeader className="px-6 pt-4 pb-3">
           <div className="flex items-center gap-2">
             <Megaphone className="h-5 w-5 text-primary" />
             <DialogTitle className="text-xl">{currentAnnouncement.title}</DialogTitle>
           </div>
-          <DialogDescription>
-            {formatDistanceToNow(new Date(currentAnnouncement.createdAt), {
-              addSuffix: true,
-              locale: idLocale,
-            })}
-          </DialogDescription>
         </DialogHeader>
 
         <Separator className="mx-6" />
@@ -154,18 +148,6 @@ export function AnnouncementPopup() {
                 </a>
               </div>
             )}
-
-            {/* Target Roles Badge */}
-            <div className="flex gap-2">
-              <span className="text-sm text-muted-foreground">Target:</span>
-              <div className="flex gap-1 flex-wrap">
-                {currentAnnouncement.targetRoles.map((role) => (
-                  <Badge key={role} variant="secondary" className="text-xs">
-                    {role === "mahasiswa" ? "Mahasiswa" : role === "dosen" ? "Dosen" : "Kaprodi"}
-                  </Badge>
-                ))}
-              </div>
-            </div>
           </div>
         </ScrollArea>
 

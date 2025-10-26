@@ -59,15 +59,14 @@ export default function AsynchronousPage() {
 
     let subjects: Subject[] = []
 
-    if (session.role === "dosen") {
+    if (session.role === "dosen" || session.role === "kaprodi") {
+      // Dosen dan Kaprodi hanya bisa melihat mata kuliah yang mereka ampu
       subjects = getSubjectsByPengampu(session.id).filter((subject) => subject.status === "aktif") as Subject[]
     } else if (session.role === "mahasiswa") {
       // Mahasiswa can see subjects they are enrolled in (KRS)
       const krsItems = getKrsByUser(session.id)
       const activeSubjects = getActiveSubjects()
       subjects = activeSubjects.filter((subject) => arr(krsItems).some((krs) => krs.subjectId === subject.id)) as Subject[]
-    } else if (session.role === "kaprodi") {
-      subjects = getActiveSubjects() as Subject[]
     }
 
     return subjects

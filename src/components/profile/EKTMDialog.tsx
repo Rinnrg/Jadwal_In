@@ -29,6 +29,8 @@ export function EKTMDialog({
       <DialogContent 
         className="max-w-none w-full h-full p-0 border-0 bg-gradient-to-br from-slate-900 via-blue-900 to-slate-900"
         aria-describedby={undefined}
+        onPointerDownOutside={() => onOpenChange(false)}
+        onEscapeKeyDown={() => onOpenChange(false)}
       >
         {/* Close Button */}
         <Button

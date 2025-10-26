@@ -107,6 +107,48 @@ export function useRealtimeSync(options: RealtimeSyncOptions = {}) {
             }
           }
           
+          // Fetch assignments and materials for all users
+          try {
+            const assignmentsResponse = await fetch(`/api/assignments?_t=${Date.now()}`, {
+              cache: 'no-store',
+              headers: {
+                'Cache-Control': 'no-cache',
+              }
+            })
+            if (assignmentsResponse.ok) {
+              const latestAssignments = await assignmentsResponse.json()
+              const assignments = latestAssignments.map((a: any) => ({
+                ...a,
+                dueUTC: a.dueUTC ? Number(a.dueUTC) : undefined,
+                createdAt: new Date(a.createdAt).getTime(),
+              }))
+              useCourseworkStore.setState({ assignments })
+              console.log('[RealtimeSync] Synced assignments:', assignments.length, 'items')
+            }
+          } catch (error) {
+            console.error('[RealtimeSync] Error syncing assignments:', error)
+          }
+
+          try {
+            const materialsResponse = await fetch(`/api/materials?_t=${Date.now()}`, {
+              cache: 'no-store',
+              headers: {
+                'Cache-Control': 'no-cache',
+              }
+            })
+            if (materialsResponse.ok) {
+              const latestMaterials = await materialsResponse.json()
+              const materials = latestMaterials.map((m: any) => ({
+                ...m,
+                createdAt: new Date(m.createdAt).getTime(),
+              }))
+              useCourseworkStore.setState({ materials })
+              console.log('[RealtimeSync] Synced materials:', materials.length, 'items')
+            }
+          } catch (error) {
+            console.error('[RealtimeSync] Error syncing materials:', error)
+          }
+          
           // On initial mount, just update the count silently
           if (isInitialMount.current) {
             previousSubjectsCount.current = latestSubjects.length
