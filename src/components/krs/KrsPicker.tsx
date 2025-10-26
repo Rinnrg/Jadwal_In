@@ -53,46 +53,6 @@ export function KrsPicker({ userId, term }: KrsPickerProps) {
   const availableOfferings = useMemo(() => {
     // Get ALL offerings for angkatan (tidak filter by kelas, mahasiswa bebas pilih kelas mana saja)
     const offerings = getOfferingsForStudent(userAngkatan)
-    
-    console.log('[KrsPicker] ===== DEBUGGING OFFERINGS =====')
-    console.log('[KrsPicker] User angkatan:', userAngkatan)
-    console.log('[KrsPicker] Total offerings for angkatan:', offerings.length)
-    console.log('[KrsPicker] Note: Visibility controlled by SUBJECT status (aktif/arsip), not offering status')
-    
-    // CRITICAL CHECK: Find subjects that are AKTIF but have NO offerings
-    const allActiveSubjects = subjects.filter(s => s.status === 'aktif' && s.angkatan === userAngkatan)
-    const subjectsWithoutOfferings = allActiveSubjects.filter(subject => {
-      const hasOffering = offerings.some(o => o.subjectId === subject.id)
-      return !hasOffering
-    })
-    
-    if (subjectsWithoutOfferings.length > 0) {
-      console.warn('[KrsPicker] ⚠️ SUBJECTS WITHOUT OFFERINGS (akan tidak muncul di KRS):')
-      subjectsWithoutOfferings.forEach(subject => {
-        console.warn(`  - ${subject.nama} (${subject.kode}) - Angkatan: ${subject.angkatan}, Kelas: ${subject.kelas}, STATUS: ${subject.status}`)
-        console.warn(`    → FIX: Buka halaman Subjects, klik "Fix Offerings" untuk kelas ${subject.kelas}`)
-      })
-    } else {
-      console.log('[KrsPicker] ✅ All active subjects have offerings!')
-    }
-    
-    console.log('[KrsPicker] Active subjects for angkatan:', allActiveSubjects.length)
-    console.log('[KrsPicker] Subjects with offerings:', allActiveSubjects.length - subjectsWithoutOfferings.length)
-    console.log('[KrsPicker] Missing offerings count:', subjectsWithoutOfferings.length)
-    
-    if (subjectsWithoutOfferings.length > 0) {
-      console.log('')
-      console.log('🔧 CARA FIX:')
-      console.log('1. Buka halaman SUBJECTS')
-      console.log('2. Cari grup "Angkatan ' + userAngkatan + '"')
-      console.log('3. Klik tombol "Fix Offerings" (oranye)')
-      console.log('4. Atau toggle OFF → ON untuk subject yang bermasalah')
-      console.log('5. Refresh halaman KRS ini')
-      console.log('')
-    }
-    
-    console.log('[KrsPicker] ===== END DEBUGGING =====')
-    console.log('')
 
     return offerings
       .map((offering) => {
@@ -100,15 +60,8 @@ export function KrsPicker({ userId, term }: KrsPickerProps) {
 
         // Only show if subject exists and is active
         if (!subject || subject.status !== "aktif") {
-          if (!subject) {
-            console.log('[KrsPicker] ❌ Skipping offering - subject not found:', offering.subjectId)
-          } else if (subject.status !== "aktif") {
-            console.log('[KrsPicker] ❌ Skipping offering - subject not active:', subject.nama, 'status:', subject.status)
-          }
           return null
         }
-        
-        console.log('[KrsPicker] ✅ Including offering:', subject.nama, '- Kelas:', offering.kelas)
 
         // CRITICAL CHANGE: Check berdasarkan NAMA mata kuliah, bukan hanya subjectId
         // Ini mencegah user mengambil "Manajemen Proyek" di kelas berbeda meskipun kode berbeda
@@ -123,8 +76,13 @@ export function KrsPicker({ userId, term }: KrsPickerProps) {
         const isThisOfferingInKrs = isOfferingInKrs(userId, offering.id)
         const isAlreadyEnrolled = isThisOfferingInKrs
         
-        // Check if subject with SAME NAME is already taken (bisa beda kode, tapi nama sama)
-        const isSubjectTakenInOtherClass = subjectWithSameName && !isThisOfferingInKrs
+        // Check if subject with SAME NAME is already taken in DIFFERENT class
+        // Only true if: ada subject dengan nama sama DAN bukan offering yang sama DAN beda kelas
+        const isSubjectTakenInOtherClass = Boolean(
+          subjectWithSameName && 
+          !isThisOfferingInKrs &&
+          subjectWithSameName.offeringId !== offering.id
+        )
         
         // Get the class name where this subject was already taken
         let takenInClass = ''
@@ -189,21 +147,10 @@ export function KrsPicker({ userId, term }: KrsPickerProps) {
     
     const subject = getSubjectById(offering.subjectId)
     
-    console.log('[KrsPicker] Adding offering:', {
-      offeringId: offering.id,
-      subjectId: offering.subjectId,
-      subjectName: subject?.nama,
-      subjectStatus: subject?.status,
-      kelas: offering.kelas,
-      userId,
-      term
-    })
-    
     // CRITICAL: Check apakah offering ini SUDAH ada di KRS
     // Check 1: Exact offering match
     const alreadyHasThisOffering = isOfferingInKrs(userId, offering.id)
     if (alreadyHasThisOffering) {
-      console.log('[KrsPicker] This exact offering already in KRS:', offering.id)
       showError(`Kelas ${offering.kelas} dari ${subject?.nama} sudah ada di KRS Anda`)
       return
     }
@@ -211,7 +158,6 @@ export function KrsPicker({ userId, term }: KrsPickerProps) {
     // Check 2: Same subject (any class) - Cek berdasarkan subjectId DAN term
     const alreadyHasThisSubject = isSubjectInKrs(userId, offering.subjectId, term)
     if (alreadyHasThisSubject) {
-      console.log('[KrsPicker] Subject already in KRS:', offering.subjectId)
       showError(`${subject?.nama} sudah ada di KRS Anda`)
       return
     }
@@ -224,21 +170,18 @@ export function KrsPicker({ userId, term }: KrsPickerProps) {
     
     if (existingSubjectWithSameName) {
       const existingSubject = getSubjectById(existingSubjectWithSameName.subjectId)
-      console.log('[KrsPicker] Duplicate subject name found:', existingSubject?.nama)
       showError(`${subject?.nama} sudah ada di KRS Anda (Kode: ${existingSubject?.kode})`)
       return
     }
 
     // Check if class is full
     if (offering.isFull) {
-      console.log('[KrsPicker] Class is full')
       showError("Kelas sudah penuh")
       return
     }
     
     // Check if subject is active
     if (!subject || subject.status !== 'aktif') {
-      console.log('[KrsPicker] Subject not active:', subject?.status)
       showError(`Mata kuliah ${subject?.nama || 'ini'} tidak aktif`)
       return
     }
@@ -246,22 +189,10 @@ export function KrsPicker({ userId, term }: KrsPickerProps) {
     setAddingOffering(offering.id)
     
     try {
-      console.log('[KrsPicker] Calling addKrsItem with:', {
-        userId,
-        subjectId: offering.subjectId,
-        term,
-        offeringId: offering.id,
-        subjectName: subject?.nama,
-        sks: subject?.sks
-      })
-      
       // Add to KRS store (now async with API call)
       await addKrsItem(userId, offering.subjectId, term, offering.id, subject?.nama, subject?.sks)
       
-      console.log('[KrsPicker] Successfully added to KRS')
-      
       // Force re-fetch to get latest data
-      console.log('[KrsPicker] Force fetching latest KRS data...')
       await fetchKrsItems(userId, term, true)
       
       // Force UI update
@@ -272,12 +203,6 @@ export function KrsPicker({ userId, term }: KrsPickerProps) {
       
       showSuccess(`${subject?.nama} (Kelas ${offering.kelas}) berhasil ditambahkan ke KRS`)
     } catch (error) {
-      console.error('[KrsPicker] Error adding to KRS:', error)
-      console.error('[KrsPicker] Error details:', {
-        message: error instanceof Error ? error.message : 'Unknown error',
-        stack: error instanceof Error ? error.stack : undefined
-      })
-      
       // Clear adding state on error
       setAddingOffering(null)
       
