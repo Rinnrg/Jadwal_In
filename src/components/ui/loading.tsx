@@ -55,10 +55,6 @@ export function PageLoading({ message = "Memuat...", className }: PageLoadingPro
             loop
             style={{ width: '250px', height: '250px' }}
             speed={1.5}
-            autoResizeCanvas={true}
-            renderConfig={{
-              devicePixelRatio: 2
-            }}
           />
         </div>
 

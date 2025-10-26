@@ -67,10 +67,6 @@ export function SuccessAnimation({ onComplete }: SuccessAnimationProps) {
               dotLottieRef.current = dotLottie
             }}
             style={{ width: '400px', height: '400px' }}
-            autoResizeCanvas={true}
-            renderConfig={{
-              devicePixelRatio: 2
-            }}
           />
         ) : (
           // Fallback sederhana saat loading - instant feedback
