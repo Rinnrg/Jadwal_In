@@ -66,22 +66,15 @@ export function PageLoading({ message = "Memuat...", className }: PageLoadingPro
   return (
     <div className={cn("min-h-screen flex items-center justify-center bg-background", className)}>
       <div className="text-center space-y-6 p-8">
-        {/* Rocket Animation */}
+        {/* Rocket Animation - Always show, no fallback */}
         <div className="flex justify-center">
-          {animationData ? (
-            <DotLottieReact
-              data={animationData}
-              autoplay
-              loop
-              speed={2.0}
-              style={{ width: '250px', height: '250px' }}
-            />
-          ) : (
-            // Instant fallback spinner saat animasi belum load
-            <div className="w-[250px] h-[250px] flex items-center justify-center">
-              <LoadingSpinner size="lg" />
-            </div>
-          )}
+          <DotLottieReact
+            data={animationData}
+            autoplay
+            loop
+            speed={2.0}
+            style={{ width: '250px', height: '250px' }}
+          />
         </div>
 
         {/* Loading Text */}

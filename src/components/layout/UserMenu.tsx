@@ -43,23 +43,27 @@ export function UserMenu() {
 
     if (confirmed) {
       try {
-        // 1. Clear client-side session FIRST
-        logout()
+        console.log('[Logout] Starting logout process...')
         
-        // 2. Call logout API in background (don't wait for response)
+        // 1. Clear client-side session FIRST (instant UI update)
+        logout()
+        console.log('[Logout] Session cleared from store')
+        
+        // 2. Call logout API to clear server-side session
         fetch('/api/auth/logout', {
           method: 'POST',
           credentials: 'include'
         }).catch(err => {
           // Silently ignore errors - user is already logged out on client
-          console.log('Logout API call failed (ignored):', err)
+          console.log('[Logout] API call failed (ignored):', err)
         })
         
-        // 3. Immediate redirect to login
+        // 3. IMMEDIATE hard redirect (clear all state)
+        console.log('[Logout] Redirecting to login...')
         window.location.href = "/login"
       } catch (error) {
         // If anything fails, still redirect to login
-        console.log("Logout flow error (ignored):", error)
+        console.log("[Logout] Error during logout (redirecting anyway):", error)
         window.location.href = "/login"
       }
     }

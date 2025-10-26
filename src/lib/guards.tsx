@@ -28,6 +28,7 @@ export function Protected({ children }: { children: React.ReactNode }) {
   const [hasMounted, setHasMounted] = useState(false)
   const [isCheckingSession, setIsCheckingSession] = useState(true)
   const fetchingRef = useRef(false)
+  const hasCheckedRef = useRef(false)
   const router = useRouter()
 
   useEffect(() => {
@@ -37,16 +38,19 @@ export function Protected({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     if (!hasMounted || !hasHydrated) return
     if (fetchingRef.current) return // Already fetching
+    if (hasCheckedRef.current) return // Already checked once
 
     // If we already have a session from localStorage, use it
     if (session) {
       console.log('[Protected] Session found in store:', session.email)
       setIsCheckingSession(false)
+      hasCheckedRef.current = true
       return
     }
 
     console.log('[Protected] No session in store, fetching from API...')
     fetchingRef.current = true
+    hasCheckedRef.current = true
     
     // Try to fetch session from API (for httpOnly cookies)
     fetch('/api/auth/session', { 
@@ -76,13 +80,18 @@ export function Protected({ children }: { children: React.ReactNode }) {
         } else {
           console.log('[Protected] No session from API, redirecting to login...')
           setIsCheckingSession(false)
-          router.push('/login')
+          // Use window.location for hard redirect to clear all state
+          window.location.href = '/login'
         }
       })
       .catch((error) => {
         console.error('[Protected] Failed to fetch session:', error)
         setIsCheckingSession(false)
-        router.push('/login')
+        // Use window.location for hard redirect to clear all state
+        window.location.href = '/login'
+      })
+      .finally(() => {
+        fetchingRef.current = false
       })
   }, [hasMounted, hasHydrated, session, setSession, router])
 
@@ -91,9 +100,9 @@ export function Protected({ children }: { children: React.ReactNode }) {
     return <PageLoading message="Memuat sesi..." />
   }
 
-  // If no session after check, don't render (router.push will handle redirect)
+  // If no session after check, don't render (redirect will handle)
   if (!session) {
-    return <PageLoading message="Mengalihkan ke login..." />
+    return null
   }
 
   // Render children only when we have a valid session

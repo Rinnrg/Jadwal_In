@@ -65,12 +65,16 @@ export const useSessionStore = create<SessionState>()(
         }
       },
       logout: () => {
+        console.log('[SessionStore] logout() called')
+        
         // Clear session from store
         set({ session: null, isLoading: false })
+        console.log('[SessionStore] Session cleared from store')
         
         // Clear localStorage
         if (typeof window !== 'undefined') {
           localStorage.removeItem('jadwalin:session:v1')
+          console.log('[SessionStore] localStorage cleared')
         }
         
         // Clear all auth cookies
@@ -82,7 +86,11 @@ export const useSessionStore = create<SessionState>()(
           // Clear jadwalin-auth cookie (both secure and non-secure)
           document.cookie = "jadwalin-auth=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT; SameSite=Lax"
           document.cookie = "jadwalin-auth=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT; SameSite=Lax; Secure"
+          
+          console.log('[SessionStore] Cookies cleared')
         }
+        
+        console.log('[SessionStore] Logout complete')
       },
     }),
     {
