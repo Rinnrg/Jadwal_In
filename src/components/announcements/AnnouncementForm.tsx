@@ -205,13 +205,10 @@ export function AnnouncementForm({ announcement, onSuccess, onCancel }: Announce
   }
 
   const toggleTargetRole = (role: string) => {
-    console.log('[AnnouncementForm] Toggling role:', role)
     setFormData((prev) => {
       const newTargetRoles = prev.targetRoles.includes(role)
         ? prev.targetRoles.filter((r) => r !== role)
         : [...prev.targetRoles, role]
-      
-      console.log('[AnnouncementForm] New target roles:', newTargetRoles)
       
       return {
         ...prev,
@@ -406,16 +403,26 @@ export function AnnouncementForm({ announcement, onSuccess, onCancel }: Announce
                     ? "bg-primary/10 border-primary"
                     : "hover:bg-muted/50 border-border"
                 }`}
-                onClick={() => toggleTargetRole(role)}
+                onClick={(e) => {
+                  // Prevent double toggle if clicking on checkbox
+                  if ((e.target as HTMLElement).closest('button[role="checkbox"]')) {
+                    return
+                  }
+                  toggleTargetRole(role)
+                }}
               >
                 <Checkbox
                   id={`role-${role}`}
                   checked={formData.targetRoles.includes(role)}
                   onCheckedChange={() => toggleTargetRole(role)}
+                  onClick={(e) => e.stopPropagation()}
                 />
-                <span className="font-normal text-sm flex-1 select-none">
+                <Label
+                  htmlFor={`role-${role}`}
+                  className="font-normal text-sm flex-1 select-none cursor-pointer"
+                >
                   {role === "mahasiswa" ? "Mahasiswa" : role === "dosen" ? "Dosen" : "Kaprodi"}
-                </span>
+                </Label>
               </div>
             ))}
           </div>

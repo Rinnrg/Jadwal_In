@@ -1,11 +1,8 @@
 "use client"
 
 import type React from "react"
-import { useState, useEffect, useMemo } from "react"
-import Image from "next/image"
 import { cn } from "@/lib/utils"
 import { DotLottieReact } from '@lottiefiles/dotlottie-react'
-import { getCachedAnimation, preloadAnimation } from '@/src/utils/preload-animations'
 
 interface LoadingSpinnerProps {
   size?: "sm" | "md" | "lg"
@@ -48,41 +45,18 @@ interface PageLoadingProps {
 }
 
 export function PageLoading({ message = "Memuat...", className }: PageLoadingProps) {
-  // Check cache immediately - instant render
-  const cachedData = useMemo(() => getCachedAnimation('/lottie/Businessman flies up with rocket.json'), [])
-  const [animationData, setAnimationData] = useState<any>(cachedData)
-  const [isAnimationReady, setIsAnimationReady] = useState(!!cachedData)
-
-  useEffect(() => {
-    // Load animation jika belum ada di cache
-    if (!animationData) {
-      preloadAnimation('/lottie/Businessman flies up with rocket.json').then(data => {
-        if (data) {
-          setAnimationData(data)
-          setIsAnimationReady(true)
-        }
-      })
-    }
-  }, [animationData])
-
   return (
     <div className={cn("min-h-screen flex items-center justify-center bg-background", className)}>
       <div className="text-center space-y-6 p-8">
-        {/* Rocket Animation - Show placeholder until loaded */}
+        {/* Rocket Animation - Always show */}
         <div className="flex justify-center">
-          {isAnimationReady && animationData ? (
-            <DotLottieReact
-              data={animationData}
-              autoplay
-              loop
-              speed={2.0}
-              style={{ width: '250px', height: '250px' }}
-            />
-          ) : (
-            <div className="w-[250px] h-[250px] flex items-center justify-center">
-              <LoadingSpinner size="lg" />
-            </div>
-          )}
+          <DotLottieReact
+            src="/lottie/Businessman flies up with rocket.json"
+            autoplay
+            loop
+            speed={2.0}
+            style={{ width: '250px', height: '250px' }}
+          />
         </div>
 
         {/* Loading Text */}

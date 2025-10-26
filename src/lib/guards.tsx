@@ -26,11 +26,9 @@ export function HydrationGuard({ children }: { children: React.ReactNode }) {
 export function Protected({ children }: { children: React.ReactNode }) {
   const { session, setSession, hasHydrated } = useSessionStore()
   const [hasMounted, setHasMounted] = useState(false)
-  const [isCheckingSession, setIsCheckingSession] = useState(true)
-  const [isRedirecting, setIsRedirecting] = useState(false)
+  const [isCheckingSession, setIsCheckingSession] = useState(false) // Changed: default false
   const fetchingRef = useRef(false)
   const hasCheckedRef = useRef(false)
-  const redirectingRef = useRef(false)
   const router = useRouter()
 
   useEffect(() => {
@@ -41,12 +39,10 @@ export function Protected({ children }: { children: React.ReactNode }) {
     if (!hasMounted || !hasHydrated) return
     if (fetchingRef.current) return // Already fetching
     if (hasCheckedRef.current) return // Already checked once
-    if (redirectingRef.current) return // Already redirecting
 
-    // If we already have a session from localStorage, use it
+    // If we already have a session from localStorage, use it immediately
     if (session) {
       console.log('[Protected] Session found in store:', session.email)
-      setIsCheckingSession(false)
       hasCheckedRef.current = true
       return
     }
@@ -54,6 +50,7 @@ export function Protected({ children }: { children: React.ReactNode }) {
     console.log('[Protected] No session in store, fetching from API...')
     fetchingRef.current = true
     hasCheckedRef.current = true
+    setIsCheckingSession(true)
     
     // Try to fetch session from API (for httpOnly cookies)
     fetch('/api/auth/session', { 
@@ -82,36 +79,27 @@ export function Protected({ children }: { children: React.ReactNode }) {
           setIsCheckingSession(false)
         } else {
           console.log('[Protected] No session from API, redirecting to login...')
-          // Set redirecting flags to prevent re-renders and loops
-          redirectingRef.current = true
-          setIsRedirecting(true)
-          setIsCheckingSession(false)
-          // Use window.location for hard redirect to clear all state
-          // Add small delay to ensure state is set before redirect
-          setTimeout(() => {
-            window.location.href = '/login'
-          }, 100)
+          // Direct redirect without showing loading
+          window.location.href = '/login'
         }
       })
       .catch((error) => {
         console.error('[Protected] Failed to fetch session:', error)
-        // Set redirecting flags to prevent re-renders and loops
-        redirectingRef.current = true
-        setIsRedirecting(true)
-        setIsCheckingSession(false)
-        // Use window.location for hard redirect to clear all state
-        // Add small delay to ensure state is set before redirect
-        setTimeout(() => {
-          window.location.href = '/login'
-        }, 100)
+        // Direct redirect without showing loading
+        window.location.href = '/login'
       })
       .finally(() => {
         fetchingRef.current = false
+        setIsCheckingSession(false)
       })
-  }, [hasMounted, hasHydrated, setSession, router]) // Removed 'session' to prevent loop on logout
+  }, [hasMounted, hasHydrated, setSession, router])
 
-  // Show loading during hydration OR session check OR redirecting
-  if (!hasMounted || !hasHydrated || isCheckingSession || isRedirecting) {
+  // Show loading ONLY during initial hydration or when actively checking session
+  if (!hasMounted || !hasHydrated) {
+    return <PageLoading message="Memuat aplikasi..." />
+  }
+
+  if (isCheckingSession) {
     return <PageLoading message="Memuat sesi..." />
   }
 
@@ -120,7 +108,7 @@ export function Protected({ children }: { children: React.ReactNode }) {
     return null
   }
 
-  // Render children only when we have a valid session
+  // Render children immediately when we have a valid session
   return <>{children}</>
 }
 

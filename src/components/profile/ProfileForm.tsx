@@ -9,7 +9,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { AvatarUploader } from "@/components/profile/AvatarUploader"
-import { EKTMDialog } from "@/components/profile/EKTMDialog"
+import { EKTMFullView } from "@/components/profile/EKTMFullView"
 import { showSuccess, showError } from "@/lib/alerts"
 import { ActivityLogger } from "@/lib/activity-logger"
 import { Lock, IdCard, Edit2, Check, X, KeyRound } from "lucide-react"
@@ -245,7 +245,7 @@ export function ProfileForm({ profile, onSuccess, onChangePassword, onSetPasswor
 
   return (
     <>
-      <EKTMDialog
+      <EKTMFullView
         open={showEKTM}
         onOpenChange={setShowEKTM}
         name={session.name}

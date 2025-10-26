@@ -80,7 +80,7 @@ export function UserLoginCard() {
     }      // Success state
       setButtonState('success')
       
-      // Set session in store FIRST
+      // Set session in store IMMEDIATELY
       if (data.user) {
         const sessionData = {
           id: data.user.id,
@@ -106,11 +106,12 @@ export function UserLoginCard() {
       console.log('Login successful, showing animation...')
       setShowSuccessAnimation(true)
 
-      // Minimal delay - hanya untuk animasi selesai
+      // Quick redirect - only wait for animation to be visible
       setTimeout(() => {
         console.log('Redirecting to:', callbackUrl)
-        window.location.href = callbackUrl
-      }, 1500) // Sangat cepat - 1.5 detik total
+        // Use replace to prevent back button going to login
+        window.location.replace(callbackUrl)
+      }, 1200) // Faster - 1.2 detik total
     } catch (error) {
       console.error('Login error:', error)
       setLoginError('Gagal login. Silakan coba lagi.')

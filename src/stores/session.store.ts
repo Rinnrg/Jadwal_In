@@ -67,27 +67,35 @@ export const useSessionStore = create<SessionState>()(
       logout: () => {
         console.log('[SessionStore] logout() called')
         
-        // Clear session from store
-        set({ session: null, isLoading: false })
+        // Clear session from store FIRST
+        set({ session: null, isLoading: false, hasHydrated: true })
         console.log('[SessionStore] Session cleared from store')
         
-        // Clear localStorage
+        // Clear localStorage IMMEDIATELY
         if (typeof window !== 'undefined') {
-          localStorage.removeItem('jadwalin:session:v1')
-          console.log('[SessionStore] localStorage cleared')
+          try {
+            localStorage.removeItem('jadwalin:session:v1')
+            console.log('[SessionStore] localStorage cleared')
+          } catch (e) {
+            console.error('[SessionStore] Failed to clear localStorage:', e)
+          }
         }
         
         // Clear all auth cookies
         if (typeof document !== 'undefined') {
-          // Clear session_token cookie (both secure and non-secure)
-          document.cookie = "session_token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT; SameSite=Lax"
-          document.cookie = "session_token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT; SameSite=Lax; Secure"
-          
-          // Clear jadwalin-auth cookie (both secure and non-secure)
-          document.cookie = "jadwalin-auth=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT; SameSite=Lax"
-          document.cookie = "jadwalin-auth=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT; SameSite=Lax; Secure"
-          
-          console.log('[SessionStore] Cookies cleared')
+          try {
+            // Clear session_token cookie (both secure and non-secure)
+            document.cookie = "session_token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT; SameSite=Lax"
+            document.cookie = "session_token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT; SameSite=Lax; Secure"
+            
+            // Clear jadwalin-auth cookie (both secure and non-secure)
+            document.cookie = "jadwalin-auth=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT; SameSite=Lax"
+            document.cookie = "jadwalin-auth=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT; SameSite=Lax; Secure"
+            
+            console.log('[SessionStore] Cookies cleared')
+          } catch (e) {
+            console.error('[SessionStore] Failed to clear cookies:', e)
+          }
         }
         
         console.log('[SessionStore] Logout complete')

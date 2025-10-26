@@ -1,8 +1,10 @@
 import { NextRequest, NextResponse } from "next/server"
-import { writeFile, mkdir } from "fs/promises"
-import { join } from "path"
-import { existsSync } from "fs"
 
+/**
+ * Upload API - Base64 Strategy for Vercel
+ * Since Vercel's file system is read-only, we convert files to base64 data URLs
+ * This works for both development and production environments
+ */
 export async function POST(request: NextRequest) {
   try {
     console.log('[Upload API] Starting file upload processing...')
@@ -24,7 +26,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "No file uploaded" }, { status: 400 })
     }
 
-    console.log(`[Upload API] Uploading ${type} file: ${file.name} (${file.size} bytes)`)
+    console.log(`[Upload API] Processing ${type} file: ${file.name} (${file.size} bytes)`)
 
     // Validate file type
     if (type === "image") {
@@ -49,74 +51,37 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // Create uploads directory if it doesn't exist
-    const uploadsDir = join(process.cwd(), "public", "uploads", type === "image" ? "images" : "pdfs")
-    
-    console.log('[Upload API] Target directory:', uploadsDir)
-    
-    try {
-      if (!existsSync(uploadsDir)) {
-        console.log(`[Upload API] Creating directory: ${uploadsDir}`)
-        await mkdir(uploadsDir, { recursive: true })
-        console.log('[Upload API] Directory created successfully')
-      } else {
-        console.log('[Upload API] Directory already exists')
-      }
-    } catch (mkdirError) {
-      console.error("[Upload API] Error creating directory:", mkdirError)
-      return NextResponse.json({ 
-        error: "Failed to create upload directory",
-        details: mkdirError instanceof Error ? mkdirError.message : "Unknown error"
-      }, { status: 500 })
-    }
-
-    // Generate unique filename - sanitize more aggressively
-    const timestamp = Date.now()
-    const ext = file.name.split('.').pop() || 'file'
-    const baseName = file.name.replace(/\.[^/.]+$/, "").replace(/[^a-zA-Z0-9]/g, "_")
-    const filename = `${timestamp}-${baseName}.${ext}`
-    const filepath = join(uploadsDir, filename)
-
-    console.log(`[Upload API] Generated filename: ${filename}`)
-    console.log(`[Upload API] Full filepath: ${filepath}`)
-
-    // Convert file to buffer and write to disk
+    // Convert file to base64 data URL
     try {
       const bytes = await file.arrayBuffer()
       const buffer = Buffer.from(bytes)
+      const base64 = buffer.toString('base64')
+      const dataUrl = `data:${file.type};base64,${base64}`
       
-      console.log(`[Upload API] File converted to buffer: ${buffer.length} bytes`)
-      
-      // Ensure directory exists before writing
-      await mkdir(uploadsDir, { recursive: true })
-      
-      console.log(`[Upload API] Writing file to disk...`)
-      await writeFile(filepath, buffer, { mode: 0o666 })
-      console.log(`[Upload API] File saved successfully: ${filename}`)
-      
-      // Verify file was written
-      if (existsSync(filepath)) {
-        console.log(`[Upload API] File verified on disk: ${filepath}`)
-      } else {
-        console.error(`[Upload API] File not found after write: ${filepath}`)
-      }
-    } catch (writeError) {
-      console.error("[Upload API] Error writing file:", writeError)
-      console.error("[Upload API] Filepath:", filepath)
-      console.error("[Upload API] Directory exists:", existsSync(uploadsDir))
+      console.log(`[Upload API] File converted to base64: ${base64.length} characters`)
+      console.log(`[Upload API] Data URL length: ${dataUrl.length} characters`)
+
+      // Generate filename for reference
+      const timestamp = Date.now()
+      const ext = file.name.split('.').pop() || 'file'
+      const baseName = file.name.replace(/\.[^/.]+$/, "").replace(/[^a-zA-Z0-9]/g, "_")
+      const filename = `${timestamp}-${baseName}.${ext}`
+
+      console.log('[Upload API] Upload successful, returning base64 data URL')
+
       return NextResponse.json({ 
-        error: "Failed to write file to disk",
-        details: writeError instanceof Error ? writeError.message : "Unknown error",
-        path: filepath
+        url: dataUrl,
+        filename,
+        type: file.type,
+        size: file.size
+      }, { status: 200 })
+    } catch (conversionError) {
+      console.error("[Upload API] Error converting file to base64:", conversionError)
+      return NextResponse.json({ 
+        error: "Failed to process file",
+        details: conversionError instanceof Error ? conversionError.message : "Unknown error"
       }, { status: 500 })
     }
-
-    // Return the URL
-    const url = `/uploads/${type === "image" ? "images" : "pdfs"}/${filename}`
-
-    console.log('[Upload API] Upload successful, returning URL:', url)
-
-    return NextResponse.json({ url, filename }, { status: 200 })
   } catch (error) {
     console.error("[Upload API] Unexpected error:", error)
     return NextResponse.json({ 
