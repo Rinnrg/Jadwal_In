@@ -10,7 +10,6 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { AlertCircle, BookOpen, FileText, ChevronRight, GraduationCap, ArrowLeft } from "lucide-react"
 import { AssignmentTab } from "@/components/asynchronous/AssignmentTab"
 import { MaterialTab } from "@/components/asynchronous/MaterialTab"
@@ -26,7 +25,6 @@ export default function AsynchronousPage() {
   const [selectedSubject, setSelectedSubject] = useState<Subject | null>(null)
   const [selectedClass, setSelectedClass] = useState<string | null>(null)
   const [selectedAngkatan, setSelectedAngkatan] = useState<string | null>(null)
-  const [openFolderPopover, setOpenFolderPopover] = useState<string | null>(null)
   
   // Force re-render trigger for reactive updates
   const [, setForceUpdate] = useState(0)
@@ -134,9 +132,9 @@ export default function AsynchronousPage() {
     setSelectedAngkatan(angkatan)
   }
 
-  const handleClassClick = (className: string) => {
+  const handleClassClick = (angkatan: string, className: string) => {
+    setSelectedAngkatan(angkatan)
     setSelectedClass(className)
-    setOpenFolderPopover(null) // Close popover when class is selected
   }
 
   const handleBackToClasses = () => {
@@ -235,8 +233,8 @@ export default function AsynchronousPage() {
 
           {/* For Dosen/Kaprodi: Show angkatan grouping with Folder component */}
           {canManage && !selectedClass ? (
-            <div className="px-4 md:px-6 lg:px-8">
-              <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 gap-4 md:gap-6 py-2">
+            <div className="px-4 md:px-6 lg:px-8 mt-8">
+              <div className="space-y-6">
                 {Object.entries(subjectsByAngkatan)
                   .sort(([a], [b]) => b.localeCompare(a)) // Sort descending (newest first)
                   .map(([angkatan, classes]) => {
@@ -244,72 +242,37 @@ export default function AsynchronousPage() {
                     const totalClasses = Object.keys(classes).length
                     
                     return (
-                      <div key={angkatan} className="flex flex-col items-center gap-2">
-                        <Popover 
-                          open={openFolderPopover === angkatan} 
-                          onOpenChange={(open) => setOpenFolderPopover(open ? angkatan : null)}
-                        >
-                          <PopoverTrigger asChild>
-                            <div className="cursor-pointer">
-                              <Folder 
-                                size={1} 
-                                color="#60A5FA" 
-                                className=""
-                                items={[]}
-                              />
-                            </div>
-                          </PopoverTrigger>
-                          <PopoverContent 
-                            className="w-72 p-3" 
-                            align="center"
-                            side="bottom"
-                            sideOffset={8}
-                            alignOffset={0}
-                            collisionPadding={16}
-                          >
-                            <div className="space-y-2">
-                              <h4 className="font-bold text-base mb-3 px-2 text-foreground">
-                                Pilih Kelas - Angkatan {angkatan}
-                              </h4>
-                              <div className="grid grid-cols-1 gap-2">
-                                {Object.entries(classes)
-                                  .sort(([a], [b]) => a.localeCompare(b))
-                                  .map(([kelas, classSubjects]) => (
-                                    <button
-                                      key={kelas}
-                                      onClick={() => {
-                                        setSelectedAngkatan(angkatan)
-                                        handleClassClick(kelas)
-                                      }}
-                                      className="w-full flex items-center justify-between p-3 rounded-lg hover:bg-blue-50 dark:hover:bg-blue-950/30 hover:border-blue-200 dark:hover:border-blue-800 border border-transparent transition-all duration-200 text-left group"
-                                    >
-                                      <div className="flex items-center gap-3">
-                                        <div className="w-10 h-10 rounded-lg bg-blue-500/10 dark:bg-blue-400/10 flex items-center justify-center group-hover:bg-blue-500/20 dark:group-hover:bg-blue-400/20 transition-colors">
-                                          <GraduationCap className="h-5 w-5 text-blue-600 dark:text-blue-400" />
-                                        </div>
-                                        <div>
-                                          <div className="font-semibold text-base text-foreground">
-                                            Kelas {kelas}
-                                          </div>
-                                          <div className="text-sm text-muted-foreground">
-                                            {classSubjects.length} mata kuliah
-                                          </div>
-                                        </div>
-                                      </div>
-                                      <ChevronRight className="h-5 w-5 text-muted-foreground group-hover:text-blue-600 dark:group-hover:text-blue-400 group-hover:translate-x-1 transition-all" />
-                                    </button>
-                                  ))}
+                      <div key={angkatan} className="space-y-3">
+                        <h3 className="text-sm font-semibold text-muted-foreground px-2">
+                          Pilih Kelas - Angkatan {angkatan}
+                        </h3>
+                        <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 gap-4 md:gap-6">
+                          {Object.entries(classes)
+                            .sort(([a], [b]) => a.localeCompare(b))
+                            .map(([kelas, classSubjects]) => (
+                              <div 
+                                key={kelas}
+                                className="flex flex-col items-center gap-2 cursor-pointer group"
+                                onClick={() => handleClassClick(angkatan, kelas)}
+                              >
+                                <div className="transition-transform group-hover:scale-110">
+                                  <Folder 
+                                    size={1} 
+                                    color="#60A5FA" 
+                                    className=""
+                                    items={[]}
+                                  />
+                                </div>
+                                <div className="text-center space-y-0.5">
+                                  <h4 className="text-xs md:text-sm font-bold text-foreground group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
+                                    Kelas {kelas}
+                                  </h4>
+                                  <p className="text-[10px] text-muted-foreground">
+                                    {classSubjects.length} mata kuliah
+                                  </p>
+                                </div>
                               </div>
-                            </div>
-                          </PopoverContent>
-                        </Popover>
-                        <div className="text-center space-y-0.5">
-                          <h3 className="text-xs md:text-sm font-bold text-foreground">
-                            {angkatan}
-                          </h3>
-                          <p className="text-[10px] text-muted-foreground">
-                            {totalClasses} kelas
-                          </p>
+                            ))}
                         </div>
                       </div>
                     )

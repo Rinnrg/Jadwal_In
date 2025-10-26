@@ -364,27 +364,27 @@ export default function AnnouncementsPage() {
 
       {/* Form Dialog */}
       <Dialog open={isFormOpen} onOpenChange={(open) => !open && handleCloseForm()}>
-        <DialogContent className="max-w-3xl max-h-[calc(100vh-4rem)] sm:my-8" showCloseButton={false}>
-          <DialogHeader className="space-y-3 pb-4 border-b">
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto" showCloseButton={false}>
+          <DialogHeader className="space-y-2 pb-3 border-b sticky top-0 bg-background z-10">
             <div className="flex items-center gap-3">
               <div className="p-2 bg-primary/10 rounded-lg">
                 <Megaphone className="h-5 w-5 text-primary" />
               </div>
               <div>
-                <DialogTitle className="text-xl">
+                <DialogTitle className="text-lg">
                   {editingAnnouncement ? "Edit Pengumuman" : "Buat Pengumuman Baru"}
                 </DialogTitle>
-                <DialogDescription className="text-sm mt-1">
+                <DialogDescription className="text-xs mt-0.5">
                   Pengumuman akan ditampilkan sebagai pop-up saat user membuka aplikasi
                 </DialogDescription>
               </div>
             </div>
           </DialogHeader>
 
-          <form onSubmit={handleSubmit} className="space-y-6 pt-4">
+          <form onSubmit={handleSubmit} className="space-y-4 pt-3">
             {/* Title */}
-            <div className="space-y-2">
-              <Label htmlFor="title" className="text-sm font-semibold flex items-center gap-2">
+            <div className="space-y-1.5">
+              <Label htmlFor="title" className="text-sm font-semibold flex items-center gap-1.5">
                 <span className="text-destructive">*</span>
                 Judul Pengumuman
               </Label>
@@ -393,13 +393,13 @@ export default function AnnouncementsPage() {
                 value={formData.title}
                 onChange={(e) => setFormData({ ...formData, title: e.target.value })}
                 placeholder="Contoh: Pengumuman Libur Semester"
-                className="h-11"
+                className="h-10"
               />
             </div>
 
             {/* Description */}
-            <div className="space-y-2">
-              <Label htmlFor="description" className="text-sm font-semibold flex items-center gap-2">
+            <div className="space-y-1.5">
+              <Label htmlFor="description" className="text-sm font-semibold flex items-center gap-1.5">
                 <span className="text-destructive">*</span>
                 Keterangan
               </Label>
@@ -408,22 +408,22 @@ export default function AnnouncementsPage() {
                 value={formData.description}
                 onChange={(e) => setFormData({ ...formData, description: e.target.value })}
                 placeholder="Tulis keterangan pengumuman di sini..."
-                rows={6}
+                rows={4}
                 className="resize-none"
               />
             </div>
 
             {/* Media Uploads Section */}
-            <div className="space-y-4 p-4 bg-muted/30 rounded-lg border border-dashed">
-              <div className="flex items-center gap-2 text-sm font-semibold">
-                <FileUp className="h-4 w-4 text-muted-foreground" />
+            <div className="space-y-3 p-3 bg-muted/30 rounded-lg border border-dashed">
+              <div className="flex items-center gap-2 text-xs font-semibold">
+                <FileUp className="h-3.5 w-3.5 text-muted-foreground" />
                 <span>Media Pendukung (Opsional)</span>
               </div>
 
               {/* Image Upload */}
-              <div className="space-y-2">
-                <Label htmlFor="imageUpload" className="text-sm flex items-center gap-2">
-                  <ImageIcon className="h-4 w-4 text-blue-500" />
+              <div className="space-y-1.5">
+                <Label htmlFor="imageUpload" className="text-xs flex items-center gap-1.5">
+                  <ImageIcon className="h-3.5 w-3.5 text-blue-500" />
                   Gambar (JPG/PNG)
                 </Label>
                 <div className="flex items-center gap-2">
@@ -433,33 +433,33 @@ export default function AnnouncementsPage() {
                     accept="image/jpeg,image/jpg,image/png"
                     onChange={handleImageUpload}
                     disabled={uploadingImage}
-                    className="flex-1 h-10 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-primary file:text-primary-foreground hover:file:bg-primary/90"
+                    className="flex-1 h-9 text-xs file:mr-3 file:py-1.5 file:px-3 file:rounded-md file:border-0 file:text-xs file:font-semibold file:bg-primary file:text-primary-foreground hover:file:bg-primary/90"
                   />
                   {uploadingImage && (
-                    <div className="flex items-center gap-2 text-sm text-primary">
-                      <FileUp className="h-4 w-4 animate-spin" />
+                    <div className="flex items-center gap-1.5 text-xs text-primary">
+                      <FileUp className="h-3.5 w-3.5 animate-spin" />
                       <span>Uploading...</span>
                     </div>
                   )}
                 </div>
                 {imageFile && (
                   <div className="flex items-center gap-2 p-2 bg-green-50 dark:bg-green-950/20 border border-green-200 dark:border-green-800 rounded-md">
-                    <CheckCircle className="h-4 w-4 text-green-600" />
+                    <CheckCircle className="h-3.5 w-3.5 text-green-600" />
                     <p className="text-xs text-green-700 dark:text-green-400 flex-1">
                       {imageFile.name} ({(imageFile.size / 1024).toFixed(2)} KB)
                     </p>
                   </div>
                 )}
-                <p className="text-xs text-muted-foreground flex items-center gap-1">
+                <p className="text-[10px] text-muted-foreground flex items-center gap-1">
                   <AlertCircle className="h-3 w-3" />
                   Format: JPG/PNG. Maksimal 5MB
                 </p>
               </div>
 
               {/* PDF Upload */}
-              <div className="space-y-2">
-                <Label htmlFor="pdfUpload" className="text-sm flex items-center gap-2">
-                  <FileText className="h-4 w-4 text-red-500" />
+              <div className="space-y-1.5">
+                <Label htmlFor="pdfUpload" className="text-xs flex items-center gap-1.5">
+                  <FileText className="h-3.5 w-3.5 text-red-500" />
                   Dokumen PDF
                 </Label>
                 <div className="flex items-center gap-2">
@@ -469,24 +469,24 @@ export default function AnnouncementsPage() {
                     accept="application/pdf"
                     onChange={handlePdfUpload}
                     disabled={uploadingPdf}
-                    className="flex-1 h-10 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-primary file:text-primary-foreground hover:file:bg-primary/90"
+                    className="flex-1 h-9 text-xs file:mr-3 file:py-1.5 file:px-3 file:rounded-md file:border-0 file:text-xs file:font-semibold file:bg-primary file:text-primary-foreground hover:file:bg-primary/90"
                   />
                   {uploadingPdf && (
-                    <div className="flex items-center gap-2 text-sm text-primary">
-                      <FileUp className="h-4 w-4 animate-spin" />
+                    <div className="flex items-center gap-1.5 text-xs text-primary">
+                      <FileUp className="h-3.5 w-3.5 animate-spin" />
                       <span>Uploading...</span>
                     </div>
                   )}
                 </div>
                 {pdfFile && (
                   <div className="flex items-center gap-2 p-2 bg-green-50 dark:bg-green-950/20 border border-green-200 dark:border-green-800 rounded-md">
-                    <CheckCircle className="h-4 w-4 text-green-600" />
+                    <CheckCircle className="h-3.5 w-3.5 text-green-600" />
                     <p className="text-xs text-green-700 dark:text-green-400 flex-1">
                       {pdfFile.name} ({(pdfFile.size / 1024).toFixed(2)} KB)
                     </p>
                   </div>
                 )}
-                <p className="text-xs text-muted-foreground flex items-center gap-1">
+                <p className="text-[10px] text-muted-foreground flex items-center gap-1">
                   <AlertCircle className="h-3 w-3" />
                   Format: PDF. Maksimal 10MB
                 </p>
@@ -494,75 +494,48 @@ export default function AnnouncementsPage() {
             </div>
 
             {/* Target Roles */}
-            <div className="space-y-3">
-              <Label className="text-sm font-semibold flex items-center gap-2">
+            <div className="space-y-2">
+              <Label className="text-sm font-semibold flex items-center gap-1.5">
                 <span className="text-destructive">*</span>
-                <Users className="h-4 w-4" />
+                <Users className="h-3.5 w-3.5" />
                 Target Penerima
               </Label>
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                <div className={`flex items-center space-x-3 p-3 border rounded-lg cursor-pointer transition-all ${
-                  formData.targetRoles.includes("mahasiswa") 
-                    ? "bg-primary/10 border-primary" 
-                    : "hover:bg-muted/50"
-                }`}
-                onClick={() => toggleTargetRole("mahasiswa")}
-                >
-                  <Checkbox
-                    id="mahasiswa"
-                    checked={formData.targetRoles.includes("mahasiswa")}
-                    onCheckedChange={() => toggleTargetRole("mahasiswa")}
-                  />
-                  <Label htmlFor="mahasiswa" className="font-normal cursor-pointer flex-1">
-                    Mahasiswa
-                  </Label>
-                </div>
-                <div className={`flex items-center space-x-3 p-3 border rounded-lg cursor-pointer transition-all ${
-                  formData.targetRoles.includes("dosen") 
-                    ? "bg-primary/10 border-primary" 
-                    : "hover:bg-muted/50"
-                }`}
-                onClick={() => toggleTargetRole("dosen")}
-                >
-                  <Checkbox
-                    id="dosen"
-                    checked={formData.targetRoles.includes("dosen")}
-                    onCheckedChange={() => toggleTargetRole("dosen")}
-                  />
-                  <Label htmlFor="dosen" className="font-normal cursor-pointer flex-1">
-                    Dosen
-                  </Label>
-                </div>
-                <div className={`flex items-center space-x-3 p-3 border rounded-lg cursor-pointer transition-all ${
-                  formData.targetRoles.includes("kaprodi") 
-                    ? "bg-primary/10 border-primary" 
-                    : "hover:bg-muted/50"
-                }`}
-                onClick={() => toggleTargetRole("kaprodi")}
-                >
-                  <Checkbox
-                    id="kaprodi"
-                    checked={formData.targetRoles.includes("kaprodi")}
-                    onCheckedChange={() => toggleTargetRole("kaprodi")}
-                  />
-                  <Label htmlFor="kaprodi" className="font-normal cursor-pointer flex-1">
-                    Kaprodi
-                  </Label>
-                </div>
+              <div className="grid grid-cols-3 gap-2">
+                {["mahasiswa", "dosen", "kaprodi"].map((role) => (
+                  <div
+                    key={role}
+                    className={`flex items-center space-x-2 p-2.5 border rounded-lg cursor-pointer transition-all ${
+                      formData.targetRoles.includes(role)
+                        ? "bg-primary/10 border-primary"
+                        : "hover:bg-muted/50"
+                    }`}
+                    onClick={() => toggleTargetRole(role)}
+                  >
+                    <Checkbox
+                      id={role}
+                      checked={formData.targetRoles.includes(role)}
+                      onCheckedChange={() => {}}
+                      onClick={(e) => e.stopPropagation()}
+                    />
+                    <Label htmlFor={role} className="font-normal cursor-pointer text-xs flex-1">
+                      {role === "mahasiswa" ? "Mahasiswa" : role === "dosen" ? "Dosen" : "Kaprodi"}
+                    </Label>
+                  </div>
+                ))}
               </div>
             </div>
 
             {/* Active Status */}
-            <div className="flex items-center justify-between p-4 bg-muted/30 rounded-lg border">
-              <div className="flex items-center space-x-3">
-                <div className="p-2 bg-background rounded-md">
-                  <Bell className="h-4 w-4 text-muted-foreground" />
+            <div className="flex items-center justify-between p-3 bg-muted/30 rounded-lg border">
+              <div className="flex items-center space-x-2.5">
+                <div className="p-1.5 bg-background rounded-md">
+                  <Bell className="h-3.5 w-3.5 text-muted-foreground" />
                 </div>
                 <div>
-                  <Label htmlFor="isActive" className="cursor-pointer font-medium text-sm">
+                  <Label htmlFor="isActive" className="cursor-pointer font-medium text-xs">
                     Status Pengumuman
                   </Label>
-                  <p className="text-xs text-muted-foreground mt-0.5">
+                  <p className="text-[10px] text-muted-foreground mt-0.5">
                     Akan muncul saat user login
                   </p>
                 </div>
@@ -575,20 +548,20 @@ export default function AnnouncementsPage() {
             </div>
 
             {/* Actions */}
-            <div className="flex gap-3 justify-end pt-4 border-t">
-              <Button type="button" variant="outline" onClick={handleCloseForm} className="min-w-24">
+            <div className="flex gap-2 justify-end pt-3 border-t sticky bottom-0 bg-background">
+              <Button type="button" variant="outline" onClick={handleCloseForm} className="min-w-20 h-9 text-sm">
                 Batal
               </Button>
-              <Button type="submit" className="min-w-32">
+              <Button type="submit" className="min-w-28 h-9 text-sm">
                 {editingAnnouncement ? (
                   <>
-                    <Edit className="h-4 w-4 mr-2" />
-                    Simpan Perubahan
+                    <Edit className="h-3.5 w-3.5 mr-1.5" />
+                    Simpan
                   </>
                 ) : (
                   <>
-                    <Plus className="h-4 w-4 mr-2" />
-                    Buat Pengumuman
+                    <Plus className="h-3.5 w-3.5 mr-1.5" />
+                    Buat
                   </>
                 )}
               </Button>

@@ -53,7 +53,8 @@ export function PageLoading({ message = "Memuat...", className }: PageLoadingPro
             src="/lottie/Businessman flies up with rocket.json"
             autoplay
             loop
-            style={{ width: '300px', height: '300px' }}
+            style={{ width: '250px', height: '250px' }}
+            speed={1.2}
           />
         </div>
 

@@ -43,25 +43,30 @@ export function UserMenu() {
 
     if (confirmed) {
       try {
-        // 1. Call logout API FIRST to clear server-side cookies
-        await fetch('/api/auth/logout', {
+        // 1. Call logout API to clear server-side cookies
+        const response = await fetch('/api/auth/logout', {
           method: 'POST',
           credentials: 'include'
         })
         
-        // 2. Clear client-side session after server confirms
+        // Don't throw error if logout API fails - just log it
+        if (!response.ok) {
+          console.warn('Logout API returned non-OK status, but continuing with logout')
+        }
+        
+        // 2. Clear client-side session
         logout()
         
-        // 3. Small delay to ensure cookies are cleared in browser
-        await new Promise(resolve => setTimeout(resolve, 200))
+        // 3. Small delay to ensure state is cleared
+        await new Promise(resolve => setTimeout(resolve, 100))
         
-        // 4. Force full page reload to login (this will clear any remaining state)
+        // 4. Redirect to login
         window.location.href = "/login"
       } catch (error) {
         console.error("Logout error:", error)
-        // Even if API fails, try to clear client-side and redirect
+        // Even if API fails, clear client-side and redirect
         logout()
-        await new Promise(resolve => setTimeout(resolve, 200))
+        await new Promise(resolve => setTimeout(resolve, 100))
         window.location.href = "/login"
       }
     }

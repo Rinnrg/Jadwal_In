@@ -97,11 +97,11 @@ export function UserLoginCard() {
         })
       }
 
-      // Wait for animation to play before redirect (reduced time)
+      // Wait for animation to play before redirect
       setTimeout(() => {
         console.log('Redirecting to:', callbackUrl)
         window.location.href = callbackUrl
-      }, 2500) // Reduced from 3000ms to 2500ms
+      }, 3500) // Wait for full animation to complete
     } catch (error) {
       console.error('Login error:', error)
       setLoginError('Gagal login. Silakan coba lagi.')
