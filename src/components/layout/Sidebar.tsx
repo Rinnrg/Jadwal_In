@@ -231,12 +231,12 @@ export function Sidebar() {
       {/* Mobile Menu Button */}
       <button
         onClick={() => setDrawerOpen(!drawerOpen)}
-        className="fixed z-[110] top-8 left-4 p-3 rounded-xl sm:hidden bg-transparent hover:scale-105 active:scale-95 transition-all duration-300 ease-out"
+        className="fixed z-[110] top-4 left-4 p-2 rounded-xl sm:hidden bg-transparent hover:scale-105 active:scale-95 transition-all duration-300 ease-out"
         title="Menu"
         aria-label="Toggle menu"
       >
         <div className={cn("transition-transform duration-300", drawerOpen && "rotate-90")}>
-          {drawerOpen ? <X className="h-5 w-5 text-gray-700 dark:text-gray-300" /> : <Menu className="h-5 w-5 text-gray-700 dark:text-gray-300" />}
+          {drawerOpen ? <X className="h-6 w-6 text-gray-700 dark:text-gray-300" /> : <Menu className="h-6 w-6 text-gray-700 dark:text-gray-300" />}
         </div>
       </button>
 

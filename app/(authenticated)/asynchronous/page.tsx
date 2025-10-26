@@ -10,6 +10,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { AlertCircle, BookOpen, FileText, ChevronRight, GraduationCap, ArrowLeft } from "lucide-react"
 import { AssignmentTab } from "@/components/asynchronous/AssignmentTab"
 import { MaterialTab } from "@/components/asynchronous/MaterialTab"
@@ -25,6 +26,7 @@ export default function AsynchronousPage() {
   const [selectedSubject, setSelectedSubject] = useState<Subject | null>(null)
   const [selectedClass, setSelectedClass] = useState<string | null>(null)
   const [selectedAngkatan, setSelectedAngkatan] = useState<string | null>(null)
+  const [openFolderPopover, setOpenFolderPopover] = useState<string | null>(null)
   
   // Force re-render trigger for reactive updates
   const [, setForceUpdate] = useState(0)
@@ -134,6 +136,7 @@ export default function AsynchronousPage() {
 
   const handleClassClick = (className: string) => {
     setSelectedClass(className)
+    setOpenFolderPopover(null) // Close popover when class is selected
   }
 
   const handleBackToClasses = () => {
@@ -231,9 +234,9 @@ export default function AsynchronousPage() {
           </div>
 
           {/* For Dosen/Kaprodi: Show angkatan grouping with Folder component */}
-          {canManage && !selectedAngkatan ? (
+          {canManage && !selectedClass ? (
             <div className="px-3 md:px-4">
-              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-8 md:gap-12">
+              <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 gap-4 md:gap-6">
                 {Object.entries(subjectsByAngkatan)
                   .sort(([a], [b]) => b.localeCompare(a)) // Sort descending (newest first)
                   .map(([angkatan, classes]) => {
@@ -241,37 +244,74 @@ export default function AsynchronousPage() {
                     const totalClasses = Object.keys(classes).length
                     
                     return (
-                      <div key={angkatan} className="flex flex-col items-center gap-3">
-                        <div onClick={() => handleAngkatanClick(angkatan)}>
-                          <Folder 
-                            size={1.5} 
-                            color="#5227FF" 
-                            className="cursor-pointer"
-                            items={[
-                              <div key={1} className="w-full h-full flex items-center justify-center p-2">
-                                <span className="text-[8px] font-semibold text-gray-700 text-center">
-                                  {Object.keys(classes)[0] || ''}
-                                </span>
-                              </div>,
-                              <div key={2} className="w-full h-full flex items-center justify-center p-2">
-                                <span className="text-[8px] font-semibold text-gray-700 text-center">
-                                  {Object.keys(classes)[1] || ''}
-                                </span>
-                              </div>,
-                              <div key={3} className="w-full h-full flex items-center justify-center p-2">
-                                <span className="text-[8px] font-semibold text-gray-700 text-center">
-                                  {Object.keys(classes)[2] || ''}
-                                </span>
-                              </div>
-                            ]}
-                          />
-                        </div>
-                        <div className="text-center space-y-1">
-                          <h3 className="text-sm md:text-base font-bold text-foreground">
-                            Angkatan {angkatan}
+                      <div key={angkatan} className="flex flex-col items-center gap-2">
+                        <Popover 
+                          open={openFolderPopover === angkatan} 
+                          onOpenChange={(open) => setOpenFolderPopover(open ? angkatan : null)}
+                        >
+                          <PopoverTrigger asChild>
+                            <div className="cursor-pointer">
+                              <Folder 
+                                size={1} 
+                                color="#60A5FA" 
+                                className=""
+                                items={[
+                                  <div key={1} className="w-full h-full flex items-center justify-center p-1">
+                                    <span className="text-[6px] font-semibold text-gray-700 text-center">
+                                      {Object.keys(classes)[0] || ''}
+                                    </span>
+                                  </div>,
+                                  <div key={2} className="w-full h-full flex items-center justify-center p-1">
+                                    <span className="text-[6px] font-semibold text-gray-700 text-center">
+                                      {Object.keys(classes)[1] || ''}
+                                    </span>
+                                  </div>,
+                                  <div key={3} className="w-full h-full flex items-center justify-center p-1">
+                                    <span className="text-[6px] font-semibold text-gray-700 text-center">
+                                      {Object.keys(classes)[2] || ''}
+                                    </span>
+                                  </div>
+                                ]}
+                              />
+                            </div>
+                          </PopoverTrigger>
+                          <PopoverContent className="w-56 p-2" align="center">
+                            <div className="space-y-1">
+                              <h4 className="font-semibold text-sm mb-2 px-2">Pilih Kelas - {angkatan}</h4>
+                              {Object.entries(classes)
+                                .sort(([a], [b]) => a.localeCompare(b))
+                                .map(([kelas, classSubjects]) => (
+                                  <button
+                                    key={kelas}
+                                    onClick={() => {
+                                      setSelectedAngkatan(angkatan)
+                                      handleClassClick(kelas)
+                                    }}
+                                    className="w-full flex items-center justify-between p-2 rounded-md hover:bg-accent hover:text-accent-foreground transition-colors text-left"
+                                  >
+                                    <div className="flex items-center gap-2">
+                                      <div className="w-8 h-8 rounded bg-primary/10 flex items-center justify-center">
+                                        <GraduationCap className="h-4 w-4 text-primary" />
+                                      </div>
+                                      <div>
+                                        <div className="font-medium text-sm">Kelas {kelas}</div>
+                                        <div className="text-xs text-muted-foreground">
+                                          {classSubjects.length} mata kuliah
+                                        </div>
+                                      </div>
+                                    </div>
+                                    <ChevronRight className="h-4 w-4 text-muted-foreground" />
+                                  </button>
+                                ))}
+                            </div>
+                          </PopoverContent>
+                        </Popover>
+                        <div className="text-center space-y-0.5">
+                          <h3 className="text-xs md:text-sm font-bold text-foreground">
+                            {angkatan}
                           </h3>
-                          <p className="text-xs text-muted-foreground">
-                            {totalClasses} kelas • {totalSubjects} mata kuliah
+                          <p className="text-[10px] text-muted-foreground">
+                            {totalClasses} kelas
                           </p>
                         </div>
                       </div>
@@ -279,69 +319,6 @@ export default function AsynchronousPage() {
                   })}
               </div>
             </div>
-          ) : canManage && selectedAngkatan && !selectedClass ? (
-            /* Show classes in selected angkatan */
-            <>
-              <div className="px-3 md:px-4">
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={handleBackToAngkatanList}
-                  className="gap-2 -ml-2 hover:bg-muted"
-                >
-                  <ArrowLeft className="h-4 w-4" />
-                  Kembali ke Daftar Angkatan
-                </Button>
-                <h2 className="text-base md:text-xl font-bold mt-3">
-                  Kelas Angkatan {selectedAngkatan}
-                </h2>
-                <p className="text-xs md:text-sm text-muted-foreground">
-                  {Object.keys(subjectsByAngkatan[selectedAngkatan] || {}).length} kelas tersedia
-                </p>
-              </div>
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 px-3 md:px-4">
-                {Object.entries(subjectsByAngkatan[selectedAngkatan] || {})
-                  .sort(([a], [b]) => a.localeCompare(b))
-                  .map(([kelas, classSubjects]) => (
-                    <Card
-                      key={kelas}
-                      className="cursor-pointer hover:border-primary/50 hover:shadow-md transition-all duration-200 overflow-hidden group"
-                      onClick={() => setSelectedClass(kelas)}
-                    >
-                      <CardHeader className="p-4 pb-3">
-                        <div className="flex items-start gap-3">
-                          <div className="w-12 h-12 rounded-lg bg-primary/10 flex items-center justify-center flex-shrink-0 group-hover:bg-primary/20 transition-colors">
-                            <GraduationCap className="h-6 w-6 text-primary" />
-                          </div>
-                          <div className="flex-1 min-w-0">
-                            <CardTitle className="text-sm md:text-base leading-tight mb-1">
-                              Kelas {kelas}
-                            </CardTitle>
-                            <p className="text-xs text-muted-foreground">
-                              {classSubjects.length} mata kuliah
-                            </p>
-                          </div>
-                          <ChevronRight className="h-5 w-5 text-muted-foreground group-hover:text-primary group-hover:translate-x-1 transition-all flex-shrink-0" />
-                        </div>
-                      </CardHeader>
-                      <CardContent className="p-4 pt-0">
-                        <div className="space-y-1">
-                          {classSubjects.slice(0, 3).map((subject) => (
-                            <p key={subject.id} className="text-xs text-muted-foreground truncate">
-                              • {subject.nama}
-                            </p>
-                          ))}
-                          {classSubjects.length > 3 && (
-                            <p className="text-xs text-muted-foreground">
-                              +{classSubjects.length - 3} mata kuliah lainnya
-                            </p>
-                          )}
-                        </div>
-                      </CardContent>
-                    </Card>
-                  ))}
-              </div>
-            </>
           ) : canManage && selectedAngkatan && selectedClass ? (
             /* Show subjects in selected class */
             <>
@@ -353,7 +330,7 @@ export default function AsynchronousPage() {
                   className="gap-2 -ml-2 hover:bg-muted"
                 >
                   <ArrowLeft className="h-4 w-4" />
-                  Kembali ke Daftar Kelas
+                  Kembali ke Daftar Angkatan
                 </Button>
                 <h2 className="text-base md:text-xl font-bold mt-3">
                   Mata Kuliah Kelas {selectedClass} - Angkatan {selectedAngkatan}
