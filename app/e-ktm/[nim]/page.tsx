@@ -1,6 +1,6 @@
 import { notFound } from "next/navigation"
 import { prisma } from "@/lib/prisma"
-import { EKTMCard } from "@/components/profile/EKTMCard"
+import { EKTMCardWithTilt } from "@/src/components/profile/EKTMCardWithTilt"
 
 interface PageProps {
   params: {
@@ -71,15 +71,13 @@ export default async function EKTMPublicPage({ params }: PageProps) {
       }}
     >
       <div className="w-full max-w-lg">
-        <div className="bg-white/90 backdrop-blur-sm rounded-2xl shadow-xl p-6">
-          <EKTMCard
-            name={profile.user.name}
-            nim={nim}
-            fakultas={getFakultasFromNIM(nim)}
-            programStudi={getProdiFromNIM(nim)}
-            avatarUrl={profile.avatarUrl || undefined}
-          />
-        </div>
+        <EKTMCardWithTilt
+          name={profile.user.name}
+          nim={nim}
+          fakultas={getFakultasFromNIM(nim)}
+          programStudi={getProdiFromNIM(nim)}
+          avatarUrl={profile.avatarUrl || undefined}
+        />
 
         <div className="text-center mt-6 text-sm text-gray-700 drop-shadow">
           <p className="font-semibold">Universitas Negeri Surabaya</p>
