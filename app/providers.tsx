@@ -2,8 +2,20 @@
 
 import { ThemeProvider as NextThemesProvider } from "next-themes";
 import { Toaster } from "sonner";
+import { useEffect } from "react";
 
 export function Providers({ children }: { children: React.ReactNode }) {
+  // Pre-load animasi saat app mount
+  useEffect(() => {
+    // Dynamic import untuk avoid bloating initial bundle
+    import('@/src/utils/preload-animations').then(({ preloadAnimations }) => {
+      preloadAnimations([
+        '/lottie/success.json',
+        // Tambahkan animasi lain yang sering dipakai
+      ])
+    })
+  }, [])
+
   return (
     <NextThemesProvider 
       attribute="class" 
