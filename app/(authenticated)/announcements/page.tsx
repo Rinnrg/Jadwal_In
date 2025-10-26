@@ -364,7 +364,7 @@ export default function AnnouncementsPage() {
 
       {/* Form Dialog */}
       <Dialog open={isFormOpen} onOpenChange={(open) => !open && handleCloseForm()}>
-        <DialogContent className="max-w-3xl max-h-[85vh] overflow-y-auto sm:my-8" showCloseButton={false}>
+        <DialogContent className="max-w-3xl max-h-[calc(100vh-4rem)] sm:my-8" showCloseButton={false}>
           <DialogHeader className="space-y-3 pb-4 border-b">
             <div className="flex items-center gap-3">
               <div className="p-2 bg-primary/10 rounded-lg">

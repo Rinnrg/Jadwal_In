@@ -106,42 +106,11 @@ export default function RemindersPage() {
         </Button>
       </div>
 
-      {/* Stats Cards */}
-      <div className="grid grid-cols-3 gap-3 md:gap-4">
-        <Card>
-          <CardContent className="pt-6">
-            <div className="text-center">
-              <Bell className="h-8 w-8 mx-auto text-blue-500 mb-2" />
-              <div className="text-2xl font-bold">{activeReminders.length}</div>
-              <p className="text-xs text-muted-foreground">Total Aktif</p>
-            </div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="pt-6">
-            <div className="text-center">
-              <Bell className="h-8 w-8 mx-auto text-yellow-500 mb-2" />
-              <div className="text-2xl font-bold">{upcomingReminders.length}</div>
-              <p className="text-xs text-muted-foreground">Mendatang (24h)</p>
-            </div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="pt-6">
-            <div className="text-center">
-              <AlertTriangle className="h-8 w-8 mx-auto text-red-500 mb-2" />
-              <div className="text-2xl font-bold">{overdueReminders.length}</div>
-              <p className="text-xs text-muted-foreground">Terlambat</p>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-
       {/* Main Content */}
       <div className="space-y-4 md:space-y-6">
         {/* Dialog Form */}
         <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>
-          <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+          <DialogContent className="max-w-2xl max-h-[calc(100vh-4rem)]">
             <DialogHeader>
               <DialogTitle className="text-xl md:text-2xl">
                 {editingReminder ? "Edit Pengingat" : "Tambah Pengingat Baru"}

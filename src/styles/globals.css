@@ -296,6 +296,14 @@
     animation: rotateIn 0.4s ease-out;
   }
 
+  .animate-dialog-bounce-in {
+    animation: dialogBounceIn 0.4s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+  }
+
+  .animate-dialog-bounce-out {
+    animation: dialogBounceOut 0.3s ease-in;
+  }
+
   /* Enhanced card and interactive element styles */
   .card-interactive {
     transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
@@ -523,5 +531,30 @@
   }
   100% {
     background-position: 200% 0;
+  }
+}
+
+@keyframes dialogBounceIn {
+  0% {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(0.8);
+  }
+  50% {
+    transform: translate(-50%, -50%) scale(1.05);
+  }
+  100% {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1);
+  }
+}
+
+@keyframes dialogBounceOut {
+  0% {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(0.9);
   }
 }

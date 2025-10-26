@@ -101,7 +101,7 @@ export function AnnouncementPopup() {
 
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
-      <DialogContent className="max-w-2xl max-h-[90vh] overflow-hidden flex flex-col">
+      <DialogContent className="max-w-2xl max-h-[calc(100vh-4rem)] overflow-hidden flex flex-col">
         <DialogHeader>
           <div className="flex items-start justify-between gap-4">
             <div className="flex items-center gap-2">

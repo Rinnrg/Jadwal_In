@@ -4,6 +4,7 @@ import { useState, useEffect } from "react"
 import { useSessionStore } from "@/stores/session.store"
 import { useSubjectsStore } from "@/stores/subjects.store"
 import { useGradesStore } from "@/stores/grades.store"
+import { useKrsStore } from "@/stores/krs.store"
 import { useProfileStore } from "@/stores/profile.store"
 import { useNotificationStore } from "@/stores/notification.store"
 import { useRealtimeSync } from "@/hooks/use-realtime-sync"
@@ -20,7 +21,8 @@ import { showSuccess, showError } from "@/lib/alerts"
 export default function KhsPage() {
   const { session } = useSessionStore()
   const { subjects, fetchSubjects } = useSubjectsStore()
-  const { getGradesByUser, calculateGPA, calculateSemesterGPA, grades: allGrades } = useGradesStore()
+  const { getGradesByUser, calculateGPA, calculateSemesterGPA, grades: allGrades, fetchGrades } = useGradesStore()
+  const { fetchKrsItems, krsItems } = useKrsStore()
   const { getProfile } = useProfileStore()
   const { markAsRead } = useNotificationStore()
   
@@ -38,12 +40,16 @@ export default function KhsPage() {
   // Force update when store data changes
   useEffect(() => {
     setForceUpdate(prev => prev + 1)
-  }, [subjects.length, allGrades.length])
+  }, [subjects.length, allGrades.length, krsItems.length])
 
-  // Fetch subjects on mount
+  // Fetch subjects, grades, and KRS on mount
   useEffect(() => {
     fetchSubjects()
-  }, [fetchSubjects])
+    if (session?.id) {
+      fetchGrades(session.id)
+      fetchKrsItems(session.id)
+    }
+  }, [fetchSubjects, fetchGrades, fetchKrsItems, session?.id])
 
   // Mark KHS notification as read when user opens this page
   useEffect(() => {

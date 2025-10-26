@@ -115,7 +115,7 @@ export function MaterialTab({ subjectId, canManage, userRole }: MaterialTabProps
                 Tambah Materi
               </Button>
             </DialogTrigger>
-            <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+            <DialogContent className="max-w-4xl max-h-[calc(100vh-4rem)]">
               <DialogHeader>
                 <DialogTitle>{editingMaterial ? "Edit Materi" : "Tambah Materi Baru"}</DialogTitle>
                 <DialogDescription>

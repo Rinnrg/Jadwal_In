@@ -138,8 +138,23 @@ export function KrsPicker({ userId, term }: KrsPickerProps) {
     // Sort by kelas name
     return Object.entries(groups)
       .sort(([kelasA], [kelasB]) => kelasA.localeCompare(kelasB))
-      .map(([kelas, offerings]) => ({ kelas, offerings }))
-  }, [availableOfferings])
+      .map(([kelas, offerings]) => ({ 
+        kelas, 
+        // Sort offerings: belum diambil (available) di atas, sudah diambil di bawah
+        offerings: offerings.sort((a, b) => {
+          // Jika keduanya sudah diambil atau belum, urutkan berdasarkan nama mata kuliah
+          if (a.isAlreadyEnrolled === b.isAlreadyEnrolled && a.isSubjectTakenInOtherClass === b.isSubjectTakenInOtherClass) {
+            const subjectA = getSubjectById(a.subjectId)
+            const subjectB = getSubjectById(b.subjectId)
+            return (subjectA?.nama || '').localeCompare(subjectB?.nama || '')
+          }
+          // Yang belum diambil (false) di atas, yang sudah diambil (true) di bawah
+          if (a.isAlreadyEnrolled || a.isSubjectTakenInOtherClass) return 1
+          if (b.isAlreadyEnrolled || b.isSubjectTakenInOtherClass) return -1
+          return 0
+        })
+      }))
+  }, [availableOfferings, getSubjectById])
 
   const handleAddOffering = async (offering: any) => {
     // Prevent multiple rapid clicks

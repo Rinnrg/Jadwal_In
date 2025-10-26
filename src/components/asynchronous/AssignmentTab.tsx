@@ -443,7 +443,7 @@ export function AssignmentTab({ subjectId, canManage, userRole }: AssignmentTabP
       )}
 
       <Dialog open={isSubmissionDialogOpen} onOpenChange={setIsSubmissionDialogOpen}>
-        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+        <DialogContent className="max-w-4xl max-h-[calc(100vh-4rem)]">
           <DialogHeader>
             <DialogTitle>
               {selectedSubmission && !Array.isArray(selectedSubmission) && (selectedSubmission.status === "submitted" || selectedSubmission.status === "graded")

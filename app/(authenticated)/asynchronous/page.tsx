@@ -22,6 +22,7 @@ export default function AsynchronousPage() {
   const { krsItems, getKrsByUser } = useKrsStore()
   const { markAsRead } = useNotificationStore()
   const [selectedSubject, setSelectedSubject] = useState<Subject | null>(null)
+  const [selectedClass, setSelectedClass] = useState<string | null>(null)
   
   // Force re-render trigger for reactive updates
   const [, setForceUpdate] = useState(0)
@@ -70,6 +71,28 @@ export default function AsynchronousPage() {
     return subjects
   }, [session, subjects, krsItems, getSubjectsByPengampu, getActiveSubjects, getKrsByUser])
 
+  // Group subjects by class for dosen/kaprodi
+  const subjectsByClass = useMemo(() => {
+    if (!canManage) return {}
+    
+    const grouped: Record<string, Subject[]> = {}
+    availableSubjects.forEach((subject) => {
+      const className = `${subject.angkatan} ${subject.kelas || 'A'}`
+      if (!grouped[className]) {
+        grouped[className] = []
+      }
+      grouped[className].push(subject)
+    })
+    
+    // Sort by class name
+    return Object.keys(grouped)
+      .sort()
+      .reduce((acc, key) => {
+        acc[key] = grouped[key]
+        return acc
+      }, {} as Record<string, Subject[]>)
+  }, [availableSubjects, canManage])
+
   const canManage = session?.role === "dosen" || session?.role === "kaprodi"
 
   const handleSubjectClick = (subject: Subject) => {
@@ -77,6 +100,15 @@ export default function AsynchronousPage() {
   }
 
   const handleBackToList = () => {
+    setSelectedSubject(null)
+    setSelectedClass(null)
+  }
+
+  const handleClassClick = (className: string) => {
+    setSelectedClass(className)
+  }
+
+  const handleBackToClasses = () => {
     setSelectedSubject(null)
   }
 
@@ -159,59 +191,165 @@ export default function AsynchronousPage() {
             </p>
           </div>
 
-          {/* Subject Cards Grid */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 px-3 md:px-4">
-            {availableSubjects.map((subject) => (
-              <Card
-                key={subject.id}
-                className="cursor-pointer hover:border-primary/50 hover:shadow-md transition-all duration-200 overflow-hidden group"
-                onClick={() => handleSubjectClick(subject)}
-              >
-                <CardHeader className="p-4 pb-3">
-                  <div className="flex items-start gap-3">
-                    <div className="w-12 h-12 rounded-lg bg-primary/10 flex items-center justify-center flex-shrink-0 group-hover:bg-primary/20 transition-colors">
-                      <BookOpen className="h-6 w-6 text-primary" />
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <CardTitle className="text-sm md:text-base leading-tight line-clamp-2 mb-1">
-                        {subject.nama}
-                      </CardTitle>
-                      <p className="text-xs text-muted-foreground font-medium">
-                        {subject.kode}
-                      </p>
-                    </div>
-                    <ChevronRight className="h-5 w-5 text-muted-foreground group-hover:text-primary group-hover:translate-x-1 transition-all flex-shrink-0" />
-                  </div>
-                </CardHeader>
-                <CardContent className="p-4 pt-0">
-                  <div className="flex items-center gap-2 flex-wrap">
-                    <Badge variant="secondary" className="text-xs">
-                      {subject.sks} SKS
-                    </Badge>
-                    <Badge variant="outline" className="text-xs">
-                      Semester {subject.semester}
-                    </Badge>
-                    {subject.kelas && (
-                      <Badge variant="outline" className="text-xs">
-                        Kelas {subject.kelas}
-                      </Badge>
-                    )}
-                    {subject.angkatan && (
-                      <div className="flex items-center gap-1 text-xs text-muted-foreground ml-auto">
-                        <GraduationCap className="h-3 w-3" />
-                        <span>{subject.angkatan}</span>
+          {/* For Dosen/Kaprodi: Show class grouping first */}
+          {canManage && !selectedClass ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 px-3 md:px-4">
+              {Object.entries(subjectsByClass).map(([className, classSubjects]) => (
+                <Card
+                  key={className}
+                  className="cursor-pointer hover:border-primary/50 hover:shadow-md transition-all duration-200 overflow-hidden group"
+                  onClick={() => handleClassClick(className)}
+                >
+                  <CardHeader className="p-4 pb-3">
+                    <div className="flex items-start gap-3">
+                      <div className="w-12 h-12 rounded-lg bg-primary/10 flex items-center justify-center flex-shrink-0 group-hover:bg-primary/20 transition-colors">
+                        <GraduationCap className="h-6 w-6 text-primary" />
                       </div>
+                      <div className="flex-1 min-w-0">
+                        <CardTitle className="text-sm md:text-base leading-tight mb-1">
+                          Kelas {className}
+                        </CardTitle>
+                        <p className="text-xs text-muted-foreground">
+                          {classSubjects.length} mata kuliah
+                        </p>
+                      </div>
+                      <ChevronRight className="h-5 w-5 text-muted-foreground group-hover:text-primary group-hover:translate-x-1 transition-all flex-shrink-0" />
+                    </div>
+                  </CardHeader>
+                  <CardContent className="p-4 pt-0">
+                    <div className="space-y-1">
+                      {classSubjects.slice(0, 3).map((subject) => (
+                        <p key={subject.id} className="text-xs text-muted-foreground truncate">
+                          • {subject.nama}
+                        </p>
+                      ))}
+                      {classSubjects.length > 3 && (
+                        <p className="text-xs text-muted-foreground">
+                          +{classSubjects.length - 3} mata kuliah lainnya
+                        </p>
+                      )}
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          ) : canManage && selectedClass ? (
+            /* Show subjects in selected class */
+            <>
+              <div className="px-3 md:px-4">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={handleBackToClasses}
+                  className="gap-2 -ml-2 hover:bg-muted"
+                >
+                  <ArrowLeft className="h-4 w-4" />
+                  Kembali ke Daftar Kelas
+                </Button>
+                <h2 className="text-base md:text-xl font-bold mt-3">
+                  Mata Kuliah Kelas {selectedClass}
+                </h2>
+                <p className="text-xs md:text-sm text-muted-foreground">
+                  {subjectsByClass[selectedClass]?.length || 0} mata kuliah tersedia
+                </p>
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 px-3 md:px-4">
+                {subjectsByClass[selectedClass]?.map((subject) => (
+                  <Card
+                    key={subject.id}
+                    className="cursor-pointer hover:border-primary/50 hover:shadow-md transition-all duration-200 overflow-hidden group"
+                    onClick={() => handleSubjectClick(subject)}
+                  >
+                    <CardHeader className="p-4 pb-3">
+                      <div className="flex items-start gap-3">
+                        <div className="w-12 h-12 rounded-lg bg-primary/10 flex items-center justify-center flex-shrink-0 group-hover:bg-primary/20 transition-colors">
+                          <BookOpen className="h-6 w-6 text-primary" />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <CardTitle className="text-sm md:text-base leading-tight line-clamp-2 mb-1">
+                            {subject.nama}
+                          </CardTitle>
+                          <p className="text-xs text-muted-foreground font-medium">
+                            {subject.kode}
+                          </p>
+                        </div>
+                        <ChevronRight className="h-5 w-5 text-muted-foreground group-hover:text-primary group-hover:translate-x-1 transition-all flex-shrink-0" />
+                      </div>
+                    </CardHeader>
+                    <CardContent className="p-4 pt-0">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <Badge variant="secondary" className="text-xs">
+                          {subject.sks} SKS
+                        </Badge>
+                        <Badge variant="outline" className="text-xs">
+                          Semester {subject.semester}
+                        </Badge>
+                      </div>
+                      {subject.prodi && (
+                        <p className="text-xs text-muted-foreground mt-2 line-clamp-1">
+                          {subject.prodi}
+                        </p>
+                      )}
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            </>
+          ) : (
+            /* For Mahasiswa: Show subjects directly */
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 px-3 md:px-4">
+              {availableSubjects.map((subject) => (
+                <Card
+                  key={subject.id}
+                  className="cursor-pointer hover:border-primary/50 hover:shadow-md transition-all duration-200 overflow-hidden group"
+                  onClick={() => handleSubjectClick(subject)}
+                >
+                  <CardHeader className="p-4 pb-3">
+                    <div className="flex items-start gap-3">
+                      <div className="w-12 h-12 rounded-lg bg-primary/10 flex items-center justify-center flex-shrink-0 group-hover:bg-primary/20 transition-colors">
+                        <BookOpen className="h-6 w-6 text-primary" />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <CardTitle className="text-sm md:text-base leading-tight line-clamp-2 mb-1">
+                          {subject.nama}
+                        </CardTitle>
+                        <p className="text-xs text-muted-foreground font-medium">
+                          {subject.kode}
+                        </p>
+                      </div>
+                      <ChevronRight className="h-5 w-5 text-muted-foreground group-hover:text-primary group-hover:translate-x-1 transition-all flex-shrink-0" />
+                    </div>
+                  </CardHeader>
+                  <CardContent className="p-4 pt-0">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <Badge variant="secondary" className="text-xs">
+                        {subject.sks} SKS
+                      </Badge>
+                      <Badge variant="outline" className="text-xs">
+                        Semester {subject.semester}
+                      </Badge>
+                      {subject.kelas && (
+                        <Badge variant="outline" className="text-xs">
+                          Kelas {subject.kelas}
+                        </Badge>
+                      )}
+                      {subject.angkatan && (
+                        <div className="flex items-center gap-1 text-xs text-muted-foreground ml-auto">
+                          <GraduationCap className="h-3 w-3" />
+                          <span>{subject.angkatan}</span>
+                        </div>
+                      )}
+                    </div>
+                    {subject.prodi && (
+                      <p className="text-xs text-muted-foreground mt-2 line-clamp-1">
+                        {subject.prodi}
+                      </p>
                     )}
-                  </div>
-                  {subject.prodi && (
-                    <p className="text-xs text-muted-foreground mt-2 line-clamp-1">
-                      {subject.prodi}
-                    </p>
-                  )}
-                </CardContent>
-              </Card>
-            ))}
-          </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          )}
         </>
       ) : (
         <>
@@ -220,11 +358,11 @@ export default function AsynchronousPage() {
             <Button
               variant="ghost"
               size="sm"
-              onClick={handleBackToList}
+              onClick={canManage && selectedClass ? handleBackToClasses : handleBackToList}
               className="gap-2 -ml-2 hover:bg-muted"
             >
               <ArrowLeft className="h-4 w-4" />
-              Kembali ke Daftar Mata Kuliah
+              {canManage && selectedClass ? 'Kembali ke Daftar Mata Kuliah' : 'Kembali ke Daftar' + (canManage ? ' Kelas' : ' Mata Kuliah')}
             </Button>
             
             <div className="flex items-start gap-3 p-4 bg-card border rounded-lg">
