@@ -71,6 +71,8 @@ export default function AsynchronousPage() {
     return subjects
   }, [session, subjects, krsItems, getSubjectsByPengampu, getActiveSubjects, getKrsByUser])
 
+  const canManage = session?.role === "dosen" || session?.role === "kaprodi"
+
   // Group subjects by class for dosen/kaprodi
   const subjectsByClass = useMemo(() => {
     if (!canManage) return {}
@@ -92,8 +94,6 @@ export default function AsynchronousPage() {
         return acc
       }, {} as Record<string, Subject[]>)
   }, [availableSubjects, canManage])
-
-  const canManage = session?.role === "dosen" || session?.role === "kaprodi"
 
   const handleSubjectClick = (subject: Subject) => {
     setSelectedSubject(subject)

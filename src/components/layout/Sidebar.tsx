@@ -27,7 +27,7 @@ import {
   Settings,
   Megaphone,
 } from "lucide-react"
-import { useState } from "react"
+import { useState, useMemo, memo, useCallback } from "react"
 import { motion, AnimatePresence } from "framer-motion"
 import { useNotificationStore } from "@/stores/notification.store"
 import { NotificationBadge } from "@/components/ui/NotificationBadge"
@@ -49,6 +49,121 @@ const iconMap = {
   megaphone: Megaphone,
 }
 
+// Memoized MenuItem Component for better performance
+const MenuItem = memo(({ 
+  item, 
+  isActive, 
+  isCollapsed, 
+  badgeCount, 
+  onClick,
+  Icon
+}: { 
+  item: ExtendedRouteConfig
+  isActive: boolean
+  isCollapsed: boolean
+  badgeCount: number
+  onClick: () => void
+  Icon: any
+}) => {
+  return (
+    <Link
+      href={item.path}
+      className={cn(
+        "flex items-center px-3 py-3 text-sm font-medium rounded-xl transition-all duration-300 ease-out group/item relative overflow-hidden",
+        isActive
+          ? "bg-gradient-to-r from-blue-50 to-blue-100/50 dark:from-blue-900/30 dark:to-blue-800/20 text-blue-700 dark:text-blue-300 shadow-sm border border-blue-200/50 dark:border-blue-700/30"
+          : "text-gray-700 dark:text-gray-300 hover:bg-gray-50/80 dark:hover:bg-gray-800/50 hover:text-gray-900 dark:hover:text-white hover:shadow-sm hover:scale-[1.02]",
+      )}
+      onClick={onClick}
+    >
+      <div className="relative">
+        <Icon
+          className={cn(
+            "h-5 w-5 flex-shrink-0 transition-all duration-300",
+            isActive ? "text-blue-600 dark:text-blue-400 scale-110" : "text-gray-500 dark:text-gray-400 group-hover/item:text-blue-600 dark:group-hover/item:text-blue-400 group-hover/item:scale-105",
+          )}
+        />
+        {badgeCount > 0 && <NotificationBadge count={badgeCount} />}
+      </div>
+
+      <span
+        className={cn(
+          "ml-3 transition-all duration-500 ease-out truncate",
+          isCollapsed ? "w-0 opacity-0" : "w-auto opacity-100",
+        )}
+      >
+        {item.title}
+      </span>
+
+      {isActive && !isCollapsed && (
+        <div className="ml-auto">
+          <div className="w-2 h-2 bg-blue-600 dark:bg-blue-400 rounded-full animate-pulse" />
+        </div>
+      )}
+      
+      {isActive && (
+        <div className="absolute left-0 top-0 w-1 h-full bg-gradient-to-b from-blue-500 to-blue-600 rounded-r-full" />
+      )}
+    </Link>
+  )
+})
+
+MenuItem.displayName = 'MenuItem'
+
+// Memoized DropdownMenuItem for better performance
+const DropdownMenuItem = memo(({ 
+  child, 
+  isActive, 
+  badgeCount, 
+  onClick,
+  ChildIcon
+}: { 
+  child: ExtendedRouteConfig
+  isActive: boolean
+  badgeCount: number
+  onClick: () => void
+  ChildIcon: any
+}) => {
+  return (
+    <Link
+      href={child.path}
+      className={cn(
+        "flex items-center px-3 py-2 text-sm font-medium rounded-lg transition-all duration-300 ease-out group/child relative overflow-hidden",
+        isActive
+          ? "bg-gradient-to-r from-blue-50 to-blue-100/50 dark:from-blue-900/30 dark:to-blue-800/20 text-blue-700 dark:text-blue-300 shadow-sm border border-blue-200/50 dark:border-blue-700/30"
+          : "text-gray-600 dark:text-gray-400 hover:bg-gray-50/60 dark:hover:bg-gray-800/30 hover:text-gray-900 dark:hover:text-white hover:shadow-sm hover:scale-[1.02]",
+      )}
+      onClick={onClick}
+    >
+      <div className="relative">
+        <ChildIcon
+          className={cn(
+            "h-4 w-4 flex-shrink-0 transition-all duration-300",
+            isActive ? "text-blue-600 dark:text-blue-400 scale-110" : "text-gray-500 dark:text-gray-400 group-hover/child:text-blue-600 dark:group-hover/child:text-blue-400 group-hover/child:scale-105",
+          )}
+        />
+        {badgeCount > 0 && <NotificationBadge count={badgeCount} />}
+      </div>
+
+      <span className="ml-3 transition-all duration-300 truncate">
+        {child.title}
+      </span>
+
+      {isActive && (
+        <div className="ml-auto">
+          <div className="w-2 h-2 bg-blue-600 dark:bg-blue-400 rounded-full animate-pulse" />
+        </div>
+      )}
+      
+      {isActive && (
+        <div className="absolute left-0 top-0 w-1 h-full bg-gradient-to-b from-blue-500 to-blue-600 rounded-r-full" />
+      )}
+    </Link>
+  )
+})
+
+DropdownMenuItem.displayName = 'DropdownMenuItem'
+
 export function Sidebar() {
   const [collapsed, setCollapsed] = useState(true)
   const [drawerOpen, setDrawerOpen] = useState(false)
@@ -60,23 +175,35 @@ export function Sidebar() {
 
   if (!session) return null
 
-  const menuItems = getMenuItems(session.role)
+  // Memoize menu items to prevent recalculation
+  const menuItems = useMemo(() => getMenuItems(session.role), [session.role])
 
-  // Helper function to get badge count for menu item
-  const getMenuBadgeCount = (path: string): number => {
-    if (!session) return 0
+  // Memoize badge counts to prevent recalculation on every render
+  const badgeCounts = useMemo(() => {
+    if (!session) return {}
     
-    if (path.includes("/krs")) return getBadgeCount("krs", session.id)
-    if (path.includes("/jadwal")) return getBadgeCount("jadwal", session.id)
-    if (path.includes("/asynchronous")) return getBadgeCount("asynchronous", session.id)
-    if (path.includes("/khs")) return getBadgeCount("khs", session.id)
-    if (path.includes("/reminders")) return getBadgeCount("reminder", session.id)
+    return {
+      krs: getBadgeCount("krs", session.id),
+      jadwal: getBadgeCount("jadwal", session.id),
+      asynchronous: getBadgeCount("asynchronous", session.id),
+      khs: getBadgeCount("khs", session.id),
+      reminder: getBadgeCount("reminder", session.id),
+    }
+  }, [session, getBadgeCount])
+
+  // Helper function to get badge count for menu item - now uses memoized values
+  const getMenuBadgeCount = useCallback((path: string): number => {
+    if (path.includes("/krs")) return badgeCounts.krs || 0
+    if (path.includes("/jadwal")) return badgeCounts.jadwal || 0
+    if (path.includes("/asynchronous")) return badgeCounts.asynchronous || 0
+    if (path.includes("/khs")) return badgeCounts.khs || 0
+    if (path.includes("/reminders")) return badgeCounts.reminder || 0
     
     return 0
-  }
+  }, [badgeCounts])
 
   // Helper function to mark badge as read when menu is clicked
-  const handleMenuClick = (path: string) => {
+  const handleMenuClick = useCallback((path: string) => {
     if (!session) return
     
     if (path.includes("/krs")) markAsRead("krs", session.id)
@@ -84,68 +211,46 @@ export function Sidebar() {
     if (path.includes("/asynchronous")) markAsRead("asynchronous", session.id)
     if (path.includes("/khs")) markAsRead("khs", session.id)
     if (path.includes("/reminders")) markAsRead("reminder", session.id)
-  }
+  }, [session, markAsRead])
 
-  const toggleDropdown = (path: string) => {
+  const toggleDropdown = useCallback((path: string) => {
     setOpenDropdowns(prev => 
       prev.includes(path) 
         ? prev.filter(p => p !== path)
         : [...prev, path]
     )
-  }
+  }, [])
 
-  const isDropdownActive = (item: ExtendedRouteConfig) => {
+  const isDropdownActive = useCallback((item: ExtendedRouteConfig) => {
     if (!item.children) return false
     return item.children.some(child => isActiveRoute(child.path))
-  }
+  }, [isActiveRoute])
 
   return (
     <>
       {/* Mobile Menu Button */}
       <button
         onClick={() => setDrawerOpen(!drawerOpen)}
-        className="
-          fixed z-[110] top-1/2 -translate-y-1/2 left-4 p-3 rounded-xl
-          sm:hidden
-          bg-transparent
-          hover:scale-105
-          active:scale-95
-          transition-all duration-300 ease-out
-        "
-        style={{ top: '2rem' }}
+        className="fixed z-[110] top-8 left-4 p-3 rounded-xl sm:hidden bg-transparent hover:scale-105 active:scale-95 transition-all duration-300 ease-out"
         title="Menu"
         aria-label="Toggle menu"
       >
-        <motion.div
-          animate={{ rotate: drawerOpen ? 90 : 0 }}
-          transition={{ duration: 0.3, ease: "easeInOut" }}
-        >
+        <div className={cn("transition-transform duration-300", drawerOpen && "rotate-90")}>
           {drawerOpen ? <X className="h-5 w-5 text-gray-700 dark:text-gray-300" /> : <Menu className="h-5 w-5 text-gray-700 dark:text-gray-300" />}
-        </motion.div>
+        </div>
       </button>
 
       {/* Mobile Dropdown Menu */}
-      <AnimatePresence>
+      <AnimatePresence mode="wait">
         {drawerOpen && (
           <motion.div
-            initial={{ opacity: 0, height: 0 }}
-            animate={{ opacity: 1, height: "auto" }}
-            exit={{ opacity: 0, height: 0 }}
-            transition={{ duration: 0.3, ease: "easeInOut" }}
-            className="
-              fixed top-16 left-4 right-4 z-[120] sm:hidden
-              bg-white/95 dark:bg-gray-900/95 backdrop-blur-xl 
-              border border-gray-200/50 dark:border-gray-700/50 
-              rounded-xl shadow-xl overflow-hidden
-            "
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -10 }}
+            transition={{ duration: 0.2 }}
+            className="fixed top-16 left-4 right-4 z-[120] sm:hidden bg-white/95 dark:bg-gray-900/95 backdrop-blur-xl border border-gray-200/50 dark:border-gray-700/50 rounded-xl shadow-xl overflow-hidden max-h-[calc(100vh-5rem)] overflow-y-auto"
           >
-            <motion.div
-              initial={{ y: -20 }}
-              animate={{ y: 0 }}
-              exit={{ y: -20 }}
-              transition={{ duration: 0.3, delay: 0.1 }}
-              className="px-4 py-6 space-y-2"
-            >
+            <div className="px-4 py-6 space-y-2">
               {/* Logo Section */}
               <div className="flex items-center space-x-3 px-3 py-2 mb-4 border-b border-gray-100/50 dark:border-gray-800/50">
                 <div className="w-8 h-8 flex items-center justify-center flex-shrink-0 overflow-hidden">
@@ -164,7 +269,7 @@ export function Sidebar() {
               </div>
 
               {/* Menu Items */}
-              {menuItems.map((item, index) => {
+              {menuItems.map((item) => {
                 const Icon = iconMap[item.icon as keyof typeof iconMap] || Home
                 const isActive = isActiveRoute(item.path)
                 const isDropdownOpen = openDropdowns.includes(item.path)
@@ -172,12 +277,7 @@ export function Sidebar() {
                 const badgeCount = getMenuBadgeCount(item.path)
 
                 return (
-                  <motion.div
-                    key={item.path}
-                    initial={{ opacity: 0, x: -20 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    transition={{ duration: 0.3, delay: 0.2 + index * 0.1 }}
-                  >
+                  <div key={item.path}>
                     {item.isDropdown ? (
                       <div>
                         <button
@@ -206,13 +306,13 @@ export function Sidebar() {
                             )}
                           />
                         </button>
-                        <AnimatePresence>
+                        <AnimatePresence mode="wait">
                           {isDropdownOpen && item.children && (
                             <motion.div
                               initial={{ opacity: 0, height: 0 }}
                               animate={{ opacity: 1, height: "auto" }}
                               exit={{ opacity: 0, height: 0 }}
-                              transition={{ duration: 0.2 }}
+                              transition={{ duration: 0.15 }}
                               className="ml-6 mt-1 space-y-1"
                             >
                               {item.children.map((child) => {
@@ -288,12 +388,10 @@ export function Sidebar() {
                         )}
                       </Link>
                     )}
-                  </motion.div>
+                  </div>
                 )
               })}
-
-
-            </motion.div>
+            </div>
           </motion.div>
         )}
       </AnimatePresence>
@@ -394,13 +492,13 @@ export function Sidebar() {
                         )}
                       </button>
 
-                      <AnimatePresence>
+                      <AnimatePresence mode="wait">
                         {isDropdownOpen && !collapsed && item.children && (
                           <motion.div
                             initial={{ opacity: 0, height: 0 }}
                             animate={{ opacity: 1, height: "auto" }}
                             exit={{ opacity: 0, height: 0 }}
-                            transition={{ duration: 0.2 }}
+                            transition={{ duration: 0.15 }}
                             className="ml-4 mt-1 space-y-1"
                           >
                             {item.children.map((child) => {
@@ -409,41 +507,14 @@ export function Sidebar() {
                               const childBadgeCount = getMenuBadgeCount(child.path)
 
                               return (
-                                <Link
+                                <DropdownMenuItem
                                   key={child.path}
-                                  href={child.path}
-                                  className={cn(
-                                    "flex items-center px-3 py-2 text-sm font-medium rounded-lg transition-all duration-300 ease-out group/child relative overflow-hidden",
-                                    isChildActive
-                                      ? "bg-gradient-to-r from-blue-50 to-blue-100/50 dark:from-blue-900/30 dark:to-blue-800/20 text-blue-700 dark:text-blue-300 shadow-sm border border-blue-200/50 dark:border-blue-700/30"
-                                      : "text-gray-600 dark:text-gray-400 hover:bg-gray-50/60 dark:hover:bg-gray-800/30 hover:text-gray-900 dark:hover:text-white hover:shadow-sm hover:scale-[1.02]",
-                                  )}
+                                  child={child}
+                                  isActive={isChildActive}
+                                  badgeCount={childBadgeCount}
                                   onClick={() => handleMenuClick(child.path)}
-                                >
-                                  <div className="relative">
-                                    <ChildIcon
-                                      className={cn(
-                                        "h-4 w-4 flex-shrink-0 transition-all duration-300",
-                                        isChildActive ? "text-blue-600 dark:text-blue-400 scale-110" : "text-gray-500 dark:text-gray-400 group-hover/child:text-blue-600 dark:group-hover/child:text-blue-400 group-hover/child:scale-105",
-                                      )}
-                                    />
-                                    {childBadgeCount > 0 && <NotificationBadge count={childBadgeCount} />}
-                                  </div>
-
-                                  <span className="ml-3 transition-all duration-300 truncate">
-                                    {child.title}
-                                  </span>
-
-                                  {isChildActive && (
-                                    <div className="ml-auto">
-                                      <div className="w-2 h-2 bg-blue-600 dark:bg-blue-400 rounded-full animate-pulse" />
-                                    </div>
-                                  )}
-                                  
-                                  {isChildActive && (
-                                    <div className="absolute left-0 top-0 w-1 h-full bg-gradient-to-b from-blue-500 to-blue-600 rounded-r-full" />
-                                  )}
-                                </Link>
+                                  ChildIcon={ChildIcon}
+                                />
                               )
                             })}
                           </motion.div>
@@ -451,45 +522,14 @@ export function Sidebar() {
                       </AnimatePresence>
                     </div>
                   ) : (
-                    <Link
-                      href={item.path}
-                      className={cn(
-                        "flex items-center px-3 py-3 text-sm font-medium rounded-xl transition-all duration-300 ease-out group/item relative overflow-hidden",
-                        isActive
-                          ? "bg-gradient-to-r from-blue-50 to-blue-100/50 dark:from-blue-900/30 dark:to-blue-800/20 text-blue-700 dark:text-blue-300 shadow-sm border border-blue-200/50 dark:border-blue-700/30"
-                          : "text-gray-700 dark:text-gray-300 hover:bg-gray-50/80 dark:hover:bg-gray-800/50 hover:text-gray-900 dark:hover:text-white hover:shadow-sm hover:scale-[1.02]",
-                      )}
+                    <MenuItem 
+                      item={item}
+                      isActive={isActive}
+                      isCollapsed={collapsed}
+                      badgeCount={badgeCount}
                       onClick={() => handleMenuClick(item.path)}
-                    >
-                      <div className="relative">
-                        <Icon
-                          className={cn(
-                            "h-5 w-5 flex-shrink-0 transition-all duration-300",
-                            isActive ? "text-blue-600 dark:text-blue-400 scale-110" : "text-gray-500 dark:text-gray-400 group-hover/item:text-blue-600 dark:group-hover/item:text-blue-400 group-hover/item:scale-105",
-                          )}
-                        />
-                        {badgeCount > 0 && <NotificationBadge count={badgeCount} />}
-                      </div>
-
-                      <span
-                        className={cn(
-                          "ml-3 transition-all duration-500 ease-out truncate",
-                          collapsed ? "w-0 opacity-0" : "w-auto opacity-100",
-                        )}
-                      >
-                        {item.title}
-                      </span>
-
-                      {isActive && !collapsed && (
-                        <div className="ml-auto">
-                          <div className="w-2 h-2 bg-blue-600 dark:bg-blue-400 rounded-full animate-pulse" />
-                        </div>
-                      )}
-                      
-                      {isActive && (
-                        <div className="absolute left-0 top-0 w-1 h-full bg-gradient-to-b from-blue-500 to-blue-600 rounded-r-full" />
-                      )}
-                    </Link>
+                      Icon={Icon}
+                    />
                   )}
                 </div>
               )
