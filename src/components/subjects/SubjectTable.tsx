@@ -5,6 +5,7 @@ import { useSubjectsStore } from "@/stores/subjects.store"
 import { useUsersStore } from "@/stores/users.store"
 import { useOfferingsStore } from "@/stores/offerings.store"
 import { useNotificationStore } from "@/stores/notification.store"
+import { useKrsStore } from "@/stores/krs.store"
 import type { Subject } from "@/data/schema"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
@@ -486,6 +487,69 @@ export function SubjectTable({ subjects: subjectsProp, onEdit }: SubjectTablePro
     }
   }
 
+  const handleForceOffSubject = async (subject: any) => {
+    const confirmed = await confirmAction(
+      `Force Off Mata Kuliah`,
+      `Yakin ingin Force Off mata kuliah "${subject.nama}"?\n\nSemua mahasiswa yang sudah mengambil akan dihapus dari KRS mereka.`,
+      "Ya, Force Off",
+      "Batal",
+      "destructive"
+    )
+
+    if (!confirmed) return
+
+    try {
+      // Delete all KRS entries for this subject
+      const krsItems = useKrsStore.getState().krsItems.filter(
+        (krs: any) => krs.subjectId === subject.id
+      )
+      
+      const { removeKrsItem } = useKrsStore.getState()
+      for (const krs of krsItems) {
+        await removeKrsItem(krs.id, krs.userId, subject.nama)
+      }
+
+      // Update offerings to "tutup"
+      const { offerings, updateOffering } = useOfferingsStore.getState()
+      const subjectOfferings = offerings.filter((o) => o.subjectId === subject.id)
+      
+      for (const offering of subjectOfferings) {
+        await updateOffering(offering.id, { status: "tutup" })
+      }
+
+      // Send notifications to all affected students
+      const { triggerNotification } = useNotificationStore.getState()
+      const users = useUsersStore.getState().users
+      const affectedUserIds = new Set(krsItems.map((krs: any) => krs.userId))
+      
+      for (const userId of affectedUserIds) {
+        const user = users.find(u => u.id === userId)
+        if (!user) continue
+        
+        triggerNotification(
+          "krs",
+          String(userId),
+          `Mata kuliah "${subject.nama}" telah ditutup paksa (force off). KRS Anda telah diperbarui.`,
+          1
+        )
+      }
+
+      showSuccess(
+        `✅ "${subject.nama}" berhasil di-force off!\n\n${krsItems.length} mahasiswa telah dihapus dari KRS.`
+      )
+
+      // Force refresh all data
+      const { fetchOfferings } = useOfferingsStore.getState()
+      const { fetchKrsItems } = useKrsStore.getState()
+      setTimeout(() => {
+        fetchOfferings(undefined, true)
+        fetchKrsItems(undefined, undefined, true)
+      }, 100)
+    } catch (error) {
+      showError("Gagal force off mata kuliah")
+    }
+  }
+
   const getGroupOfferingsStatus = (angkatan: number | string, kelas: string): "buka" | "tutup" | "mixed" => {
     const allOfferings = useOfferingsStore.getState().offerings.filter(
       (o) => o.angkatan === angkatan && o.kelas === kelas
@@ -721,6 +785,17 @@ export function SubjectTable({ subjects: subjectsProp, onEdit }: SubjectTablePro
                                   <Edit className="h-4 w-4 mr-1.5" />
                                   Edit
                                 </Button>
+                                {getOfferingStatus(subject.id) === "buka" && (
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    className="h-8 px-3 cursor-pointer text-orange-600 hover:bg-orange-50 hover:text-orange-700 dark:text-orange-400 dark:hover:bg-orange-900/20 dark:hover:text-orange-300 transition-colors duration-200"
+                                    onClick={() => handleForceOffSubject(subject)}
+                                  >
+                                    <AlertTriangle className="h-4 w-4 mr-1.5" />
+                                    Force Off
+                                  </Button>
+                                )}
                                 <Button
                                   variant="ghost"
                                   size="sm"
@@ -805,6 +880,17 @@ export function SubjectTable({ subjects: subjectsProp, onEdit }: SubjectTablePro
                               >
                                 <Edit className="h-3 w-3 mr-1" />
                                 Edit
+                              </Button>
+                            )}
+                            {getOfferingStatus(subject.id) === "buka" && (
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                className="h-7 text-[10px] px-2 text-orange-600 hover:bg-orange-50 border-orange-300"
+                                onClick={() => handleForceOffSubject(subject)}
+                              >
+                                <AlertTriangle className="h-3 w-3 mr-1" />
+                                Force Off
                               </Button>
                             )}
                             <Button

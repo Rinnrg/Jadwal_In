@@ -94,7 +94,13 @@ export async function GET(request: NextRequest) {
       },
     })
 
-    return NextResponse.json(assignments)
+    // Convert BigInt to number for JSON serialization
+    const assignmentsJson = assignments.map(a => ({
+      ...a,
+      dueUTC: a.dueUTC ? Number(a.dueUTC) : null,
+    }))
+
+    return NextResponse.json(assignmentsJson)
   } catch (error) {
     console.error('Error fetching assignments:', error)
     return NextResponse.json(
