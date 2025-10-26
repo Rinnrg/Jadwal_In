@@ -104,6 +104,19 @@ export const useKrsStore = create<KrsState>()((set, get) => ({
         ActivityLogger.krsAdded(userId, subjectName, sks || 0)
       }
       
+      // Trigger notification for the user
+      try {
+        const { useNotificationStore } = await import('./notification.store')
+        const { triggerNotification } = useNotificationStore.getState()
+        const message = subjectName 
+          ? `Mata kuliah "${subjectName}" telah ditambahkan ke KRS` 
+          : 'Mata kuliah baru ditambahkan ke KRS'
+        triggerNotification('krs', userId, message, 1)
+        console.log('[KRS Store] Notification triggered for user:', userId)
+      } catch (error) {
+        console.error('[KRS Store] Failed to trigger notification:', error)
+      }
+      
       // Force refresh to ensure all clients get updated data
       console.log('[KRS Store] Force refreshing after add...')
       setTimeout(() => get().fetchKrsItems(userId, term, true), 100)

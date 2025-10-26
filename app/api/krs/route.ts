@@ -93,9 +93,23 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
-    console.log('[KRS API] POST request:', body)
+    console.log('[KRS API] POST request received:', body)
     
-    const data = krsItemSchema.parse(body)
+    // Validate data
+    let data
+    try {
+      data = krsItemSchema.parse(body)
+      console.log('[KRS API] Validation passed:', data)
+    } catch (validationError) {
+      console.error('[KRS API] Validation failed:', validationError)
+      if (validationError instanceof z.ZodError) {
+        return NextResponse.json(
+          { error: 'Data tidak valid', details: validationError.errors },
+          { status: 400 }
+        )
+      }
+      throw validationError
+    }
 
     // Check if item already exists
     const existing = await prisma.krsItem.findUnique({
@@ -129,10 +143,12 @@ export async function POST(request: NextRequest) {
       )
     }
 
+    console.log('[KRS API] Subject found:', { id: subject.id, nama: subject.nama, status: subject.status })
+
     if (subject.status !== 'aktif') {
       console.log('[KRS API] Subject not active:', subject.status)
       return NextResponse.json(
-        { error: 'Mata kuliah tidak aktif' },
+        { error: `Mata kuliah "${subject.nama}" tidak aktif (status: ${subject.status})` },
         { status: 400 }
       )
     }
@@ -151,10 +167,12 @@ export async function POST(request: NextRequest) {
         )
       }
 
+      console.log('[KRS API] Offering found:', { id: offering.id, status: offering.status, capacity: offering.capacity })
+
       if (offering.status !== 'buka') {
         console.log('[KRS API] Offering not open:', offering.status)
         return NextResponse.json(
-          { error: 'Penawaran sudah ditutup' },
+          { error: `Penawaran sudah ditutup (status: ${offering.status})` },
           { status: 400 }
         )
       }
@@ -175,6 +193,8 @@ export async function POST(request: NextRequest) {
         }
       }
     }
+
+    console.log('[KRS API] All validations passed, creating KRS item...')
 
     // Create KRS item
     const krsItem = await prisma.krsItem.create({
@@ -230,12 +250,15 @@ export async function POST(request: NextRequest) {
       },
     })
 
+    console.log('[KRS API] Grade entry created/updated')
+
     return NextResponse.json({
       ...krsItem,
       createdAt: new Date(krsItem.createdAt).getTime(),
     }, { status: 201 })
   } catch (error) {
     console.error('[KRS API] Error creating KRS item:', error)
+    console.error('[KRS API] Error stack:', error instanceof Error ? error.stack : 'No stack trace')
     
     if (error instanceof z.ZodError) {
       return NextResponse.json(
@@ -245,7 +268,7 @@ export async function POST(request: NextRequest) {
     }
 
     return NextResponse.json(
-      { error: 'Failed to create KRS item' },
+      { error: error instanceof Error ? error.message : 'Failed to create KRS item' },
       { status: 500 }
     )
   }

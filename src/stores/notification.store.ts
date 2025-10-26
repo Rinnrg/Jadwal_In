@@ -10,13 +10,17 @@ export interface NotificationBadge {
   isRead: boolean
   lastNotifiedCount?: number // Track last notified count
   hasEverNotified?: boolean // Track if we've ever shown a notification
+  message?: string // Custom message for notification
 }
 
 interface NotificationState {
   badges: NotificationBadge[]
   
-  // Add or update badge
+  // Add or update badge (silent, no notification)
   updateBadge: (type: NotificationBadge["type"], userId: string, count: number) => void
+  
+  // Trigger notification event (shows notification)
+  triggerNotification: (type: NotificationBadge["type"], userId: string, message?: string, incrementBy?: number) => void
   
   // Increment badge count
   incrementBadge: (type: NotificationBadge["type"], userId: string) => void
@@ -51,6 +55,7 @@ export const useNotificationStore = create<NotificationState>()(
     (set, get) => ({
       badges: [],
       
+      // Silent update - does NOT trigger notification
       updateBadge: (type, userId, count) => {
         set((state) => {
           const existingIndex = state.badges.findIndex(
@@ -61,14 +66,12 @@ export const useNotificationStore = create<NotificationState>()(
             const newBadges = [...state.badges]
             const existingBadge = newBadges[existingIndex]
             
-            // Mark as unread only if count increased from previous count
-            const isRead = count === 0 ? true : (count > existingBadge.count ? false : existingBadge.isRead)
-            
+            // Keep isRead status, only update count
             newBadges[existingIndex] = {
               ...newBadges[existingIndex],
               count,
               lastUpdated: Date.now(),
-              isRead,
+              // Don't change isRead - let it stay as is
             }
             return { badges: newBadges }
           } else {
@@ -81,9 +84,52 @@ export const useNotificationStore = create<NotificationState>()(
                   userId,
                   count,
                   lastUpdated: Date.now(),
-                  isRead: false, // Changed: Always start as unread if count > 0
-                  lastNotifiedCount: 0,
+                  isRead: true, // Start as read (silent initialization)
+                  lastNotifiedCount: count,
                   hasEverNotified: false,
+                },
+              ],
+            }
+          }
+        })
+      },
+      
+      // Trigger notification - shows unread badge and notification
+      triggerNotification: (type, userId, message, incrementBy = 1) => {
+        set((state) => {
+          const existingIndex = state.badges.findIndex(
+            (b) => b.type === type && b.userId === userId
+          )
+          
+          if (existingIndex >= 0) {
+            const newBadges = [...state.badges]
+            const existingBadge = newBadges[existingIndex]
+            const newCount = existingBadge.count + incrementBy
+            
+            newBadges[existingIndex] = {
+              ...existingBadge,
+              count: newCount,
+              lastUpdated: Date.now(),
+              isRead: false, // Mark as unread (shows badge)
+              message: message || `${incrementBy} item baru ditambahkan`,
+              hasEverNotified: true,
+            }
+            return { badges: newBadges }
+          } else {
+            // Create new badge as unread
+            return {
+              badges: [
+                ...state.badges,
+                {
+                  id: `${type}-${userId}-${Date.now()}`,
+                  type,
+                  userId,
+                  count: incrementBy,
+                  lastUpdated: Date.now(),
+                  isRead: false, // Unread
+                  lastNotifiedCount: 0,
+                  hasEverNotified: true,
+                  message: message || `${incrementBy} item baru ditambahkan`,
                 },
               ],
             }

@@ -45,6 +45,32 @@ export const useCourseworkStore = create<CourseworkState>()(
         set((state) => ({
           assignments: [...state.assignments, newAssignment],
         }))
+        
+        // Trigger notification for students enrolled in this subject
+        try {
+          ;(async () => {
+            const { useNotificationStore } = await import('./notification.store')
+            const { useKrsStore } = await import('./krs.store')
+            const { triggerNotification } = useNotificationStore.getState()
+            const { getKrsBySubject } = useKrsStore.getState()
+            
+            // Get all students enrolled in this subject
+            const enrolledStudents = getKrsBySubject(assignment.subjectId)
+            
+            const message = assignment.title 
+              ? `Tugas baru: "${assignment.title}"` 
+              : 'Tugas baru telah ditambahkan'
+            
+            // Notify each enrolled student
+            enrolledStudents.forEach(krsItem => {
+              triggerNotification('asynchronous', krsItem.userId, message, 1)
+            })
+            
+            console.log('[Coursework Store] Assignment notification triggered for', enrolledStudents.length, 'students')
+          })()
+        } catch (error) {
+          console.error('[Coursework Store] Failed to trigger assignment notification:', error)
+        }
       },
       updateAssignment: (id, updates) => {
         set((state) => ({
@@ -72,6 +98,32 @@ export const useCourseworkStore = create<CourseworkState>()(
         set((state) => ({
           materials: [...state.materials, newMaterial],
         }))
+        
+        // Trigger notification for students enrolled in this subject
+        try {
+          ;(async () => {
+            const { useNotificationStore } = await import('./notification.store')
+            const { useKrsStore } = await import('./krs.store')
+            const { triggerNotification } = useNotificationStore.getState()
+            const { getKrsBySubject } = useKrsStore.getState()
+            
+            // Get all students enrolled in this subject
+            const enrolledStudents = getKrsBySubject(material.subjectId)
+            
+            const message = material.title 
+              ? `Materi baru: "${material.title}"` 
+              : 'Materi baru telah ditambahkan'
+            
+            // Notify each enrolled student
+            enrolledStudents.forEach(krsItem => {
+              triggerNotification('asynchronous', krsItem.userId, message, 1)
+            })
+            
+            console.log('[Coursework Store] Material notification triggered for', enrolledStudents.length, 'students')
+          })()
+        } catch (error) {
+          console.error('[Coursework Store] Failed to trigger material notification:', error)
+        }
       },
       updateMaterial: (id, updates) => {
         set((state) => ({

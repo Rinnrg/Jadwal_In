@@ -109,7 +109,7 @@ export function NotificationBell() {
                             Update {label}
                           </p>
                           <p className="text-xs text-muted-foreground">
-                            {badge.count} item baru ditambahkan
+                            {badge.message || `${badge.count} item baru ditambahkan`}
                           </p>
                           <p className="text-xs text-muted-foreground">
                             {formatDistanceToNow(badge.lastUpdated, {
