@@ -94,10 +94,12 @@ export function UserLoginCard() {
       }
 
       // Show success animation
+      console.log('Login successful, showing animation...')
       setShowSuccessAnimation(true)
 
       // Wait for animation to complete before redirect
       setTimeout(() => {
+        console.log('Redirecting to:', callbackUrl)
         window.location.href = callbackUrl
       }, 3000) // Increased time to show full animation
     } catch (error) {

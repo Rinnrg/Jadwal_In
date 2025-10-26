@@ -1,6 +1,6 @@
 "use client"
 
-import React, { useEffect } from 'react'
+import React, { useEffect, useState } from 'react'
 import { DotLottieReact } from '@lottiefiles/dotlottie-react'
 
 interface SuccessAnimationProps {
@@ -9,10 +9,25 @@ interface SuccessAnimationProps {
 
 export function SuccessAnimation({ onComplete }: SuccessAnimationProps) {
   const dotLottieRef = React.useRef<any>(null)
+  const [animationData, setAnimationData] = useState<any>(null)
+
+  useEffect(() => {
+    console.log('SuccessAnimation mounted, loading animation file...')
+    // Load the local Lottie JSON file
+    fetch('/lottie/success.json')
+      .then(response => response.json())
+      .then(data => {
+        console.log('Animation data loaded successfully:', data)
+        setAnimationData(data)
+      })
+      .catch(error => console.error('Error loading animation:', error))
+  }, [])
 
   useEffect(() => {
     if (dotLottieRef.current) {
+      console.log('Setting up animation event listeners')
       const handleComplete = () => {
+        console.log('Animation completed!')
         if (onComplete) {
           onComplete()
         }
@@ -26,11 +41,17 @@ export function SuccessAnimation({ onComplete }: SuccessAnimationProps) {
     }
   }, [onComplete])
 
+  if (!animationData) {
+    console.log('Waiting for animation data to load...')
+    return null // or a loading spinner
+  }
+
+  console.log('Rendering animation with data')
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-background/80 backdrop-blur-sm">
+    <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-background/80 backdrop-blur-sm">
       <div className="relative">
         <DotLottieReact
-          src="https://lottie.host/6b0fb7ba-8e31-4bc6-95cc-d9a65af37a87/UzGKpYW6Md.lottie"
+          data={animationData}
           autoplay
           loop={false}
           dotLottieRefCallback={(dotLottie) => {
