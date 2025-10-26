@@ -82,6 +82,10 @@ export function UserLoginCard() {
       // Success state
       setButtonState('success')
       
+      // Show success animation immediately
+      console.log('Login successful, showing animation...')
+      setShowSuccessAnimation(true)
+      
       // Set session in store
       if (data.user) {
         setSession({
@@ -93,15 +97,11 @@ export function UserLoginCard() {
         })
       }
 
-      // Show success animation
-      console.log('Login successful, showing animation...')
-      setShowSuccessAnimation(true)
-
-      // Wait for animation to complete before redirect
+      // Wait for animation to play before redirect (reduced time)
       setTimeout(() => {
         console.log('Redirecting to:', callbackUrl)
         window.location.href = callbackUrl
-      }, 3000) // Increased time to show full animation
+      }, 2500) // Reduced from 3000ms to 2500ms
     } catch (error) {
       console.error('Login error:', error)
       setLoginError('Gagal login. Silakan coba lagi.')
