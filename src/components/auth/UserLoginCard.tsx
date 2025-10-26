@@ -68,18 +68,16 @@ export function UserLoginCard() {
       const data = await response.json()
 
       if (!response.ok) {
-        setLoginError(data.error || 'Gagal login. Silakan coba lagi.')
-        setButtonState('error')
-        setIsLoading(false)
-        
-        // Reset button state after animation
-        setTimeout(() => {
-          setButtonState('idle')
-        }, 2000)
-        return
-      }
-
-      // Success state
+      setLoginError(data.error || 'Gagal login. Silakan coba lagi.')
+      setButtonState('error')
+      setIsLoading(false)
+      
+      // Reset button state lebih cepat
+      setTimeout(() => {
+        setButtonState('idle')
+      }, 1000)
+      return
+    }      // Success state
       setButtonState('success')
       
       // Set session in store FIRST
@@ -104,25 +102,25 @@ export function UserLoginCard() {
         }
       }
       
-      // Show success animation
+      // Show success animation IMMEDIATELY
       console.log('Login successful, showing animation...')
       setShowSuccessAnimation(true)
 
-      // Wait for animation to play before redirect
+      // Minimal delay - hanya untuk animasi selesai
       setTimeout(() => {
         console.log('Redirecting to:', callbackUrl)
         window.location.href = callbackUrl
-      }, 4000) // Wait for full animation to complete + smooth transition
+      }, 1500) // Sangat cepat - 1.5 detik total
     } catch (error) {
       console.error('Login error:', error)
       setLoginError('Gagal login. Silakan coba lagi.')
       setButtonState('error')
       setIsLoading(false)
       
-      // Reset button state after animation
+      // Reset button state lebih cepat
       setTimeout(() => {
         setButtonState('idle')
-      }, 2000)
+      }, 1000)
     }
   }
 

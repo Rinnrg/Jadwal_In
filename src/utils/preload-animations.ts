@@ -72,10 +72,13 @@ if (typeof window !== 'undefined') {
   const idleCallback = (window as any).requestIdleCallback || setTimeout
   
   idleCallback(() => {
-    // Pre-load animasi success untuk login
+    // Pre-load animasi success untuk login (HIGH PRIORITY)
     preloadAnimation('/lottie/success.json')
+    
+    // Pre-load rocket animation untuk page loading (HIGH PRIORITY)
+    preloadAnimation('/lottie/Businessman flies up with rocket.json')
     
     // Pre-load animasi lain yang sering dipakai jika ada
     // preloadAnimation('/lottie/loading.json')
-  }, { timeout: 2000 })
+  }, { timeout: 100 }) // INSTANT - minimal timeout
 }

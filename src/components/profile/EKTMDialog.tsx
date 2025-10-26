@@ -1,7 +1,7 @@
 "use client"
 
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
-import { EKTMCard } from "./EKTMCard"
+import { EKTMCardWithTilt } from "./EKTMCardWithTilt"
 
 interface EKTMDialogProps {
   open: boolean
@@ -31,7 +31,7 @@ export function EKTMDialog({
           </DialogTitle>
         </DialogHeader>
         <div className="overflow-hidden">
-          <EKTMCard
+          <EKTMCardWithTilt
             name={name}
             nim={nim}
             fakultas={fakultas}

@@ -233,7 +233,7 @@ export default function AsynchronousPage() {
 
           {/* For Dosen/Kaprodi: Show angkatan grouping with Folder component */}
           {canManage && !selectedClass ? (
-            <div className="px-4 md:px-6 lg:px-8 mt-12">
+            <div className="px-4 md:px-6 lg:px-8 mt-12 overflow-hidden">
               <div className="space-y-8">
                 {Object.entries(subjectsByAngkatan)
                   .sort(([a], [b]) => b.localeCompare(a)) // Sort descending (newest first)
@@ -253,14 +253,14 @@ export default function AsynchronousPage() {
                         </div>
 
                         {/* Floating Cards Grid */}
-                        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4 md:gap-6">
+                        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4 md:gap-6 overflow-visible p-2">
                           {Object.entries(classes)
                             .sort(([a], [b]) => a.localeCompare(b))
                             .map(([kelas, classSubjects]) => (
                               <div
                                 key={kelas}
                                 onClick={() => handleClassClick(angkatan, kelas)}
-                                className="group relative bg-white dark:bg-gray-800 rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-300 cursor-pointer overflow-hidden border border-gray-100 dark:border-gray-700 hover:border-blue-400 dark:hover:border-blue-500 hover:scale-105"
+                                className="group relative bg-white dark:bg-gray-800 rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-300 cursor-pointer overflow-visible border border-gray-100 dark:border-gray-700 hover:border-blue-400 dark:hover:border-blue-500 will-change-transform hover:[transform:scale(1.05)] origin-center"
                               >
                                 {/* Card Content */}
                                 <div className="p-6 flex flex-col items-center gap-4">

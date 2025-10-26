@@ -1,9 +1,11 @@
 "use client"
 
 import type React from "react"
+import { useState, useEffect, useMemo } from "react"
 import Image from "next/image"
 import { cn } from "@/lib/utils"
 import { DotLottieReact } from '@lottiefiles/dotlottie-react'
+import { getCachedAnimation, preloadAnimation } from '@/src/utils/preload-animations'
 
 interface LoadingSpinnerProps {
   size?: "sm" | "md" | "lg"
@@ -25,6 +27,7 @@ export function LoadingSpinner({ size = "md", className }: LoadingSpinnerProps) 
           sizeClasses[size],
           className,
         )}
+        style={{ animationDuration: '0.6s' }}
         role="status"
         aria-label="Loading"
       />
@@ -33,6 +36,7 @@ export function LoadingSpinner({ size = "md", className }: LoadingSpinnerProps) 
           "absolute inset-0 animate-pulse rounded-full border-2 border-blue-200 dark:border-blue-800 opacity-30",
           sizeClasses[size],
         )}
+        style={{ animationDuration: '1s' }}
       />
     </div>
   )
@@ -44,18 +48,40 @@ interface PageLoadingProps {
 }
 
 export function PageLoading({ message = "Memuat...", className }: PageLoadingProps) {
+  // Check cache immediately - instant render
+  const cachedData = useMemo(() => getCachedAnimation('/lottie/Businessman flies up with rocket.json'), [])
+  const [animationData, setAnimationData] = useState<any>(cachedData)
+
+  useEffect(() => {
+    // Load animation jika belum ada di cache
+    if (!animationData) {
+      preloadAnimation('/lottie/Businessman flies up with rocket.json').then(data => {
+        if (data) {
+          setAnimationData(data)
+        }
+      })
+    }
+  }, [animationData])
+
   return (
     <div className={cn("min-h-screen flex items-center justify-center bg-background", className)}>
       <div className="text-center space-y-6 p-8">
         {/* Rocket Animation */}
         <div className="flex justify-center">
-          <DotLottieReact
-            src="/lottie/Businessman flies up with rocket.json"
-            autoplay
-            loop
-            style={{ width: '250px', height: '250px' }}
-            speed={1.5}
-          />
+          {animationData ? (
+            <DotLottieReact
+              data={animationData}
+              autoplay
+              loop
+              speed={2.0}
+              style={{ width: '250px', height: '250px' }}
+            />
+          ) : (
+            // Instant fallback spinner saat animasi belum load
+            <div className="w-[250px] h-[250px] flex items-center justify-center">
+              <LoadingSpinner size="lg" />
+            </div>
+          )}
         </div>
 
         {/* Loading Text */}

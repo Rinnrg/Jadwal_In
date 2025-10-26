@@ -5,13 +5,14 @@ import { Toaster } from "sonner";
 import { useEffect } from "react";
 
 export function Providers({ children }: { children: React.ReactNode }) {
-  // Pre-load animasi saat app mount
+  // Pre-load animasi saat app mount dengan PRIORITAS TINGGI
   useEffect(() => {
-    // Dynamic import untuk avoid bloating initial bundle
+    // Immediate preload - tidak pakai dynamic import untuk instant execution
     import('@/src/utils/preload-animations').then(({ preloadAnimations }) => {
+      // Preload langsung tanpa delay
       preloadAnimations([
         '/lottie/success.json',
-        // Tambahkan animasi lain yang sering dipakai
+        '/lottie/Businessman flies up with rocket.json',
       ])
     })
   }, [])
