@@ -44,9 +44,7 @@ export const useScheduleStore = create<ScheduleState>()(
             ;(async () => {
               const { useNotificationStore } = await import('./notification.store')
               const { triggerNotification } = useNotificationStore.getState()
-              const message = event.title 
-                ? `Jadwal "${event.title}" telah ditambahkan` 
-                : 'Jadwal baru telah ditambahkan'
+              const message = 'Jadwal baru telah ditambahkan'
               triggerNotification('jadwal', event.userId, message, 1)
               console.log('[Schedule Store] Notification triggered for user:', event.userId)
             })()
