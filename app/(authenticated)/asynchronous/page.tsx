@@ -255,54 +255,44 @@ export default function AsynchronousPage() {
                                 size={1} 
                                 color="#60A5FA" 
                                 className=""
-                                items={[
-                                  <div key={1} className="w-full h-full flex items-center justify-center p-1">
-                                    <span className="text-[6px] font-semibold text-gray-700 text-center">
-                                      {Object.keys(classes)[0] || ''}
-                                    </span>
-                                  </div>,
-                                  <div key={2} className="w-full h-full flex items-center justify-center p-1">
-                                    <span className="text-[6px] font-semibold text-gray-700 text-center">
-                                      {Object.keys(classes)[1] || ''}
-                                    </span>
-                                  </div>,
-                                  <div key={3} className="w-full h-full flex items-center justify-center p-1">
-                                    <span className="text-[6px] font-semibold text-gray-700 text-center">
-                                      {Object.keys(classes)[2] || ''}
-                                    </span>
-                                  </div>
-                                ]}
+                                items={[]}
                               />
                             </div>
                           </PopoverTrigger>
-                          <PopoverContent className="w-56 p-2" align="center">
-                            <div className="space-y-1">
-                              <h4 className="font-semibold text-sm mb-2 px-2">Pilih Kelas - {angkatan}</h4>
-                              {Object.entries(classes)
-                                .sort(([a], [b]) => a.localeCompare(b))
-                                .map(([kelas, classSubjects]) => (
-                                  <button
-                                    key={kelas}
-                                    onClick={() => {
-                                      setSelectedAngkatan(angkatan)
-                                      handleClassClick(kelas)
-                                    }}
-                                    className="w-full flex items-center justify-between p-2 rounded-md hover:bg-accent hover:text-accent-foreground transition-colors text-left"
-                                  >
-                                    <div className="flex items-center gap-2">
-                                      <div className="w-8 h-8 rounded bg-primary/10 flex items-center justify-center">
-                                        <GraduationCap className="h-4 w-4 text-primary" />
-                                      </div>
-                                      <div>
-                                        <div className="font-medium text-sm">Kelas {kelas}</div>
-                                        <div className="text-xs text-muted-foreground">
-                                          {classSubjects.length} mata kuliah
+                          <PopoverContent className="w-72 p-3" align="center">
+                            <div className="space-y-2">
+                              <h4 className="font-bold text-base mb-3 px-2 text-foreground">
+                                Pilih Kelas - Angkatan {angkatan}
+                              </h4>
+                              <div className="grid grid-cols-1 gap-2">
+                                {Object.entries(classes)
+                                  .sort(([a], [b]) => a.localeCompare(b))
+                                  .map(([kelas, classSubjects]) => (
+                                    <button
+                                      key={kelas}
+                                      onClick={() => {
+                                        setSelectedAngkatan(angkatan)
+                                        handleClassClick(kelas)
+                                      }}
+                                      className="w-full flex items-center justify-between p-3 rounded-lg hover:bg-blue-50 dark:hover:bg-blue-950/30 hover:border-blue-200 dark:hover:border-blue-800 border border-transparent transition-all duration-200 text-left group"
+                                    >
+                                      <div className="flex items-center gap-3">
+                                        <div className="w-10 h-10 rounded-lg bg-blue-500/10 dark:bg-blue-400/10 flex items-center justify-center group-hover:bg-blue-500/20 dark:group-hover:bg-blue-400/20 transition-colors">
+                                          <GraduationCap className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+                                        </div>
+                                        <div>
+                                          <div className="font-semibold text-base text-foreground">
+                                            Kelas {kelas}
+                                          </div>
+                                          <div className="text-sm text-muted-foreground">
+                                            {classSubjects.length} mata kuliah
+                                          </div>
                                         </div>
                                       </div>
-                                    </div>
-                                    <ChevronRight className="h-4 w-4 text-muted-foreground" />
-                                  </button>
-                                ))}
+                                      <ChevronRight className="h-5 w-5 text-muted-foreground group-hover:text-blue-600 dark:group-hover:text-blue-400 group-hover:translate-x-1 transition-all" />
+                                    </button>
+                                  ))}
+                              </div>
                             </div>
                           </PopoverContent>
                         </Popover>
