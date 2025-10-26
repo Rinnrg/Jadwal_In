@@ -10,12 +10,22 @@ import { PageLoading } from "@/components/ui/loading"
 // Hydration Guard to prevent hydration mismatch
 export function HydrationGuard({ children }: { children: React.ReactNode }) {
   const [mounted, setMounted] = useState(false)
+  const [showLoading, setShowLoading] = useState(true)
 
   useEffect(() => {
-    setMounted(true)
+    // Add minimum delay untuk memastikan animasi terlihat
+    const timer = setTimeout(() => {
+      setMounted(true)
+      // Add extra delay setelah mounted untuk animasi
+      setTimeout(() => {
+        setShowLoading(false)
+      }, 800) // 800ms tambahan setelah mounted
+    }, 500) // 500ms minimum delay
+
+    return () => clearTimeout(timer)
   }, [])
 
-  if (!mounted) {
+  if (!mounted || showLoading) {
     return <PageLoading message="Memuat aplikasi..." />
   }
 
@@ -27,9 +37,19 @@ export function Protected({ children }: { children: React.ReactNode }) {
   const { session, setSession, hasHydrated } = useSessionStore()
   const [hasMounted, setHasMounted] = useState(false)
   const [isCheckingSession, setIsCheckingSession] = useState(false) // Changed: default false
+  const [minLoadingComplete, setMinLoadingComplete] = useState(false)
   const fetchingRef = useRef(false)
   const hasCheckedRef = useRef(false)
   const router = useRouter()
+
+  // Minimum loading time untuk animasi
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setMinLoadingComplete(true)
+    }, 1000) // 1 detik minimum loading
+
+    return () => clearTimeout(timer)
+  }, [])
 
   useEffect(() => {
     setHasMounted(true)
@@ -95,7 +115,7 @@ export function Protected({ children }: { children: React.ReactNode }) {
   }, [hasMounted, hasHydrated, setSession, router])
 
   // Show loading ONLY during initial hydration or when actively checking session
-  if (!hasMounted || !hasHydrated) {
+  if (!hasMounted || !hasHydrated || !minLoadingComplete) {
     return <PageLoading message="Memuat aplikasi..." />
   }
 

@@ -17,10 +17,11 @@ import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Badge } from "@/components/ui/badge"
-import { Search, Save, FileDown, Users, BookOpen, TrendingUp, AlertCircle, Info } from "lucide-react"
+import { Search, Save, FileDown, Users, BookOpen, TrendingUp, AlertCircle, Info, ChevronRight, ArrowLeft } from "lucide-react"
 import { arr } from "@/lib/utils"
 import type { Subject } from "@/data/schema"
 import { gradeOptions, getGradeFromScore, getGradeColor } from "@/components/grade-info-card"
+import Folder from "@/components/ui/folder"
 
 export default function EntryNilaiPage() {
   const { session } = useSessionStore()
@@ -46,6 +47,9 @@ export default function EntryNilaiPage() {
     setForceUpdate(prev => prev + 1)
   }, [subjects.length, offerings.length, krsItems.length])
   
+  const [selectedSubject, setSelectedSubject] = useState<Subject | null>(null)
+  const [selectedClass, setSelectedClass] = useState<string | null>(null)
+  const [selectedAngkatan, setSelectedAngkatan] = useState<string | null>(null)
   const [selectedOffering, setSelectedOffering] = useState("")
   const [searchTerm, setSearchTerm] = useState("")
   const [grades, setGrades] = useState<Record<string, { nilaiAngka?: number; nilaiHuruf?: string }>>({})
@@ -65,17 +69,31 @@ export default function EntryNilaiPage() {
     return subjects
   }, [session, subjects, getSubjectsByPengampu])
 
+  // Group subjects by angkatan and class
+  const subjectsByAngkatan = useMemo(() => {
+    const grouped: Record<string, Record<string, Subject[]>> = {}
+    availableOfferings.forEach((subject) => {
+      const angkatan = subject.angkatan || 'Tidak Ada Angkatan'
+      const kelas = subject.kelas || 'A'
+      
+      if (!grouped[angkatan]) {
+        grouped[angkatan] = {}
+      }
+      if (!grouped[angkatan][kelas]) {
+        grouped[angkatan][kelas] = []
+      }
+      grouped[angkatan][kelas].push(subject)
+    })
+    return grouped
+  }, [availableOfferings])
+
   const enrolledStudents = useMemo(() => {
-    if (!selectedOffering) return []
-
-    const selectedSubject = availableOfferings.find((s) => s.id === selectedOffering)
-
     if (!selectedSubject) return []
 
-    const krsItems = getKrsByOffering(selectedOffering)
+    const krsItems = getKrsByOffering(selectedSubject.id)
     const mahasiswaUsers = getMahasiswaUsers()
-    const attendanceSessions = getAttendanceBySubject(selectedOffering)
-    const assignments = getAssignmentsBySubject(selectedOffering)
+    const attendanceSessions = getAttendanceBySubject(selectedSubject.id)
+    const assignments = getAssignmentsBySubject(selectedSubject.id)
 
     return arr(krsItems)
       .map((krs) => {
@@ -181,6 +199,29 @@ export default function EntryNilaiPage() {
   const handleExportGrades = () => {
     console.log("Exporting grades for offering:", selectedOffering)
     alert("Export nilai berhasil!")
+  }
+
+  // Navigation handlers for angkatan/class/subject selection
+  const handleClassClick = (angkatan: string, kelas: string) => {
+    setSelectedAngkatan(angkatan)
+    setSelectedClass(kelas)
+  }
+
+  const handleSubjectClick = (subject: Subject) => {
+    setSelectedSubject(subject)
+    // Also set selectedOffering for backward compatibility with existing code
+    setSelectedOffering(subject.id)
+  }
+
+  const handleBackToSubjectList = () => {
+    setSelectedSubject(null)
+    setSelectedOffering("")
+    setGrades({})
+  }
+
+  const handleBackToClassList = () => {
+    setSelectedClass(null)
+    setSelectedAngkatan(null)
   }
 
 
@@ -297,8 +338,162 @@ export default function EntryNilaiPage() {
         </CardHeader>
       </Card>
 
+      {/* Subject Selection dengan Angkatan/Class hierarchy */}
+      {!selectedClass ? (
+        <div className="px-4 md:px-6 lg:px-8 mt-12 overflow-hidden">
+          <div className="space-y-8">
+            {Object.entries(subjectsByAngkatan)
+              .sort(([a], [b]) => b.localeCompare(a)) // Sort descending (newest first)
+              .map(([angkatan, classes]) => {
+                const totalClasses = Object.keys(classes).length
+                
+                return (
+                  <div key={angkatan} className="space-y-4">
+                    {/* Angkatan Header */}
+                    <div className="text-center">
+                      <h3 className="text-lg md:text-xl font-bold text-foreground mb-1">
+                        Pilih Kelas - Angkatan {angkatan}
+                      </h3>
+                      <p className="text-sm text-muted-foreground">
+                        {totalClasses} kelas tersedia
+                      </p>
+                    </div>
+
+                    {/* Floating Cards Grid */}
+                    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4 md:gap-6 overflow-visible p-2">
+                      {Object.entries(classes)
+                        .sort(([a], [b]) => a.localeCompare(b))
+                        .map(([kelas, classSubjects]) => {
+                          return (
+                            <div
+                              key={`${angkatan}-${kelas}`}
+                              onClick={() => handleClassClick(angkatan, kelas)}
+                              className="relative cursor-pointer group"
+                            >
+                              {/* Floating Card Container */}
+                              <div className="relative transition-all duration-300 ease-out group-hover:-translate-y-2 group-active:scale-95">
+                                {/* Folder Icon and Label */}
+                                <div className="flex flex-col items-center space-y-2 p-4 rounded-xl bg-gradient-to-br from-background to-muted/30 border-2 border-muted group-hover:border-primary/30 group-hover:shadow-xl shadow-md transition-all duration-300">
+                                  <Folder className="w-16 h-16 md:w-20 md:h-20 text-primary group-hover:text-primary/80 transition-colors duration-300 drop-shadow-md" />
+                                  <div className="text-center space-y-1">
+                                    <p className="font-semibold text-sm md:text-base text-foreground group-hover:text-primary transition-colors duration-200">
+                                      Kelas {kelas}
+                                    </p>
+                                    <p className="text-xs md:text-sm text-muted-foreground">
+                                      {classSubjects.length} mata kuliah
+                                    </p>
+                                  </div>
+                                </div>
+
+                                {/* Hover Effect Gradient */}
+                                <div className="absolute inset-0 bg-gradient-to-br from-blue-500/0 to-blue-600/0 group-hover:from-blue-500/5 group-hover:to-blue-600/10 transition-all duration-300 pointer-events-none rounded-xl" />
+                                
+                                {/* Click Ripple Effect */}
+                                <div className="absolute inset-0 bg-blue-400/20 opacity-0 group-active:opacity-100 transition-opacity duration-150 pointer-events-none rounded-xl" />
+                              </div>
+                            </div>
+                          )
+                        })}
+                    </div>
+                  </div>
+                )
+              })}
+          </div>
+        </div>
+      ) : !selectedSubject ? (
+        <>
+          {/* Show subjects in selected class */}
+          <div className="px-3 md:px-4">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={handleBackToClassList}
+              className="gap-2 -ml-2 hover:bg-muted"
+            >
+              <ArrowLeft className="h-4 w-4" />
+              Kembali ke Daftar Angkatan
+            </Button>
+            <h2 className="text-base md:text-xl font-bold mt-3">
+              Mata Kuliah Kelas {selectedClass} - Angkatan {selectedAngkatan}
+            </h2>
+            <p className="text-xs md:text-sm text-muted-foreground">
+              {subjectsByAngkatan[selectedAngkatan!]?.[selectedClass!]?.length || 0} mata kuliah tersedia
+            </p>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 px-3 md:px-4">
+            {subjectsByAngkatan[selectedAngkatan!]?.[selectedClass!]?.map((subject) => (
+              <Card
+                key={subject.id}
+                className="cursor-pointer hover:border-primary/50 hover:shadow-md transition-all duration-200 overflow-hidden group"
+                onClick={() => handleSubjectClick(subject)}
+              >
+                <CardHeader className="pb-3">
+                  <div className="flex items-start justify-between">
+                    <div className="flex-1 min-w-0">
+                      <CardTitle className="text-sm md:text-base mb-1 line-clamp-1 group-hover:text-primary transition-colors">
+                        {subject.nama}
+                      </CardTitle>
+                      <CardDescription className="text-xs">
+                        {subject.kode}
+                      </CardDescription>
+                    </div>
+                    <ChevronRight className="h-4 w-4 md:h-5 md:w-5 text-muted-foreground group-hover:text-primary group-hover:translate-x-1 transition-all flex-shrink-0 ml-2" />
+                  </div>
+                </CardHeader>
+                <CardContent>
+                  <div className="flex flex-wrap gap-1.5 md:gap-2">
+                    <Badge variant="secondary" className="text-[10px] md:text-xs">
+                      {subject.sks} SKS
+                    </Badge>
+                    <Badge variant="outline" className="text-[10px] md:text-xs">
+                      Semester {subject.semester}
+                    </Badge>
+                  </div>
+                  {subject.prodi && (
+                    <p className="text-xs text-muted-foreground mt-2 line-clamp-1">
+                      {subject.prodi}
+                    </p>
+                  )}
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        </>
+      ) : (
+        <>
+          {/* Grade Entry Form - When subject is selected */}
+          <div className="px-3 md:px-4 space-y-3">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={handleBackToSubjectList}
+              className="gap-2 -ml-2 hover:bg-muted"
+            >
+              <ArrowLeft className="h-4 w-4" />
+              Kembali ke Daftar Mata Kuliah
+            </Button>
+
+            <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between md:gap-4">
+              <div className="flex-1 min-w-0">
+                <h1 className="text-base md:text-xl lg:text-2xl font-bold leading-tight mb-1">
+                  {selectedSubject?.nama}
+                </h1>
+                <p className="text-xs md:text-sm text-muted-foreground">
+                  {selectedSubject?.kode} • Semester {selectedSubject?.semester} • {selectedSubject?.sks} SKS
+                  {selectedSubject?.kelas && ` • Kelas ${selectedSubject.kelas}`}
+                  {selectedSubject?.angkatan && ` • Angkatan ${selectedSubject.angkatan}`}
+                </p>
+                {selectedSubject?.prodi && (
+                  <p className="text-xs text-muted-foreground mt-1">
+                    {selectedSubject.prodi}
+                  </p>
+                )}
+              </div>
+            </div>
+          </div>
+
       {/* Offering Selection */}
-      <Card>
+      <Card className="hidden">
         <CardHeader className="px-3 md:px-6 pt-3 md:pt-6 pb-2 md:pb-4">
           <CardTitle className="text-sm md:text-base">Pilih Mata Kuliah</CardTitle>
           <CardDescription className="text-[10px] md:text-xs">
@@ -351,14 +546,14 @@ export default function EntryNilaiPage() {
       </Card>
 
       {/* Grades Entry Table */}
-      {selectedOffering && selectedOfferingData && (
+      {selectedSubject && (
         <Card>
           <CardHeader className="px-3 md:px-6 pt-3 md:pt-6 pb-2 md:pb-4">
             <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3 md:gap-4">
               <div className="flex-1 min-w-0">
                 <CardTitle className="text-sm md:text-base truncate">
-                  Daftar Mahasiswa - {selectedOfferingData.nama}
-                  {selectedOfferingData.kelas && ` (Kelas ${selectedOfferingData.kelas})`}
+                  Daftar Mahasiswa - {selectedSubject.nama}
+                  {selectedSubject.kelas && ` (Kelas ${selectedSubject.kelas})`}
                 </CardTitle>
                 <CardDescription className="text-[10px] md:text-xs">
                   Input nilai untuk {filteredStudents.length} mahasiswa yang terdaftar
@@ -600,6 +795,8 @@ export default function EntryNilaiPage() {
             )}
           </CardContent>
         </Card>
+      )}
+      </>
       )}
     </div>
   )

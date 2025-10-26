@@ -64,8 +64,6 @@ export default function DashboardPage() {
   const [dialogOpen, setDialogOpen] = useState(false)
   const [dialogType, setDialogType] = useState<"schedule" | "subjects" | "reminders" | "coursework">("schedule")
   const [dialogData, setDialogData] = useState<any[]>([])
-  const [pressTimer, setPressTimer] = useState<NodeJS.Timeout | null>(null)
-  const [pressingCard, setPressingCard] = useState<string | null>(null)
 
   // Enable real-time sync for this page
   const { isPolling } = useRealtimeSync({
@@ -360,24 +358,6 @@ export default function DashboardPage() {
   const allMaterials = materials
     .filter(m => relevantSubjectIds.includes(m.subjectId))
     .sort((a, b) => b.createdAt - a.createdAt)
-
-  // Handle long press
-  const handlePressStart = (type: "schedule" | "subjects" | "reminders" | "coursework") => {
-    setPressingCard(type) // Trigger bounce animation
-    const timer = setTimeout(() => {
-      handleOpenDialog(type)
-      setPressingCard(null) // Remove animation when dialog opens
-    }, 500) // 500ms hold
-    setPressTimer(timer)
-  }
-
-  const handlePressEnd = () => {
-    if (pressTimer) {
-      clearTimeout(pressTimer)
-      setPressTimer(null)
-    }
-    setPressingCard(null) // Remove animation when released early
-  }
 
   const handleOpenDialog = (type: "schedule" | "subjects" | "reminders" | "coursework") => {
     setDialogType(type)
@@ -711,15 +691,9 @@ export default function DashboardPage() {
 
       <div className={`grid gap-4 md:gap-6 grid-cols-2 w-full ${session.role === "mahasiswa" ? "lg:grid-cols-4" : "lg:grid-cols-3"}`}>
         <Card
-          className={`card-interactive border-2 border-blue-200 dark:border-blue-800 hover:border-blue-400 dark:hover:border-blue-600 group w-full min-w-0 cursor-pointer select-none transition-all duration-200 ${
-            pressingCard === "schedule" ? "scale-105 shadow-2xl border-blue-500" : ""
-          }`}
+          className="card-interactive border-2 border-blue-200 dark:border-blue-800 hover:border-blue-400 dark:hover:border-blue-600 group w-full min-w-0 cursor-pointer select-none transition-all duration-200"
           style={{ animationDelay: "0.1s" }}
-          onMouseDown={() => handlePressStart("schedule")}
-          onMouseUp={handlePressEnd}
-          onMouseLeave={handlePressEnd}
-          onTouchStart={() => handlePressStart("schedule")}
-          onTouchEnd={handlePressEnd}
+          onClick={() => handleOpenDialog("schedule")}
         >
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 md:pb-3 px-4 md:px-6 pt-4 md:pt-6">
             <CardTitle className="text-xs md:text-sm font-bold">
@@ -742,15 +716,9 @@ export default function DashboardPage() {
         </Card>
 
         <Card
-          className={`card-interactive border-2 border-green-200 dark:border-green-800 hover:border-green-400 dark:hover:border-green-600 group w-full min-w-0 cursor-pointer select-none transition-all duration-200 ${
-            pressingCard === "subjects" ? "scale-105 shadow-2xl border-green-500" : ""
-          }`}
+          className="card-interactive border-2 border-green-200 dark:border-green-800 hover:border-green-400 dark:hover:border-green-600 group w-full min-w-0 cursor-pointer select-none transition-all duration-200"
           style={{ animationDelay: "0.2s" }}
-          onMouseDown={() => handlePressStart("subjects")}
-          onMouseUp={handlePressEnd}
-          onMouseLeave={handlePressEnd}
-          onTouchStart={() => handlePressStart("subjects")}
-          onTouchEnd={handlePressEnd}
+          onClick={() => handleOpenDialog("subjects")}
         >
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 md:pb-3 px-4 md:px-6 pt-4 md:pt-6">
             <CardTitle className="text-xs md:text-sm font-bold">
@@ -785,15 +753,9 @@ export default function DashboardPage() {
         </Card>
 
         <Card
-          className={`card-interactive border-2 border-orange-200 dark:border-orange-800 hover:border-orange-400 dark:hover:border-orange-600 group w-full min-w-0 cursor-pointer select-none transition-all duration-200 ${
-            pressingCard === "reminders" ? "scale-105 shadow-2xl border-orange-500" : ""
-          }`}
+          className="card-interactive border-2 border-orange-200 dark:border-orange-800 hover:border-orange-400 dark:hover:border-orange-600 group w-full min-w-0 cursor-pointer select-none transition-all duration-200"
           style={{ animationDelay: "0.3s" }}
-          onMouseDown={() => handlePressStart("reminders")}
-          onMouseUp={handlePressEnd}
-          onMouseLeave={handlePressEnd}
-          onTouchStart={() => handlePressStart("reminders")}
-          onTouchEnd={handlePressEnd}
+          onClick={() => handleOpenDialog("reminders")}
         >
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 md:pb-3 px-4 md:px-6 pt-4 md:pt-6">
             <CardTitle className="text-xs md:text-sm font-bold">Pengingat Aktif</CardTitle>
@@ -808,67 +770,63 @@ export default function DashboardPage() {
           </CardContent>
         </Card>
 
-        {/* Tugas/Materi Card - Show for all users */}
-        <Card
-          className={`card-interactive border-2 border-purple-200 dark:border-purple-800 hover:border-purple-400 dark:hover:border-purple-600 group w-full min-w-0 cursor-pointer select-none transition-all duration-200 ${
-            pressingCard === "coursework" ? "scale-105 shadow-2xl border-purple-500" : ""
-          }`}
-          style={{ animationDelay: "0.4s" }}
-          onMouseDown={() => handlePressStart("coursework")}
-          onMouseUp={handlePressEnd}
-          onMouseLeave={handlePressEnd}
-          onTouchStart={() => handlePressStart("coursework")}
-          onTouchEnd={handlePressEnd}
-        >
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 md:pb-3 px-4 md:px-6 pt-4 md:pt-6">
-            <CardTitle className="text-xs md:text-sm font-bold">
-              {showAssignments ? "Tugas" : "Materi"}
-            </CardTitle>
-            {showAssignments ? (
-              <ClipboardList className="h-5 w-5 md:h-6 md:w-6 text-purple-500 group-hover:scale-125 transition-transform duration-300" />
-            ) : (
-              <FilesIcon className="h-5 w-5 md:h-6 md:w-6 text-purple-500 group-hover:scale-125 transition-transform duration-300" />
-            )}
-          </CardHeader>
-          <CardContent className="px-4 md:px-6 pb-4 md:pb-6">
-            <div className="text-3xl md:text-4xl font-bold text-purple-600 mb-1 md:mb-2">
-              {showAssignments ? allAssignments.length : allMaterials.length}
-            </div>
-            <p className="text-xs md:text-sm text-muted-foreground">
-              {showAssignments ? "Tugas mendatang" : "Materi tersedia"}
-            </p>
-            <div className="mt-2 md:mt-3 flex items-center justify-between">
-              <div className="flex items-center text-[10px] md:text-xs text-purple-600">
-                <Activity className="h-3 w-3 mr-1" />
-                {showAssignments 
-                  ? allAssignments.length === 0 ? "Tidak ada tugas" : `${allAssignments.length} belum selesai`
-                  : allMaterials.length === 0 ? "Tidak ada materi" : `${allMaterials.length} total materi`
-                }
+        {/* Tugas/Materi Card - Only show for mahasiswa */}
+        {session.role === "mahasiswa" && (
+          <Card
+            className="card-interactive border-2 border-purple-200 dark:border-purple-800 hover:border-purple-400 dark:hover:border-purple-600 group w-full min-w-0 cursor-pointer select-none transition-all duration-200"
+            style={{ animationDelay: "0.4s" }}
+            onClick={() => handleOpenDialog("coursework")}
+          >
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 md:pb-3 px-4 md:px-6 pt-4 md:pt-6">
+              <CardTitle className="text-xs md:text-sm font-bold">
+                {showAssignments ? "Tugas" : "Materi"}
+              </CardTitle>
+              {showAssignments ? (
+                <ClipboardList className="h-5 w-5 md:h-6 md:w-6 text-purple-500 group-hover:scale-125 transition-transform duration-300" />
+              ) : (
+                <FilesIcon className="h-5 w-5 md:h-6 md:w-6 text-purple-500 group-hover:scale-125 transition-transform duration-300" />
+              )}
+            </CardHeader>
+            <CardContent className="px-4 md:px-6 pb-4 md:pb-6">
+              <div className="text-3xl md:text-4xl font-bold text-purple-600 mb-1 md:mb-2">
+                {showAssignments ? allAssignments.length : allMaterials.length}
               </div>
-              <Button
-                variant="outline"
-                size="sm"
-                className="h-6 px-2 text-[10px] md:text-xs border-purple-300 text-purple-700 dark:text-purple-300 hover:bg-purple-50 hover:text-purple-900 dark:hover:bg-purple-900/20 dark:hover:text-purple-100 transition-colors"
-                onClick={(e) => {
-                  e.stopPropagation()
-                  setShowAssignments(!showAssignments)
-                }}
-              >
-                {showAssignments ? (
-                  <>
-                    <FilesIcon className="h-3 w-3 mr-1" />
-                    Materi
-                  </>
-                ) : (
-                  <>
-                    <ClipboardList className="h-3 w-3 mr-1" />
-                    Tugas
-                  </>
-                )}
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
+              <p className="text-xs md:text-sm text-muted-foreground">
+                {showAssignments ? "Tugas mendatang" : "Materi tersedia"}
+              </p>
+              <div className="mt-2 md:mt-3 flex items-center justify-between">
+                <div className="flex items-center text-[10px] md:text-xs text-purple-600">
+                  <Activity className="h-3 w-3 mr-1" />
+                  {showAssignments 
+                    ? allAssignments.length === 0 ? "Tidak ada tugas" : `${allAssignments.length} belum selesai`
+                    : allMaterials.length === 0 ? "Tidak ada materi" : `${allMaterials.length} total materi`
+                  }
+                </div>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="h-6 px-2 text-[10px] md:text-xs border-purple-300 text-purple-700 dark:text-purple-300 hover:bg-purple-50 hover:text-purple-900 dark:hover:bg-purple-900/20 dark:hover:text-purple-100 transition-colors"
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    setShowAssignments(!showAssignments)
+                  }}
+                >
+                  {showAssignments ? (
+                    <>
+                      <FilesIcon className="h-3 w-3 mr-1" />
+                      Materi
+                    </>
+                  ) : (
+                    <>
+                      <ClipboardList className="h-3 w-3 mr-1" />
+                      Tugas
+                    </>
+                  )}
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        )}
       </div>
 
       <div className="grid gap-4 md:gap-6 grid-cols-1 lg:grid-cols-3 w-full">

@@ -11,9 +11,10 @@ import { Input } from "@/components/ui/input"
 import { Switch } from "@/components/ui/switch"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Card, CardContent } from "@/components/ui/card"
-import { Edit, Trash2, Search } from "lucide-react"
+import { Edit, Trash2, Search, AlertTriangle, Trash } from "lucide-react"
 import { confirmAction, showSuccess, showError } from "@/lib/alerts"
 import { arr } from "@/lib/utils"
+import { Checkbox } from "@/components/ui/checkbox"
 
 // Helper function to get current term
 const getCurrentTerm = () => {
@@ -35,6 +36,7 @@ export function SubjectTable({ subjects: subjectsProp, onEdit }: SubjectTablePro
   const { getOfferingsBySubject, updateOffering } = useOfferingsStore()
   const [searchTerm, setSearchTerm] = useState("")
   const [kelasFilter, setKelasFilter] = useState("")
+  const [selectedSubjects, setSelectedSubjects] = useState<Set<string>>(new Set())
 
   const uniqueKelas = [...new Set(subjects.map((s) => s.kelas).filter(Boolean))].sort()
 
@@ -92,6 +94,102 @@ export function SubjectTable({ subjects: subjectsProp, onEdit }: SubjectTablePro
       } catch (error) {
         showError(error instanceof Error ? error.message : "Gagal menghapus mata kuliah")
       }
+    }
+  }
+
+  const handleToggleSelection = (subjectId: string) => {
+    setSelectedSubjects(prev => {
+      const newSet = new Set(prev)
+      if (newSet.has(subjectId)) {
+        newSet.delete(subjectId)
+      } else {
+        newSet.add(subjectId)
+      }
+      return newSet
+    })
+  }
+
+  const handleSelectAll = (subjects: Subject[]) => {
+    const allIds = subjects.map(s => s.id)
+    const allSelected = allIds.every(id => selectedSubjects.has(id))
+    
+    if (allSelected) {
+      // Deselect all
+      setSelectedSubjects(prev => {
+        const newSet = new Set(prev)
+        allIds.forEach(id => newSet.delete(id))
+        return newSet
+      })
+    } else {
+      // Select all
+      setSelectedSubjects(prev => {
+        const newSet = new Set(prev)
+        allIds.forEach(id => newSet.add(id))
+        return newSet
+      })
+    }
+  }
+
+  const handleForceDelete = async () => {
+    if (selectedSubjects.size === 0) return
+
+    const selectedList = subjects.filter(s => selectedSubjects.has(s.id))
+    const subjectNames = selectedList.map(s => s.nama).join(', ')
+    
+    try {
+      // Fetch fresh offering data to get accurate student count
+      const offeringPromises = selectedList.map(subject => 
+        fetch(`/api/offerings?subjectId=${subject.id}`).then(res => res.json())
+      )
+      const offeringsData = await Promise.all(offeringPromises)
+      
+      // Calculate total students affected
+      let totalStudents = 0
+      offeringsData.forEach(offerings => {
+        if (Array.isArray(offerings)) {
+          offerings.forEach(offering => {
+            totalStudents += offering._count?.krsItems || 0
+          })
+        }
+      })
+
+      const confirmed = await confirmAction(
+        "⚠️ Force Delete Mata Kuliah",
+        `PERINGATAN: Anda akan menghapus ${selectedSubjects.size} mata kuliah secara permanen:\n\n${subjectNames}\n\n${totalStudents > 0 ? `⚠️ ${totalStudents} mahasiswa yang sudah mengambil mata kuliah ini akan otomatis dihapus dari KRS mereka!\n\n` : ''}Tindakan ini TIDAK DAPAT dibatalkan!`,
+        "Ya, Force Delete"
+      )
+
+      if (!confirmed) return
+
+      // Call API to force delete
+      const response = await fetch('/api/subjects/force-delete', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ 
+          subjectIds: Array.from(selectedSubjects) 
+        })
+      })
+
+      if (!response.ok) {
+        const error = await response.json()
+        throw new Error(error.error || 'Failed to force delete subjects')
+      }
+
+      const result = await response.json()
+      
+      // Clear selection
+      setSelectedSubjects(new Set())
+      
+      // Refresh data
+      const { fetchSubjects } = useSubjectsStore.getState()
+      const { fetchOfferings } = useOfferingsStore.getState()
+      await fetchSubjects()
+      await fetchOfferings(undefined, true)
+      
+      showSuccess(`✅ ${result.deletedSubjects} mata kuliah berhasil dihapus!\n${result.deletedKrsItems > 0 ? `🗑️ ${result.deletedKrsItems} item KRS mahasiswa dihapus\n` : ''}${result.deletedOfferings > 0 ? `📋 ${result.deletedOfferings} penawaran dihapus` : ''}`)
+    } catch (error) {
+      console.error('Force delete error:', error)
+      showError(error instanceof Error ? error.message : 'Gagal menghapus mata kuliah')
     }
   }
   
@@ -365,6 +463,39 @@ export function SubjectTable({ subjects: subjectsProp, onEdit }: SubjectTablePro
             <p className="text-xs md:text-base text-muted-foreground">Kelola mata kuliah dalam katalog program studi</p>
           </div>
           
+          {/* Force Delete Button - Muncul saat ada yang dipilih */}
+          {selectedSubjects.size > 0 && (
+            <div className="flex items-center gap-3 p-3 bg-destructive/10 border border-destructive/20 rounded-lg">
+              <AlertTriangle className="h-5 w-5 text-destructive" />
+              <div className="flex-1">
+                <p className="text-sm font-medium text-destructive">
+                  {selectedSubjects.size} mata kuliah dipilih
+                </p>
+                <p className="text-xs text-muted-foreground">
+                  Klik tombol force delete untuk menghapus mata kuliah dan semua KRS mahasiswa terkait
+                </p>
+              </div>
+              <div className="flex gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setSelectedSubjects(new Set())}
+                >
+                  Batal
+                </Button>
+                <Button
+                  variant="destructive"
+                  size="sm"
+                  onClick={handleForceDelete}
+                  className="gap-2"
+                >
+                  <Trash className="h-4 w-4" />
+                  Force Delete
+                </Button>
+              </div>
+            </div>
+          )}
+          
           <div className="flex flex-col sm:flex-row gap-2 md:gap-4">
             <div className="relative flex-1">
               <Search className="absolute left-2 md:left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-3.5 w-3.5 md:h-4 md:w-4" />
@@ -445,6 +576,13 @@ export function SubjectTable({ subjects: subjectsProp, onEdit }: SubjectTablePro
                     <Table>
                       <TableHeader>
                         <TableRow>
+                          <TableHead className="w-[50px]">
+                            <Checkbox
+                              checked={group.subjects.every(s => selectedSubjects.has(s.id))}
+                              onCheckedChange={() => handleSelectAll(group.subjects)}
+                              aria-label="Select all"
+                            />
+                          </TableHead>
                           <TableHead>Kode</TableHead>
                           <TableHead>Nama</TableHead>
                           <TableHead>SKS</TableHead>
@@ -457,8 +595,15 @@ export function SubjectTable({ subjects: subjectsProp, onEdit }: SubjectTablePro
                         {group.subjects.map((subject, index) => (
                           <TableRow
                             key={subject.id}
-                            className="hover:bg-muted/50 transition-colors duration-200"
+                            className={`hover:bg-muted/50 transition-colors duration-200 ${selectedSubjects.has(subject.id) ? 'bg-blue-50 dark:bg-blue-950/20' : ''}`}
                           >
+                            <TableCell>
+                              <Checkbox
+                                checked={selectedSubjects.has(subject.id)}
+                                onCheckedChange={() => handleToggleSelection(subject.id)}
+                                aria-label={`Select ${subject.nama}`}
+                              />
+                            </TableCell>
                             <TableCell className="font-medium">{subject.kode}</TableCell>
                             <TableCell>
                               <div>
@@ -514,25 +659,36 @@ export function SubjectTable({ subjects: subjectsProp, onEdit }: SubjectTablePro
                   {/* Mobile Card View */}
                   <div className="md:hidden space-y-2">
                     {group.subjects.map((subject) => (
-                      <Card key={subject.id} className="border-2 hover:border-primary/50 transition-colors">
+                      <Card 
+                        key={subject.id} 
+                        className={`border-2 hover:border-primary/50 transition-colors ${selectedSubjects.has(subject.id) ? 'border-blue-500 bg-blue-50 dark:bg-blue-950/20' : ''}`}
+                      >
                         <CardContent className="p-3 space-y-2">
-                          {/* Header */}
+                          {/* Header with Checkbox */}
                           <div className="flex items-start justify-between gap-2">
-                            <div className="flex-1 min-w-0">
-                              <div className="flex items-center gap-1.5 mb-1 flex-wrap">
-                                <Badge variant="outline" className="text-[10px] font-mono">
-                                  {subject.kode}
-                                </Badge>
-                                <Badge variant={subject.status === "aktif" ? "default" : "secondary"} className="text-[10px]">
-                                  {subject.status === "aktif" ? "Aktif" : "Arsip"}
-                                </Badge>
+                            <div className="flex items-start gap-2 flex-1 min-w-0">
+                              <Checkbox
+                                checked={selectedSubjects.has(subject.id)}
+                                onCheckedChange={() => handleToggleSelection(subject.id)}
+                                aria-label={`Select ${subject.nama}`}
+                                className="mt-1"
+                              />
+                              <div className="flex-1 min-w-0">
+                                <div className="flex items-center gap-1.5 mb-1 flex-wrap">
+                                  <Badge variant="outline" className="text-[10px] font-mono">
+                                    {subject.kode}
+                                  </Badge>
+                                  <Badge variant={subject.status === "aktif" ? "default" : "secondary"} className="text-[10px]">
+                                    {subject.status === "aktif" ? "Aktif" : "Arsip"}
+                                  </Badge>
+                                </div>
+                                <h4 className="font-semibold text-xs leading-tight break-words">
+                                  {subject.nama}
+                                </h4>
+                                {subject.prodi && (
+                                  <p className="text-[10px] text-muted-foreground mt-0.5">{subject.prodi}</p>
+                                )}
                               </div>
-                              <h4 className="font-semibold text-xs leading-tight break-words">
-                                {subject.nama}
-                              </h4>
-                              {subject.prodi && (
-                                <p className="text-[10px] text-muted-foreground mt-0.5">{subject.prodi}</p>
-                              )}
                             </div>
                             <div className="flex flex-col items-end gap-1 flex-shrink-0">
                               <Badge className="text-[10px]">{subject.sks} SKS</Badge>

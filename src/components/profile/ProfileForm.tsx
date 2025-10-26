@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useRef } from "react"
 import { useSessionStore } from "@/stores/session.store"
 import { useProfileStore } from "@/stores/profile.store"
 import type { Profile } from "@/data/schema"
@@ -12,7 +12,7 @@ import { AvatarUploader } from "@/components/profile/AvatarUploader"
 import { EKTMFullView } from "@/components/profile/EKTMFullView"
 import { showSuccess, showError } from "@/lib/alerts"
 import { ActivityLogger } from "@/lib/activity-logger"
-import { Lock, IdCard, Edit2, Check, X, KeyRound } from "lucide-react"
+import { Lock, IdCard, Edit2, Check, X, KeyRound, Upload } from "lucide-react"
 
 interface ProfileFormProps {
   profile?: Profile
@@ -30,6 +30,7 @@ export function ProfileForm({ profile, onSuccess, onChangePassword, onSetPasswor
   const [isSaving, setIsSaving] = useState(false)
   const [hasPassword, setHasPassword] = useState<boolean | null>(null)
   const [isCheckingPassword, setIsCheckingPassword] = useState(true)
+  const fileInputRef = useRef<HTMLInputElement>(null)
 
   // Check if user has password
   useEffect(() => {
@@ -266,6 +267,7 @@ export function ProfileForm({ profile, onSuccess, onChangePassword, onSetPasswor
             currentAvatar={currentAvatar}
             userName={session.name}
             onAvatarChange={handleAvatarChange}
+            fileInputRef={fileInputRef}
           />
           
           {/* E-KTM Button */}
@@ -281,6 +283,18 @@ export function ProfileForm({ profile, onSuccess, onChangePassword, onSetPasswor
                 <IdCard className="h-4 w-4 mr-2" />
                 Lihat E-KTM
               </Button>
+              
+              {/* Tombol Ubah Foto Profile */}
+              <Button
+                type="button"
+                variant="outline"
+                className="w-full"
+                onClick={() => fileInputRef.current?.click()}
+              >
+                <Upload className="h-4 w-4 mr-2" />
+                Ubah Foto Profile
+              </Button>
+              
               {!currentAvatar && (
                 <p className="text-xs text-center text-muted-foreground">
                   Unggah foto profil terlebih dahulu untuk melihat E-KTM

@@ -284,31 +284,38 @@ export function EKTMFullView({
 
   return (
     <div 
-      className="fixed inset-0 z-[100] bg-gradient-to-br from-slate-900 via-blue-900 to-slate-900 m-0 p-0"
+      className="fixed inset-0 z-[100] m-0 p-0"
+      style={{ background: 'transparent' }}
+      onClick={(e) => {
+        // Klik di luar E-KTM akan menutup
+        if (e.target === e.currentTarget) {
+          onOpenChange(false)
+        }
+      }}
     >
       {/* Close Button - Fixed position */}
       <Button
         onClick={() => onOpenChange(false)}
         variant="ghost"
         size="icon"
-        className="fixed top-4 right-4 z-[101] text-white hover:bg-white/10 rounded-full h-10 w-10"
+        className="fixed top-4 right-4 z-[101] text-white hover:bg-white/10 rounded-full h-10 w-10 bg-black/30 backdrop-blur-sm"
       >
         <X className="h-6 w-6" />
       </Button>
 
       {/* Content - Scrollable */}
-      <div className="flex flex-col items-center justify-start min-h-screen w-full overflow-y-auto p-4 sm:p-8 pt-20">
-        {/* Title */}
-        <h2 className="text-white text-xl sm:text-2xl md:text-3xl font-bold mb-6 sm:mb-8 text-center">
-          E-KTM
-        </h2>
+      <div 
+        className="flex flex-col items-center justify-start min-h-screen w-full overflow-y-auto p-4 sm:p-8 pt-20"
+        onClick={(e) => e.stopPropagation()}
+      >
+        {/* Title - Hilangkan atau buat lebih subtle */}
         
         {/* E-KTM Card - Floating bebas */}
         <div className="w-full max-w-lg mb-8">
           <EKTMCardWithTilt
-            name={name}
-            nim={nim}
-            fakultas={fakultas}
+        {/* E-KTM Card - Floating bebas */}
+        <div className="w-full max-w-lg mb-8 mt-12">
+          <EKTMCardWithTilttas}
             programStudi={programStudi}
             avatarUrl={avatarUrl}
           />
@@ -319,7 +326,7 @@ export function EKTMFullView({
           onClick={handleDownload}
           variant="default"
           size="lg"
-          className="gap-2 text-sm sm:text-base font-semibold shadow-2xl bg-white text-blue-600 hover:bg-blue-50 border-2 border-white/20 mb-8"
+          className="gap-2 text-sm sm:text-base font-semibold shadow-2xl bg-white text-blue-600 hover:bg-blue-50 border-2 border-white/20 mb-8 hover:scale-105 transition-transform"
           disabled={isDownloading}
         >
           <Download className="h-5 w-5" />

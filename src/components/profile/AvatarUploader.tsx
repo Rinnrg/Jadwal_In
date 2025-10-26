@@ -14,14 +14,20 @@ interface AvatarUploaderProps {
   userName: string
   onAvatarChange: (avatarUrl: string) => void
   disabled?: boolean
+  onUploadClick?: () => void
+  isUploading?: boolean
+  fileInputRef?: React.RefObject<HTMLInputElement>
 }
 
-export function AvatarUploader({ currentAvatar, userName, onAvatarChange, disabled }: AvatarUploaderProps) {
+export function AvatarUploader({ currentAvatar, userName, onAvatarChange, disabled, onUploadClick: externalOnUploadClick, isUploading: externalIsUploading, fileInputRef: externalFileInputRef }: AvatarUploaderProps) {
   const [previewUrl, setPreviewUrl] = useState<string | null>(null)
-  const [isUploading, setIsUploading] = useState(false)
+  const [internalIsUploading, setInternalIsUploading] = useState(false)
   const [cropDialogOpen, setCropDialogOpen] = useState(false)
   const [selectedImage, setSelectedImage] = useState<string | null>(null)
-  const fileInputRef = useRef<HTMLInputElement>(null)
+  const internalFileInputRef = useRef<HTMLInputElement>(null)
+  const fileInputRef = externalFileInputRef || internalFileInputRef
+  
+  const isUploading = externalIsUploading ?? internalIsUploading
 
   // Reset preview when currentAvatar changes and force image reload
   useEffect(() => {
@@ -80,7 +86,11 @@ export function AvatarUploader({ currentAvatar, userName, onAvatarChange, disabl
 
   const handleUploadClick = () => {
     if (isUploading || disabled) return
-    fileInputRef.current?.click()
+    if (externalOnUploadClick) {
+      externalOnUploadClick()
+    } else {
+      fileInputRef.current?.click()
+    }
   }
 
   const displayAvatar = previewUrl || currentAvatar
@@ -127,27 +137,6 @@ export function AvatarUploader({ currentAvatar, userName, onAvatarChange, disabl
           </div>
         )}
       </div>
-
-      {!disabled && (
-        <Button
-          variant="outline"
-          onClick={handleUploadClick}
-          disabled={isUploading}
-          className="flex items-center gap-2 bg-transparent hover:scale-105 transition-transform duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
-        >
-          {isUploading ? (
-            <>
-              <Loader2 className="h-4 w-4 animate-spin" />
-              Mengupload...
-            </>
-          ) : (
-            <>
-              <Upload className="h-4 w-4" />
-              Ubah Foto Profile
-            </>
-          )}
-        </Button>
-      )}
 
       <input
         ref={fileInputRef}
