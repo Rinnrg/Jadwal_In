@@ -42,6 +42,8 @@ export function AnnouncementForm({ announcement, onSuccess, onCancel }: Announce
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
 
+    console.log('[AnnouncementForm] Submitting form with data:', formData)
+
     if (!formData.title || !formData.description) {
       showError("Judul dan keterangan harus diisi")
       return
@@ -52,6 +54,11 @@ export function AnnouncementForm({ announcement, onSuccess, onCancel }: Announce
       return
     }
 
+    if (!session) {
+      showError("Sesi tidak ditemukan. Silakan login kembali.")
+      return
+    }
+
     setIsSubmitting(true)
 
     try {
@@ -59,8 +66,10 @@ export function AnnouncementForm({ announcement, onSuccess, onCancel }: Announce
         ...formData,
         imageUrl: formData.imageUrl || null,
         fileUrl: formData.fileUrl || null,
-        createdById: session!.id,
+        createdById: session.id,
       }
+
+      console.log('[AnnouncementForm] Sending data to API:', data)
 
       if (announcement) {
         await updateAnnouncement(announcement.id, data)
@@ -72,6 +81,7 @@ export function AnnouncementForm({ announcement, onSuccess, onCancel }: Announce
 
       onSuccess()
     } catch (error) {
+      console.error('[AnnouncementForm] Submit error:', error)
       showError(error instanceof Error ? error.message : "Gagal menyimpan pengumuman")
     } finally {
       setIsSubmitting(false)
@@ -195,12 +205,19 @@ export function AnnouncementForm({ announcement, onSuccess, onCancel }: Announce
   }
 
   const toggleTargetRole = (role: string) => {
-    setFormData((prev) => ({
-      ...prev,
-      targetRoles: prev.targetRoles.includes(role)
+    console.log('[AnnouncementForm] Toggling role:', role)
+    setFormData((prev) => {
+      const newTargetRoles = prev.targetRoles.includes(role)
         ? prev.targetRoles.filter((r) => r !== role)
-        : [...prev.targetRoles, role],
-    }))
+        : [...prev.targetRoles, role]
+      
+      console.log('[AnnouncementForm] New target roles:', newTargetRoles)
+      
+      return {
+        ...prev,
+        targetRoles: newTargetRoles,
+      }
+    })
   }
 
   return (

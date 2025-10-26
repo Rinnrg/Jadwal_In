@@ -51,6 +51,7 @@ export function PageLoading({ message = "Memuat...", className }: PageLoadingPro
   // Check cache immediately - instant render
   const cachedData = useMemo(() => getCachedAnimation('/lottie/Businessman flies up with rocket.json'), [])
   const [animationData, setAnimationData] = useState<any>(cachedData)
+  const [isAnimationReady, setIsAnimationReady] = useState(!!cachedData)
 
   useEffect(() => {
     // Load animation jika belum ada di cache
@@ -58,6 +59,7 @@ export function PageLoading({ message = "Memuat...", className }: PageLoadingPro
       preloadAnimation('/lottie/Businessman flies up with rocket.json').then(data => {
         if (data) {
           setAnimationData(data)
+          setIsAnimationReady(true)
         }
       })
     }
@@ -66,15 +68,21 @@ export function PageLoading({ message = "Memuat...", className }: PageLoadingPro
   return (
     <div className={cn("min-h-screen flex items-center justify-center bg-background", className)}>
       <div className="text-center space-y-6 p-8">
-        {/* Rocket Animation - Always show, no fallback */}
+        {/* Rocket Animation - Show placeholder until loaded */}
         <div className="flex justify-center">
-          <DotLottieReact
-            data={animationData}
-            autoplay
-            loop
-            speed={2.0}
-            style={{ width: '250px', height: '250px' }}
-          />
+          {isAnimationReady && animationData ? (
+            <DotLottieReact
+              data={animationData}
+              autoplay
+              loop
+              speed={2.0}
+              style={{ width: '250px', height: '250px' }}
+            />
+          ) : (
+            <div className="w-[250px] h-[250px] flex items-center justify-center">
+              <LoadingSpinner size="lg" />
+            </div>
+          )}
         </div>
 
         {/* Loading Text */}

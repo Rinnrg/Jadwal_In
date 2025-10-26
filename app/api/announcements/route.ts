@@ -56,23 +56,31 @@ export async function GET(request: NextRequest) {
 // POST - Create new announcement
 export async function POST(request: NextRequest) {
   try {
+    console.log('[Announcement API] POST - Creating new announcement...')
+    
     const body = await request.json()
+    console.log('[Announcement API] Request body:', JSON.stringify(body, null, 2))
+    
     const validatedData = announcementSchema.parse(body)
+    console.log('[Announcement API] Validated data:', JSON.stringify(validatedData, null, 2))
 
     const announcement = await prisma.announcement.create({
       data: validatedData,
     })
 
+    console.log('[Announcement API] Announcement created successfully:', announcement.id)
+
     return NextResponse.json(announcement, { status: 201 })
   } catch (error) {
     if (error instanceof z.ZodError) {
+      console.error('[Announcement API] Validation error:', error.errors)
       return NextResponse.json(
         { error: "Validasi gagal", details: error.errors },
         { status: 400 }
       )
     }
 
-    console.error("Error creating announcement:", error)
+    console.error("[Announcement API] Error creating announcement:", error)
     return NextResponse.json(
       { error: "Gagal membuat pengumuman" },
       { status: 500 }
@@ -83,10 +91,16 @@ export async function POST(request: NextRequest) {
 // PUT - Update announcement
 export async function PUT(request: NextRequest) {
   try {
+    console.log('[Announcement API] PUT - Updating announcement...')
+    
     const body = await request.json()
     const { id, ...data } = body
 
+    console.log('[Announcement API] Update ID:', id)
+    console.log('[Announcement API] Update data:', JSON.stringify(data, null, 2))
+
     if (!id) {
+      console.error('[Announcement API] No ID provided')
       return NextResponse.json(
         { error: "ID pengumuman harus disertakan" },
         { status: 400 }
@@ -94,22 +108,26 @@ export async function PUT(request: NextRequest) {
     }
 
     const validatedData = announcementSchema.partial().parse(data)
+    console.log('[Announcement API] Validated data:', JSON.stringify(validatedData, null, 2))
 
     const announcement = await prisma.announcement.update({
       where: { id },
       data: validatedData,
     })
 
+    console.log('[Announcement API] Announcement updated successfully:', announcement.id)
+
     return NextResponse.json(announcement)
   } catch (error) {
     if (error instanceof z.ZodError) {
+      console.error('[Announcement API] Validation error:', error.errors)
       return NextResponse.json(
         { error: "Validasi gagal", details: error.errors },
         { status: 400 }
       )
     }
 
-    console.error("Error updating announcement:", error)
+    console.error("[Announcement API] Error updating announcement:", error)
     return NextResponse.json(
       { error: "Gagal mengupdate pengumuman" },
       { status: 500 }
