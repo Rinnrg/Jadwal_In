@@ -78,6 +78,14 @@ export function AssignmentTab({ subjectId, canManage, userRole }: AssignmentTabP
     feedback: "",
   })
 
+  // Get assignments and sort them
+  const assignments = arr(getAssignmentsBySubject(subjectId)).sort((a, b) => {
+    if (!a.dueUTC && !b.dueUTC) return b.createdAt - a.createdAt
+    if (!a.dueUTC) return 1
+    if (!b.dueUTC) return -1
+    return a.dueUTC - b.dueUTC
+  })
+
   // Fetch assignments on mount and when subjectId changes
   useEffect(() => {
     console.log('[AssignmentTab] Fetching assignments for subject:', subjectId)
@@ -88,6 +96,7 @@ export function AssignmentTab({ subjectId, canManage, userRole }: AssignmentTabP
   useEffect(() => {
     console.log('[AssignmentTab] Assignments count for subject', subjectId, ':', assignments.length)
   }, [assignments.length, subjectId])
+
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
     if (!file) return
@@ -183,13 +192,6 @@ export function AssignmentTab({ subjectId, canManage, userRole }: AssignmentTabP
       setUploadingPdf(false)
     }
   }
-
-  const assignments = arr(getAssignmentsBySubject(subjectId)).sort((a, b) => {
-    if (!a.dueUTC && !b.dueUTC) return b.createdAt - a.createdAt
-    if (!a.dueUTC) return 1
-    if (!b.dueUTC) return -1
-    return a.dueUTC - b.dueUTC
-  })
 
   // Get submissions for current user (if student) or all submissions (if lecturer)
   const getAssignmentSubmissions = (assignmentId: string) => {

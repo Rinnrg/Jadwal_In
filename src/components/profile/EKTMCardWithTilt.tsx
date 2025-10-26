@@ -16,14 +16,17 @@ interface EKTMCardWithTiltProps {
   fakultas: string
   programStudi: string
   avatarUrl?: string
+  userId?: string // For generating QR code for Google Auth users
 }
 
-export function EKTMCardWithTilt({ name, nim, fakultas, programStudi, avatarUrl }: EKTMCardWithTiltProps) {
+export function EKTMCardWithTilt({ name, nim, fakultas, programStudi, avatarUrl, userId }: EKTMCardWithTiltProps) {
   const cardRef = useRef<HTMLDivElement>(null)
   const [cardImageUrl, setCardImageUrl] = useState<string>("")
   const [isGenerating, setIsGenerating] = useState(true)
 
-  const qrData = `${typeof window !== 'undefined' ? window.location.origin : ''}/e-ktm/${nim}`
+  // Use userId for Google Auth users, NIM for regular users
+  const qrIdentifier = userId || nim
+  const qrData = `${typeof window !== 'undefined' ? window.location.origin : ''}/e-ktm/${qrIdentifier}`
 
   // Generate E-KTM card as image
   useEffect(() => {

@@ -13,6 +13,7 @@ interface EKTMDialogProps {
   fakultas: string
   programStudi: string
   avatarUrl?: string
+  userId?: string // For Google Auth users
 }
 
 export function EKTMDialog({
@@ -23,6 +24,7 @@ export function EKTMDialog({
   fakultas,
   programStudi,
   avatarUrl,
+  userId,
 }: EKTMDialogProps) {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -57,6 +59,7 @@ export function EKTMDialog({
               fakultas={fakultas}
               programStudi={programStudi}
               avatarUrl={avatarUrl}
+              userId={userId}
             />
           </div>
         </div>

@@ -19,15 +19,17 @@ interface EKTMCardProps {
   fakultas: string
   programStudi: string
   avatarUrl?: string
+  userId?: string // For generating QR code for Google Auth users
 }
 
-export function EKTMCard({ name, nim, fakultas, programStudi, avatarUrl }: EKTMCardProps) {
+export function EKTMCard({ name, nim, fakultas, programStudi, avatarUrl, userId }: EKTMCardProps) {
   const cardRef = useRef<HTMLDivElement>(null)
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const [isDownloading, setIsDownloading] = useState(false)
 
-  // Generate QR Code data - URL yang akan menampilkan E-KTM
-  const qrData = `${typeof window !== 'undefined' ? window.location.origin : ''}/e-ktm/${nim}`
+  // Generate QR Code data - use userId for Google Auth users, NIM for regular users
+  const qrIdentifier = userId || nim
+  const qrData = `${typeof window !== 'undefined' ? window.location.origin : ''}/e-ktm/${qrIdentifier}`
 
   // Function to load image from URL with better CORS handling
   const loadImage = async (url: string): Promise<HTMLImageElement> => {
