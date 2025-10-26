@@ -2,7 +2,7 @@
 
 import { useState, useRef } from "react"
 import { Button } from "@/components/ui/button"
-import { X, Download } from "lucide-react"
+import { Download } from "lucide-react"
 import { EKTMCardWithTilt } from "./EKTMCardWithTilt"
 
 interface EKTMFullViewProps {
@@ -293,19 +293,9 @@ export function EKTMFullView({
         }
       }}
     >
-      {/* Close Button - Fixed position */}
-      <Button
-        onClick={() => onOpenChange(false)}
-        variant="ghost"
-        size="icon"
-        className="fixed top-4 right-4 z-[101] text-white hover:bg-white/10 rounded-full h-10 w-10 bg-black/30 backdrop-blur-sm"
-      >
-        <X className="h-6 w-6" />
-      </Button>
-
       {/* Content - Scrollable */}
       <div 
-        className="flex flex-col items-center justify-start min-h-screen w-full overflow-y-auto p-4 sm:p-8 pt-20"
+        className="flex flex-col items-center justify-start min-h-screen w-full overflow-y-auto p-4 sm:p-8 pt-8"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Title - Hilangkan atau buat lebih subtle */}

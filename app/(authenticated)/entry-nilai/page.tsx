@@ -368,29 +368,36 @@ export default function EntryNilaiPage() {
                             <div
                               key={`${angkatan}-${kelas}`}
                               onClick={() => handleClassClick(angkatan, kelas)}
-                              className="relative cursor-pointer group"
+                              className="group relative bg-white dark:bg-gray-800 rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-300 cursor-pointer overflow-visible border border-gray-100 dark:border-gray-700 hover:border-blue-400 dark:hover:border-blue-500 will-change-transform hover:[transform:scale(1.05)] origin-center"
                             >
-                              {/* Floating Card Container */}
-                              <div className="relative transition-all duration-300 ease-out group-hover:-translate-y-2 group-active:scale-95">
-                                {/* Folder Icon and Label */}
-                                <div className="flex flex-col items-center space-y-2 p-4 rounded-xl bg-gradient-to-br from-background to-muted/30 border-2 border-muted group-hover:border-primary/30 group-hover:shadow-xl shadow-md transition-all duration-300">
-                                  <Folder className="w-16 h-16 md:w-20 md:h-20 text-primary group-hover:text-primary/80 transition-colors duration-300 drop-shadow-md" />
-                                  <div className="text-center space-y-1">
-                                    <p className="font-semibold text-sm md:text-base text-foreground group-hover:text-primary transition-colors duration-200">
-                                      Kelas {kelas}
-                                    </p>
-                                    <p className="text-xs md:text-sm text-muted-foreground">
-                                      {classSubjects.length} mata kuliah
-                                    </p>
-                                  </div>
+                              {/* Card Content */}
+                              <div className="p-6 flex flex-col items-center gap-4">
+                                {/* Folder Icon */}
+                                <div className="transition-transform group-hover:scale-110 group-hover:-translate-y-1">
+                                  <Folder 
+                                    size={1} 
+                                    color="#60A5FA" 
+                                    className=""
+                                    items={[]}
+                                  />
                                 </div>
-
-                                {/* Hover Effect Gradient */}
-                                <div className="absolute inset-0 bg-gradient-to-br from-blue-500/0 to-blue-600/0 group-hover:from-blue-500/5 group-hover:to-blue-600/10 transition-all duration-300 pointer-events-none rounded-xl" />
                                 
-                                {/* Click Ripple Effect */}
-                                <div className="absolute inset-0 bg-blue-400/20 opacity-0 group-active:opacity-100 transition-opacity duration-150 pointer-events-none rounded-xl" />
+                                {/* Class Info */}
+                                <div className="text-center space-y-1">
+                                  <h4 className="text-base md:text-lg font-bold text-foreground group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
+                                    Kelas {kelas}
+                                  </h4>
+                                  <p className="text-xs md:text-sm text-muted-foreground">
+                                    {classSubjects.length} mata kuliah
+                                  </p>
+                                </div>
                               </div>
+
+                              {/* Hover Effect Gradient */}
+                              <div className="absolute inset-0 bg-gradient-to-br from-blue-500/0 to-blue-600/0 group-hover:from-blue-500/5 group-hover:to-blue-600/10 transition-all duration-300 pointer-events-none" />
+                              
+                              {/* Click Ripple Effect */}
+                              <div className="absolute inset-0 bg-blue-400/20 opacity-0 group-active:opacity-100 transition-opacity duration-150 pointer-events-none" />
                             </div>
                           )
                         })}

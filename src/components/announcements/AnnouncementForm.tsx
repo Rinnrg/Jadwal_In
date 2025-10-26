@@ -404,8 +404,9 @@ export function AnnouncementForm({ announcement, onSuccess, onCancel }: Announce
                     : "hover:bg-muted/50 border-border"
                 }`}
                 onClick={(e) => {
-                  // Prevent double toggle if clicking on checkbox
-                  if ((e.target as HTMLElement).closest('button[role="checkbox"]')) {
+                  // Prevent double toggle if clicking on checkbox or label
+                  const target = e.target as HTMLElement
+                  if (target.closest('button[role="checkbox"]') || target.closest('label')) {
                     return
                   }
                   toggleTargetRole(role)
@@ -420,6 +421,7 @@ export function AnnouncementForm({ announcement, onSuccess, onCancel }: Announce
                 <Label
                   htmlFor={`role-${role}`}
                   className="font-normal text-sm flex-1 select-none cursor-pointer"
+                  onClick={(e) => e.stopPropagation()}
                 >
                   {role === "mahasiswa" ? "Mahasiswa" : role === "dosen" ? "Dosen" : "Kaprodi"}
                 </Label>

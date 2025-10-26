@@ -101,16 +101,11 @@ export function AnnouncementPopup() {
 
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
-      <DialogContent className="max-w-2xl max-h-[calc(100vh-4rem)] overflow-hidden flex flex-col">
-        <DialogHeader>
-          <div className="flex items-start justify-between gap-4">
-            <div className="flex items-center gap-2">
-              <Megaphone className="h-5 w-5 text-primary" />
-              <DialogTitle className="text-xl">{currentAnnouncement.title}</DialogTitle>
-            </div>
-            <Button variant="ghost" size="icon" onClick={handleClose}>
-              <X className="h-4 w-4" />
-            </Button>
+      <DialogContent className="max-w-2xl max-h-[85vh] overflow-hidden flex flex-col gap-0 p-0">
+        <DialogHeader className="px-6 pt-6 pb-4">
+          <div className="flex items-center gap-2">
+            <Megaphone className="h-5 w-5 text-primary" />
+            <DialogTitle className="text-xl">{currentAnnouncement.title}</DialogTitle>
           </div>
           <DialogDescription>
             {formatDistanceToNow(new Date(currentAnnouncement.createdAt), {
@@ -120,9 +115,9 @@ export function AnnouncementPopup() {
           </DialogDescription>
         </DialogHeader>
 
-        <Separator />
+        <Separator className="mx-6" />
 
-        <ScrollArea className="flex-1 pr-4">
+        <ScrollArea className="flex-1 px-6 py-4">
           <div className="space-y-4">
             {/* Image */}
             {currentAnnouncement.imageUrl && (
@@ -174,10 +169,10 @@ export function AnnouncementPopup() {
           </div>
         </ScrollArea>
 
-        <Separator />
+        <Separator className="mx-6" />
 
         {/* Navigation */}
-        <div className="flex items-center justify-between">
+        <div className="flex items-center justify-between px-6 py-4">
           <div className="text-sm text-muted-foreground">
             {currentIndex + 1} dari {unviewedAnnouncements.length} pengumuman
           </div>
