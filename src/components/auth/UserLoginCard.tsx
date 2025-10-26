@@ -82,20 +82,31 @@ export function UserLoginCard() {
       // Success state
       setButtonState('success')
       
-      // Show success animation immediately
-      console.log('Login successful, showing animation...')
-      setShowSuccessAnimation(true)
-      
-      // Set session in store
+      // Set session in store FIRST
       if (data.user) {
-        setSession({
+        const sessionData = {
           id: data.user.id,
           email: data.user.email,
           name: data.user.name,
           role: data.user.role,
           image: data.user.image,
-        })
+        }
+        
+        console.log('Setting session in store:', sessionData)
+        setSession(sessionData)
+        
+        // Force save to localStorage immediately
+        if (typeof window !== 'undefined') {
+          localStorage.setItem('jadwalin:session:v1', JSON.stringify({
+            state: { session: sessionData, isLoading: false, hasHydrated: true },
+            version: 0
+          }))
+        }
       }
+      
+      // Show success animation
+      console.log('Login successful, showing animation...')
+      setShowSuccessAnimation(true)
 
       // Wait for animation to play before redirect
       setTimeout(() => {

@@ -21,18 +21,12 @@ const protectedRoutes = [
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl
   
-  // Check both types of authentication
-  const manualSessionCookie = request.cookies.get("jadwalin-auth")
-  const hasManualSession = manualSessionCookie?.value === "true"
+  // Check for session_token (used by both manual login and Google OAuth)
+  const sessionToken = request.cookies.get("session_token")
+  const isAuthenticated = !!sessionToken?.value
   
-  // Check Google OAuth session
-  const googleSessionCookie = request.cookies.get("session_token")
-  const hasGoogleSession = !!googleSessionCookie?.value
-  
-  const isAuthenticated = hasManualSession || hasGoogleSession
-  
-  // Debug log (remove in production)
-  console.log(`[Middleware] ${pathname} - Auth: ${isAuthenticated} (manual: ${hasManualSession}, google: ${hasGoogleSession})`)
+  // Debug log
+  console.log(`[Middleware] ${pathname} - Auth: ${isAuthenticated}, Token: ${sessionToken?.value ? 'exists' : 'none'}`)
   
   // If user is on auth path, handle authentication logic
   if (pathname === "/auth") {
@@ -55,7 +49,9 @@ export async function middleware(request: NextRequest) {
   
   // If user is trying to access protected route without authentication, redirect to login
   if (protectedRoutes.some(route => pathname.startsWith(route)) && !isAuthenticated) {
-    return NextResponse.redirect(new URL("/login", request.url))
+    const loginUrl = new URL("/login", request.url)
+    loginUrl.searchParams.set("callbackUrl", pathname)
+    return NextResponse.redirect(loginUrl)
   }
   
   return NextResponse.next()

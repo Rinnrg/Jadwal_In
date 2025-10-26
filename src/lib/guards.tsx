@@ -26,8 +26,9 @@ export function HydrationGuard({ children }: { children: React.ReactNode }) {
 export function Protected({ children }: { children: React.ReactNode }) {
   const { session, setSession, hasHydrated } = useSessionStore()
   const [hasMounted, setHasMounted] = useState(false)
-  const [isLoadingSession, setIsLoadingSession] = useState(false)
+  const [isCheckingSession, setIsCheckingSession] = useState(true)
   const fetchingRef = useRef(false)
+  const router = useRouter()
 
   useEffect(() => {
     setHasMounted(true)
@@ -36,17 +37,21 @@ export function Protected({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     if (!hasMounted || !hasHydrated) return
     if (fetchingRef.current) return // Already fetching
-    if (session) return // Already have session
+
+    // If we already have a session from localStorage, use it
+    if (session) {
+      console.log('[Protected] Session found in store:', session.email)
+      setIsCheckingSession(false)
+      return
+    }
 
     console.log('[Protected] No session in store, fetching from API...')
     fetchingRef.current = true
-    setIsLoadingSession(true)
     
-    // Always try to fetch session from API
-    // This works for both manual and Google auth (httpOnly cookie)
+    // Try to fetch session from API (for httpOnly cookies)
     fetch('/api/auth/session', { 
       cache: 'no-store',
-      credentials: 'include', // Important! Include httpOnly cookies
+      credentials: 'include',
     })
       .then(res => {
         console.log('[Protected] API response status:', res.status)
@@ -56,7 +61,7 @@ export function Protected({ children }: { children: React.ReactNode }) {
       .then(data => {
         console.log('[Protected] API response data:', data)
         if (data.user) {
-          console.log('[Protected] Session found! Email:', data.user.email)
+          console.log('[Protected] Session found from API! Email:', data.user.email)
           
           const newSession = {
             id: data.user.id,
@@ -66,31 +71,32 @@ export function Protected({ children }: { children: React.ReactNode }) {
             image: data.user.image,
           }
           
-          console.log('[Protected] Calling setSession with:', newSession)
           setSession(newSession)
-          
-          // Verify after set
-          setTimeout(() => {
-            console.log('[Protected] Verification - session should be set')
-          }, 50)
+          setIsCheckingSession(false)
         } else {
-          console.log('[Protected] No valid session from API')
+          console.log('[Protected] No session from API, redirecting to login...')
+          setIsCheckingSession(false)
+          router.push('/login')
         }
       })
       .catch((error) => {
         console.error('[Protected] Failed to fetch session:', error)
+        setIsCheckingSession(false)
+        router.push('/login')
       })
-      .finally(() => {
-        setIsLoadingSession(false)
-      })
-  }, [hasMounted, hasHydrated, session, setSession])
+  }, [hasMounted, hasHydrated, session, setSession, router])
 
-  // Show loading during hydration OR session fetch
-  if (!hasMounted || !hasHydrated || isLoadingSession) {
+  // Show loading during hydration OR session check
+  if (!hasMounted || !hasHydrated || isCheckingSession) {
     return <PageLoading message="Memuat sesi..." />
   }
 
-  // Render children immediately, let dashboard handle its own loading
+  // If no session after check, don't render (router.push will handle redirect)
+  if (!session) {
+    return <PageLoading message="Mengalihkan ke login..." />
+  }
+
+  // Render children only when we have a valid session
   return <>{children}</>
 }
 
