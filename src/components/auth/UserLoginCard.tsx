@@ -10,6 +10,7 @@ import { useSearchParams, useRouter } from 'next/navigation'
 import { Loader2, Mail, Lock, Eye, EyeOff, CheckCircle2, XCircle } from 'lucide-react'
 import Image from 'next/image'
 import { useSessionStore } from '@/stores/session.store'
+import { SuccessAnimation } from './SuccessAnimation'
 
 // Google Icon SVG component
 const GoogleIcon = () => (
@@ -41,6 +42,7 @@ export function UserLoginCard() {
   const [showPassword, setShowPassword] = useState(false)
   const [loginError, setLoginError] = useState('')
   const [buttonState, setButtonState] = useState<'idle' | 'loading' | 'success' | 'error'>('idle')
+  const [showSuccessAnimation, setShowSuccessAnimation] = useState(false)
   
   const searchParams = useSearchParams()
   const router = useRouter()
@@ -91,10 +93,13 @@ export function UserLoginCard() {
         })
       }
 
-      // Wait a bit to show success animation before redirect
+      // Show success animation
+      setShowSuccessAnimation(true)
+
+      // Wait for animation to complete before redirect
       setTimeout(() => {
         window.location.href = callbackUrl
-      }, 800)
+      }, 3000) // Increased time to show full animation
     } catch (error) {
       console.error('Login error:', error)
       setLoginError('Gagal login. Silakan coba lagi.')
@@ -129,8 +134,18 @@ export function UserLoginCard() {
   }
 
   const errorMessage = getErrorMessage(error) || loginError
+  
   return (
-    <Card className="w-full max-w-[440px] mx-auto border-0 shadow-2xl bg-card/95 backdrop-blur-xl animate-fade-in overflow-hidden">
+    <>
+      {showSuccessAnimation && (
+        <SuccessAnimation 
+          onComplete={() => {
+            window.location.href = callbackUrl
+          }}
+        />
+      )}
+      
+      <Card className="w-full max-w-[440px] mx-auto border-0 shadow-2xl bg-card/95 backdrop-blur-xl animate-fade-in overflow-hidden">
       <CardContent className="p-5 sm:p-6 space-y-4">
         {/* Logo and Title Section */}
         <div className="text-center space-y-2 animate-slide-up">
@@ -293,5 +308,6 @@ export function UserLoginCard() {
         </div>
       </CardContent>
     </Card>
+    </>
   )
 }

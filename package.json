@@ -21,6 +21,7 @@
   "dependencies": {
     "@googleapis/oauth2": "^4.0.0",
     "@hookform/resolvers": "latest",
+    "@lottiefiles/dotlottie-react": "^0.17.5",
     "@prisma/client": "^6.17.1",
     "@radix-ui/react-accordion": "1.2.2",
     "@radix-ui/react-alert-dialog": "1.1.4",
