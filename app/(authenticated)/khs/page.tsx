@@ -21,7 +21,7 @@ import { showSuccess, showError } from "@/lib/alerts"
 export default function KhsPage() {
   const { session } = useSessionStore()
   const { subjects, fetchSubjects } = useSubjectsStore()
-  const { getGradesByUser, calculateGPA, calculateSemesterGPA, grades: allGrades, fetchGrades } = useGradesStore()
+  const { getGradesByUser, calculateGPA, calculateSemesterGPA, grades: allGrades } = useGradesStore()
   const { fetchKrsItems, krsItems } = useKrsStore()
   const { getProfile } = useProfileStore()
   const { markAsRead } = useNotificationStore()
@@ -42,14 +42,13 @@ export default function KhsPage() {
     setForceUpdate(prev => prev + 1)
   }, [subjects.length, allGrades.length, krsItems.length])
 
-  // Fetch subjects, grades, and KRS on mount
+  // Fetch subjects and KRS on mount
   useEffect(() => {
     fetchSubjects()
     if (session?.id) {
-      fetchGrades(session.id)
       fetchKrsItems(session.id)
     }
-  }, [fetchSubjects, fetchGrades, fetchKrsItems, session?.id])
+  }, [fetchSubjects, fetchKrsItems, session?.id])
 
   // Mark KHS notification as read when user opens this page
   useEffect(() => {
