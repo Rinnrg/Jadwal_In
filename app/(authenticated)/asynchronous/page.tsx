@@ -25,7 +25,6 @@ export default function AsynchronousPage() {
   const [selectedSubject, setSelectedSubject] = useState<Subject | null>(null)
   const [selectedClass, setSelectedClass] = useState<string | null>(null)
   const [selectedAngkatan, setSelectedAngkatan] = useState<string | null>(null)
-  const [hoveredAngkatan, setHoveredAngkatan] = useState<string | null>(null)
   
   // Force re-render trigger for reactive updates
   const [, setForceUpdate] = useState(0)
@@ -136,7 +135,6 @@ export default function AsynchronousPage() {
   const handleClassClick = (angkatan: string, className: string) => {
     setSelectedAngkatan(angkatan)
     setSelectedClass(className)
-    setHoveredAngkatan(null) // Close floating menu when class is selected
   }
 
   const handleBackToClasses = () => {
@@ -236,73 +234,65 @@ export default function AsynchronousPage() {
           {/* For Dosen/Kaprodi: Show angkatan grouping with Folder component */}
           {canManage && !selectedClass ? (
             <div className="px-4 md:px-6 lg:px-8 mt-12">
-              <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 gap-6 md:gap-8">
+              <div className="space-y-8">
                 {Object.entries(subjectsByAngkatan)
                   .sort(([a], [b]) => b.localeCompare(a)) // Sort descending (newest first)
                   .map(([angkatan, classes]) => {
                     const totalClasses = Object.keys(classes).length
-                    const isHovered = hoveredAngkatan === angkatan
                     
                     return (
-                      <div 
-                        key={angkatan} 
-                        className="relative flex flex-col items-center gap-2"
-                        onMouseEnter={() => setHoveredAngkatan(angkatan)}
-                        onMouseLeave={() => setHoveredAngkatan(null)}
-                      >
-                        {/* Main Folder */}
-                        <div className="cursor-pointer transition-transform hover:scale-110 relative">
-                          <Folder 
-                            size={1} 
-                            color="#60A5FA" 
-                            className=""
-                            items={[]}
-                          />
-                        </div>
-                        
-                        {/* Folder Label */}
-                        <div className="text-center space-y-0.5">
-                          <h3 className="text-xs md:text-sm font-bold text-foreground">
-                            Angkatan {angkatan}
+                      <div key={angkatan} className="space-y-4">
+                        {/* Angkatan Header */}
+                        <div className="text-center">
+                          <h3 className="text-lg md:text-xl font-bold text-foreground mb-1">
+                            Pilih Kelas - Angkatan {angkatan}
                           </h3>
-                          <p className="text-[10px] text-muted-foreground">
-                            {totalClasses} kelas
+                          <p className="text-sm text-muted-foreground">
+                            {totalClasses} kelas tersedia
                           </p>
                         </div>
 
-                        {/* Floating Subfolders - Show on hover */}
-                        {isHovered && (
-                          <div className="absolute top-full left-1/2 -translate-x-1/2 mt-2 z-50 animate-in fade-in slide-in-from-top-2 duration-200">
-                            <div className="flex flex-col gap-2 p-2 bg-background/95 backdrop-blur-sm border rounded-lg shadow-xl min-w-[120px]">
-                              {Object.entries(classes)
-                                .sort(([a], [b]) => a.localeCompare(b))
-                                .map(([kelas, classSubjects]) => (
-                                  <div
-                                    key={kelas}
-                                    onClick={() => handleClassClick(angkatan, kelas)}
-                                    className="flex flex-col items-center gap-1 p-2 rounded-md hover:bg-blue-50 dark:hover:bg-blue-950/30 cursor-pointer transition-all group"
-                                  >
-                                    <div className="transition-transform group-hover:scale-110">
-                                      <Folder 
-                                        size={0.6} 
-                                        color="#60A5FA" 
-                                        className=""
-                                        items={[]}
-                                      />
-                                    </div>
-                                    <div className="text-center">
-                                      <p className="text-xs font-semibold text-foreground group-hover:text-blue-600 dark:group-hover:text-blue-400">
-                                        Kelas {kelas}
-                                      </p>
-                                      <p className="text-[10px] text-muted-foreground">
-                                        {classSubjects.length} mata kuliah
-                                      </p>
-                                    </div>
+                        {/* Floating Cards Grid */}
+                        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4 md:gap-6">
+                          {Object.entries(classes)
+                            .sort(([a], [b]) => a.localeCompare(b))
+                            .map(([kelas, classSubjects]) => (
+                              <div
+                                key={kelas}
+                                onClick={() => handleClassClick(angkatan, kelas)}
+                                className="group relative bg-white dark:bg-gray-800 rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-300 cursor-pointer overflow-hidden border border-gray-100 dark:border-gray-700 hover:border-blue-400 dark:hover:border-blue-500 hover:scale-105"
+                              >
+                                {/* Card Content */}
+                                <div className="p-6 flex flex-col items-center gap-4">
+                                  {/* Folder Icon */}
+                                  <div className="transition-transform group-hover:scale-110 group-hover:-translate-y-1">
+                                    <Folder 
+                                      size={1} 
+                                      color="#60A5FA" 
+                                      className=""
+                                      items={[]}
+                                    />
                                   </div>
-                                ))}
-                            </div>
-                          </div>
-                        )}
+                                  
+                                  {/* Class Info */}
+                                  <div className="text-center space-y-1">
+                                    <h4 className="text-base md:text-lg font-bold text-foreground group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
+                                      Kelas {kelas}
+                                    </h4>
+                                    <p className="text-xs md:text-sm text-muted-foreground">
+                                      {classSubjects.length} mata kuliah
+                                    </p>
+                                  </div>
+                                </div>
+
+                                {/* Hover Effect Gradient */}
+                                <div className="absolute inset-0 bg-gradient-to-br from-blue-500/0 to-blue-600/0 group-hover:from-blue-500/5 group-hover:to-blue-600/10 transition-all duration-300 pointer-events-none" />
+                                
+                                {/* Click Ripple Effect */}
+                                <div className="absolute inset-0 bg-blue-400/20 opacity-0 group-active:opacity-100 transition-opacity duration-150 pointer-events-none" />
+                              </div>
+                            ))}
+                        </div>
                       </div>
                     )
                   })}

@@ -43,30 +43,23 @@ export function UserMenu() {
 
     if (confirmed) {
       try {
-        // 1. Call logout API to clear server-side cookies
-        const response = await fetch('/api/auth/logout', {
+        // 1. Clear client-side session FIRST
+        logout()
+        
+        // 2. Call logout API in background (don't wait for response)
+        fetch('/api/auth/logout', {
           method: 'POST',
           credentials: 'include'
+        }).catch(err => {
+          // Silently ignore errors - user is already logged out on client
+          console.log('Logout API call failed (ignored):', err)
         })
         
-        // Don't throw error if logout API fails - just log it
-        if (!response.ok) {
-          console.warn('Logout API returned non-OK status, but continuing with logout')
-        }
-        
-        // 2. Clear client-side session
-        logout()
-        
-        // 3. Small delay to ensure state is cleared
-        await new Promise(resolve => setTimeout(resolve, 100))
-        
-        // 4. Redirect to login
+        // 3. Immediate redirect to login
         window.location.href = "/login"
       } catch (error) {
-        console.error("Logout error:", error)
-        // Even if API fails, clear client-side and redirect
-        logout()
-        await new Promise(resolve => setTimeout(resolve, 100))
+        // If anything fails, still redirect to login
+        console.log("Logout flow error (ignored):", error)
         window.location.href = "/login"
       }
     }

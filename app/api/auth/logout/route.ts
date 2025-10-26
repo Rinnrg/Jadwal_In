@@ -40,12 +40,12 @@ export async function POST(request: NextRequest) {
 
     return response
   } catch (error) {
-    console.error('Logout error:', error)
+    console.log('Logout error (returning success anyway):', error)
     
-    // Even if there's an error, try to clear cookies
+    // Always return success response to prevent error page
     const response = NextResponse.json(
-      { error: 'Terjadi kesalahan saat logout' },
-      { status: 500 }
+      { success: true, message: 'Logout berhasil' },
+      { status: 200 }
     )
     
     const cookieOptions = {

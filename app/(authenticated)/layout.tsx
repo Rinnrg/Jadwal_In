@@ -19,7 +19,7 @@ function LayoutContent({ children }: { children: React.ReactNode }) {
       <NotificationManager />
       <FloatingNotifications />
       <AnnouncementPopup />
-      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 transition-colors duration-300 overflow-x-hidden w-full">
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 transition-colors duration-300 overflow-x-hidden w-full animate-in fade-in duration-700">
         <Topbar />
         <div className="flex pt-16 overflow-x-hidden w-full">
           <Sidebar />

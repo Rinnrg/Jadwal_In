@@ -12,6 +12,7 @@ export function SuccessAnimation({ onComplete }: SuccessAnimationProps) {
   const dotLottieRef = React.useRef<any>(null)
   const [animationData, setAnimationData] = useState<any>(getCachedAnimation('/lottie/success.json'))
   const [isReady, setIsReady] = useState(!!getCachedAnimation('/lottie/success.json'))
+  const [isFadingOut, setIsFadingOut] = useState(false)
 
   useEffect(() => {
     // Load animation jika belum ada di cache
@@ -28,9 +29,15 @@ export function SuccessAnimation({ onComplete }: SuccessAnimationProps) {
   useEffect(() => {
     if (dotLottieRef.current && isReady) {
       const handleComplete = () => {
-        if (onComplete) {
-          onComplete()
-        }
+        // Start fade out animation
+        setIsFadingOut(true)
+        
+        // Wait for fade out, then call onComplete
+        setTimeout(() => {
+          if (onComplete) {
+            onComplete()
+          }
+        }, 500) // Fade out duration
       }
 
       dotLottieRef.current.addEventListener('complete', handleComplete)
@@ -42,17 +49,28 @@ export function SuccessAnimation({ onComplete }: SuccessAnimationProps) {
   }, [onComplete, isReady])
 
   return (
-    <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/50 backdrop-blur-md animate-in fade-in duration-200">
-      <div className="relative animate-in zoom-in duration-300">
+    <div 
+      className={`fixed inset-0 z-[9999] flex items-center justify-center bg-black/50 backdrop-blur-md transition-opacity duration-500 ${
+        isFadingOut ? 'opacity-0' : 'opacity-100 animate-in fade-in'
+      }`}
+    >
+      <div className={`relative transition-transform duration-500 ${
+        isFadingOut ? 'scale-95' : 'animate-in zoom-in duration-300'
+      }`}>
         {isReady && animationData ? (
           <DotLottieReact
             data={animationData}
             autoplay
             loop={false}
+            speed={1.3}
             dotLottieRefCallback={(dotLottie) => {
               dotLottieRef.current = dotLottie
             }}
             style={{ width: '400px', height: '400px' }}
+            autoResizeCanvas={true}
+            renderConfig={{
+              devicePixelRatio: 2
+            }}
           />
         ) : (
           // Fallback sederhana saat loading - instant feedback

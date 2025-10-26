@@ -101,7 +101,7 @@ export function UserLoginCard() {
       setTimeout(() => {
         console.log('Redirecting to:', callbackUrl)
         window.location.href = callbackUrl
-      }, 3500) // Wait for full animation to complete
+      }, 4000) // Wait for full animation to complete + smooth transition
     } catch (error) {
       console.error('Login error:', error)
       setLoginError('Gagal login. Silakan coba lagi.')
