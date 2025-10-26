@@ -340,10 +340,24 @@ export function SubjectTable({ subjects: subjectsProp, onEdit }: SubjectTablePro
           showError(`Gagal membuat penawaran untuk "${subject.nama}"`)
         }
       } else {
-        // Toggle offering status
+        // Check current status
         const { updateOffering } = useOfferingsStore.getState()
         const currentStatus = offerings[0].status
         const newStatus = currentStatus === "buka" ? "tutup" : "buka"
+        
+        // If trying to close (buka → tutup), check if students have enrolled
+        if (newStatus === "tutup") {
+          const krsItems = useKrsStore.getState().krsItems.filter(
+            (krs: any) => krs.subjectId === subject.id
+          )
+          
+          if (krsItems.length > 0) {
+            showError(
+              `Tidak bisa menutup mata kuliah "${subject.nama}"!\n\n${krsItems.length} mahasiswa sudah mengambil mata kuliah ini.\n\nGunakan tombol "Force Tutup" untuk menutup paksa dan menghapus dari KRS mahasiswa.`
+            )
+            return
+          }
+        }
         
         try {
           // Update all offerings for this subject
@@ -487,11 +501,11 @@ export function SubjectTable({ subjects: subjectsProp, onEdit }: SubjectTablePro
     }
   }
 
-  const handleForceOffSubject = async (subject: any) => {
+  const handleForceCloseSubject = async (subject: any) => {
     const confirmed = await confirmAction(
-      `Force Off Mata Kuliah`,
-      `Yakin ingin Force Off mata kuliah "${subject.nama}"?\n\nSemua mahasiswa yang sudah mengambil akan dihapus dari KRS mereka.`,
-      "Ya, Force Off",
+      `Force Tutup Mata Kuliah`,
+      `Yakin ingin Force Tutup mata kuliah "${subject.nama}"?\n\nSemua mahasiswa yang sudah mengambil akan dihapus dari KRS mereka.`,
+      "Ya, Force Tutup",
       "Batal",
       "destructive"
     )
@@ -529,13 +543,13 @@ export function SubjectTable({ subjects: subjectsProp, onEdit }: SubjectTablePro
         triggerNotification(
           "krs",
           String(userId),
-          `Mata kuliah "${subject.nama}" telah ditutup paksa (force off). KRS Anda telah diperbarui.`,
+          `Mata kuliah "${subject.nama}" telah ditutup paksa. KRS Anda telah diperbarui.`,
           1
         )
       }
 
       showSuccess(
-        `✅ "${subject.nama}" berhasil di-force off!\n\n${krsItems.length} mahasiswa telah dihapus dari KRS.`
+        `✅ "${subject.nama}" berhasil ditutup paksa!\n\n${krsItems.length} mahasiswa telah dihapus dari KRS.`
       )
 
       // Force refresh all data
@@ -546,7 +560,7 @@ export function SubjectTable({ subjects: subjectsProp, onEdit }: SubjectTablePro
         fetchKrsItems(undefined, undefined, true)
       }, 100)
     } catch (error) {
-      showError("Gagal force off mata kuliah")
+      showError("Gagal force tutup mata kuliah")
     }
   }
 
@@ -785,17 +799,15 @@ export function SubjectTable({ subjects: subjectsProp, onEdit }: SubjectTablePro
                                   <Edit className="h-4 w-4 mr-1.5" />
                                   Edit
                                 </Button>
-                                {getOfferingStatus(subject.id) === "buka" && (
-                                  <Button
-                                    variant="ghost"
-                                    size="sm"
-                                    className="h-8 px-3 cursor-pointer text-orange-600 hover:bg-orange-50 hover:text-orange-700 dark:text-orange-400 dark:hover:bg-orange-900/20 dark:hover:text-orange-300 transition-colors duration-200"
-                                    onClick={() => handleForceOffSubject(subject)}
-                                  >
-                                    <AlertTriangle className="h-4 w-4 mr-1.5" />
-                                    Force Off
-                                  </Button>
-                                )}
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  className="h-8 px-3 cursor-pointer text-orange-600 hover:bg-orange-50 hover:text-orange-700 dark:text-orange-400 dark:hover:bg-orange-900/20 dark:hover:text-orange-300 transition-colors duration-200"
+                                  onClick={() => handleForceCloseSubject(subject)}
+                                >
+                                  <AlertTriangle className="h-4 w-4 mr-1.5" />
+                                  Force Tutup
+                                </Button>
                                 <Button
                                   variant="ghost"
                                   size="sm"
@@ -882,17 +894,15 @@ export function SubjectTable({ subjects: subjectsProp, onEdit }: SubjectTablePro
                                 Edit
                               </Button>
                             )}
-                            {getOfferingStatus(subject.id) === "buka" && (
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                className="h-7 text-[10px] px-2 text-orange-600 hover:bg-orange-50 border-orange-300"
-                                onClick={() => handleForceOffSubject(subject)}
-                              >
-                                <AlertTriangle className="h-3 w-3 mr-1" />
-                                Force Off
-                              </Button>
-                            )}
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              className="h-7 text-[10px] px-2 text-orange-600 hover:bg-orange-50 border-orange-300"
+                              onClick={() => handleForceCloseSubject(subject)}
+                            >
+                              <AlertTriangle className="h-3 w-3 mr-1" />
+                              Force Tutup
+                            </Button>
                             <Button
                               variant="ghost"
                               size="sm"
