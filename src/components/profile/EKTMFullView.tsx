@@ -311,11 +311,11 @@ export function EKTMFullView({
         {/* Title - Hilangkan atau buat lebih subtle */}
         
         {/* E-KTM Card - Floating bebas */}
-        <div className="w-full max-w-lg mb-8">
-          <EKTMCardWithTilt
-        {/* E-KTM Card - Floating bebas */}
         <div className="w-full max-w-lg mb-8 mt-12">
-          <EKTMCardWithTilttas}
+          <EKTMCardWithTilt
+            name={name}
+            nim={nim}
+            fakultas={fakultas}
             programStudi={programStudi}
             avatarUrl={avatarUrl}
           />
