@@ -1,16 +1,24 @@
 import Swal from "./sweetalert-config"
 
 // Confirmation dialog
-export async function confirmAction(title: string, text: string, confirmText = "Ya, Lanjutkan"): Promise<boolean> {
+export async function confirmAction(
+  title: string, 
+  text: string, 
+  confirmText = "Ya, Lanjutkan",
+  cancelText = "Batal",
+  variant: "default" | "destructive" = "default"
+): Promise<boolean> {
+  const confirmColor = variant === "destructive" ? "#ef4444" : "#3b82f6"
+  
   const result = await Swal.fire({
     title,
     text,
     icon: "warning",
     showCancelButton: true,
-    confirmButtonColor: "#ef4444",
+    confirmButtonColor: confirmColor,
     cancelButtonColor: "#6b7280",
     confirmButtonText: confirmText,
-    cancelButtonText: "Batal",
+    cancelButtonText: cancelText,
   })
 
   return result.isConfirmed
