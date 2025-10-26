@@ -129,9 +129,10 @@ export function SubjectTable({ subjects: subjectsProp, onEdit }: SubjectTablePro
             activated++
           }
           
-          // Step 2: Create offering if doesn't exist
+          // Step 2: Create or update offering
           const offerings = getOfferingsBySubject(subject.id)
           if (offerings.length === 0) {
+            // Create new offering
             await addOffering({
               subjectId: subject.id,
               angkatan: subject.angkatan,
@@ -142,6 +143,14 @@ export function SubjectTable({ subjects: subjectsProp, onEdit }: SubjectTablePro
               capacity: 40,
             })
             offeringsCreated++
+          } else {
+            // Update existing offerings to "buka"
+            const { updateOffering } = useOfferingsStore.getState()
+            for (const offering of offerings) {
+              if (offering.status !== 'buka') {
+                await updateOffering(offering.id, { status: 'buka' })
+              }
+            }
           }
         } catch (error) {
           console.error(`[AddAllToKRS] Error processing "${subject.nama}":`, error)
@@ -171,6 +180,62 @@ export function SubjectTable({ subjects: subjectsProp, onEdit }: SubjectTablePro
     }
   }
 
+  const handleToggleOfferingStatus = async (subject: Subject) => {
+    try {
+      const offerings = getOfferingsBySubject(subject.id)
+      
+      if (offerings.length === 0) {
+        // No offering exists - create one with "buka" status
+        const { addOffering } = useOfferingsStore.getState()
+        const currentTerm = getCurrentTerm()
+        
+        try {
+          await addOffering({
+            subjectId: subject.id,
+            angkatan: subject.angkatan,
+            kelas: subject.kelas || "A",
+            semester: subject.semester,
+            term: currentTerm,
+            status: "buka",
+            capacity: 40,
+          })
+          
+          showSuccess(
+            `✅ Penawaran "${subject.nama}" dibuka!\n\nMahasiswa sekarang bisa mengambil mata kuliah ini di KRS.`
+          )
+        } catch (error) {
+          showError(`Gagal membuat penawaran untuk "${subject.nama}"`)
+        }
+      } else {
+        // Toggle offering status
+        const { updateOffering } = useOfferingsStore.getState()
+        const currentStatus = offerings[0].status
+        const newStatus = currentStatus === "buka" ? "tutup" : "buka"
+        
+        try {
+          // Update all offerings for this subject
+          for (const offering of offerings) {
+            await updateOffering(offering.id, { status: newStatus })
+          }
+          
+          showSuccess(
+            newStatus === "buka"
+              ? `✅ Penawaran "${subject.nama}" dibuka!\n\nMahasiswa sekarang bisa mengambil mata kuliah ini di KRS.`
+              : `❌ Penawaran "${subject.nama}" ditutup.\n\nMahasiswa tidak bisa mengambil mata kuliah ini untuk sementara.`
+          )
+        } catch (error) {
+          showError(`Gagal mengubah status penawaran "${subject.nama}"`)
+        }
+      }
+      
+      // Force refresh offerings
+      const { fetchOfferings } = useOfferingsStore.getState()
+      setTimeout(() => fetchOfferings(undefined, true), 100)
+    } catch (error) {
+      showError("Gagal mengubah status penawaran")
+    }
+  }
+
   const handleToggleSubjectStatus = async (subject: Subject) => {
     try {
       const newStatus = subject.status === "aktif" ? "arsip" : "aktif"
@@ -180,7 +245,7 @@ export function SubjectTable({ subjects: subjectsProp, onEdit }: SubjectTablePro
       
       if (newStatus === "aktif") {
         // When activating a subject, ALWAYS ensure it has an offering
-        const { addOffering } = useOfferingsStore.getState()
+        const { addOffering, updateOffering } = useOfferingsStore.getState()
         const currentTerm = getCurrentTerm()
         
         if (offerings.length === 0) {
@@ -203,10 +268,21 @@ export function SubjectTable({ subjects: subjectsProp, onEdit }: SubjectTablePro
             showError(`Mata kuliah "${subject.nama}" diaktifkan, tapi gagal membuat penawaran.\n\nSilakan gunakan tombol "Tambahkan Semua MK Kelas ${subject.kelas}" untuk membuat penawaran.`)
           }
         } else {
-          // Offering already exists
-          showSuccess(
-            `✅ "${subject.nama}" diaktifkan!\n\nMata kuliah sekarang tersedia di halaman KRS.`
-          )
+          // Offering exists - make sure it's "buka"
+          try {
+            for (const offering of offerings) {
+              if (offering.status !== 'buka') {
+                await updateOffering(offering.id, { status: 'buka' })
+              }
+            }
+            showSuccess(
+              `✅ "${subject.nama}" diaktifkan!\n\nMata kuliah sekarang tersedia di halaman KRS.`
+            )
+          } catch (error) {
+            showSuccess(
+              `✅ "${subject.nama}" diaktifkan!\n\nMata kuliah sekarang tersedia di halaman KRS.`
+            )
+          }
         }
       } else {
         // Archiving subject
@@ -238,6 +314,17 @@ export function SubjectTable({ subjects: subjectsProp, onEdit }: SubjectTablePro
     if (openCount === allOfferings.length) return "buka"
     if (openCount === 0) return "tutup"
     return "mixed"
+  }
+
+  const getOfferingStatus = (subjectId: string): "buka" | "tutup" => {
+    const offerings = getOfferingsBySubject(subjectId)
+    
+    // If no offerings exist, consider it "tutup"
+    if (!offerings || offerings.length === 0) return "tutup"
+    
+    // Check if any offering is open
+    const hasOpenOffering = offerings.some((o) => o.status === "buka")
+    return hasOpenOffering ? "buka" : "tutup"
   }
 
   const renderPengampuChips = (pengampuIds: string[]) => {
@@ -358,7 +445,7 @@ export function SubjectTable({ subjects: subjectsProp, onEdit }: SubjectTablePro
                           <TableHead>Nama</TableHead>
                           <TableHead>SKS</TableHead>
                           <TableHead>Pengampu</TableHead>
-                          <TableHead>Status</TableHead>
+                          <TableHead>Penawaran</TableHead>
                           <TableHead className="w-[50px]"></TableHead>
                         </TableRow>
                       </TableHeader>
@@ -371,7 +458,12 @@ export function SubjectTable({ subjects: subjectsProp, onEdit }: SubjectTablePro
                             <TableCell className="font-medium">{subject.kode}</TableCell>
                             <TableCell>
                               <div>
-                                <p className="font-medium">{subject.nama}</p>
+                                <div className="flex items-center gap-2">
+                                  <p className="font-medium">{subject.nama}</p>
+                                  <Badge variant={subject.status === "aktif" ? "default" : "secondary"} className="text-xs">
+                                    {subject.status === "aktif" ? "Aktif" : "Arsip"}
+                                  </Badge>
+                                </div>
                                 {subject.prodi && <p className="text-sm text-muted-foreground">{subject.prodi}</p>}
                               </div>
                             </TableCell>
@@ -380,11 +472,11 @@ export function SubjectTable({ subjects: subjectsProp, onEdit }: SubjectTablePro
                             <TableCell>
                               <div className="flex items-center gap-2">
                                 <Switch
-                                  checked={subject.status === "aktif"}
-                                  onCheckedChange={() => handleToggleSubjectStatus(subject)}
+                                  checked={getOfferingStatus(subject.id) === "buka"}
+                                  onCheckedChange={() => handleToggleOfferingStatus(subject)}
                                 />
                                 <span className="text-sm">
-                                  {subject.status === "aktif" ? "Aktif" : "Arsip"}
+                                  {getOfferingStatus(subject.id) === "buka" ? "Buka" : "Tutup"}
                                 </span>
                               </div>
                             </TableCell>
@@ -455,12 +547,12 @@ export function SubjectTable({ subjects: subjectsProp, onEdit }: SubjectTablePro
                           <div className="flex items-center gap-1.5 pt-1.5 border-t">
                             <div className="flex items-center gap-1.5 flex-1">
                               <Switch
-                                checked={subject.status === "aktif"}
-                                onCheckedChange={() => handleToggleSubjectStatus(subject)}
+                                checked={getOfferingStatus(subject.id) === "buka"}
+                                onCheckedChange={() => handleToggleOfferingStatus(subject)}
                                 className="scale-90"
                               />
                               <span className="text-[10px] text-muted-foreground">
-                                {subject.status === "aktif" ? "Aktif" : "Arsip"}
+                                {getOfferingStatus(subject.id) === "buka" ? "Buka" : "Tutup"}
                               </span>
                             </div>
                             {onEdit && (

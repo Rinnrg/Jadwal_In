@@ -169,13 +169,9 @@ export async function POST(request: NextRequest) {
 
       console.log('[KRS API] Offering found:', { id: offering.id, status: offering.status, capacity: offering.capacity })
 
-      if (offering.status !== 'buka') {
-        console.log('[KRS API] Offering not open:', offering.status)
-        return NextResponse.json(
-          { error: `Penawaran sudah ditutup (status: ${offering.status})` },
-          { status: 400 }
-        )
-      }
+      // REMOVED: Offering status check - we only care about subject.status
+      // Offering status is for admin control only, not for student enrollment
+      // Students can enroll as long as subject.status === 'aktif'
 
       // Check capacity
       if (offering.capacity) {
