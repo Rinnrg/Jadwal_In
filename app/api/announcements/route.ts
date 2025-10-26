@@ -5,8 +5,8 @@ import { z } from "zod"
 const announcementSchema = z.object({
   title: z.string().min(1, "Judul harus diisi"),
   description: z.string().min(1, "Keterangan harus diisi"),
-  imageUrl: z.string().url().optional().nullable(),
-  fileUrl: z.string().url().optional().nullable(),
+  imageUrl: z.string().optional().nullable(),
+  fileUrl: z.string().optional().nullable(),
   targetRoles: z.array(z.enum(["mahasiswa", "dosen", "kaprodi"])).min(1, "Pilih minimal satu target"),
   isActive: z.boolean().default(true),
   createdById: z.string(),

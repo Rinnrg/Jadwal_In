@@ -86,8 +86,12 @@ export function SubjectTable({ subjects: subjectsProp, onEdit }: SubjectTablePro
     )
 
     if (confirmed) {
-      deleteSubject(subject.id)
-      showSuccess("Mata kuliah berhasil dihapus")
+      try {
+        await deleteSubject(subject.id)
+        showSuccess("Mata kuliah berhasil dihapus")
+      } catch (error) {
+        showError(error instanceof Error ? error.message : "Gagal menghapus mata kuliah")
+      }
     }
   }
   

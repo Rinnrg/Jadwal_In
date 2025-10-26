@@ -498,13 +498,13 @@ export function EKTMCardWithTilt({ name, nim, fakultas, programStudi, avatarUrl 
       {/* Download Button */}
       <Button
         onClick={handleDownload}
-        variant="outline"
-        size="sm"
-        className="gap-2 text-xs sm:text-sm shadow-lg"
+        variant="default"
+        size="lg"
+        className="gap-2 text-sm sm:text-base font-semibold shadow-2xl bg-white text-blue-600 hover:bg-blue-50 border-2 border-white/20"
         disabled={isDownloading}
       >
-        <Download className="h-4 w-4" />
-        {isDownloading ? 'Mengunduh...' : 'Unduh E-KTM (PDF)'}
+        <Download className="h-5 w-5" />
+        {isDownloading ? 'Mengunduh E-KTM...' : 'Unduh E-KTM'}
       </Button>
     </div>
   )
