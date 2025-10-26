@@ -44,13 +44,17 @@ export async function POST(request: NextRequest) {
       }
     } catch (mkdirError) {
       console.error("[Upload] Error creating directory:", mkdirError)
-      return NextResponse.json({ error: "Failed to create upload directory" }, { status: 500 })
+      return NextResponse.json({ 
+        error: "Failed to create upload directory",
+        details: mkdirError instanceof Error ? mkdirError.message : "Unknown error"
+      }, { status: 500 })
     }
 
-    // Generate unique filename
+    // Generate unique filename - sanitize more aggressively
     const timestamp = Date.now()
-    const originalName = file.name.replace(/[^a-zA-Z0-9.-]/g, "_")
-    const filename = `${timestamp}-${originalName}`
+    const ext = file.name.split('.').pop() || 'file'
+    const baseName = file.name.replace(/\.[^/.]+$/, "").replace(/[^a-zA-Z0-9]/g, "_")
+    const filename = `${timestamp}-${baseName}.${ext}`
     const filepath = join(uploadsDir, filename)
 
     console.log(`[Upload] Saving file to: ${filepath}`)
@@ -59,11 +63,21 @@ export async function POST(request: NextRequest) {
     try {
       const bytes = await file.arrayBuffer()
       const buffer = Buffer.from(bytes)
-      await writeFile(filepath, buffer)
+      
+      // Ensure directory exists before writing
+      await mkdir(uploadsDir, { recursive: true })
+      
+      await writeFile(filepath, buffer, { mode: 0o666 })
       console.log(`[Upload] File saved successfully: ${filename}`)
     } catch (writeError) {
       console.error("[Upload] Error writing file:", writeError)
-      return NextResponse.json({ error: "Failed to write file to disk" }, { status: 500 })
+      console.error("[Upload] Filepath:", filepath)
+      console.error("[Upload] Directory exists:", existsSync(uploadsDir))
+      return NextResponse.json({ 
+        error: "Failed to write file to disk",
+        details: writeError instanceof Error ? writeError.message : "Unknown error",
+        path: filepath
+      }, { status: 500 })
     }
 
     // Return the URL

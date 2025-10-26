@@ -395,11 +395,10 @@ export function AnnouncementForm({ announcement, onSuccess, onCancel }: Announce
                   id={`role-${role}`}
                   checked={formData.targetRoles.includes(role)}
                   onCheckedChange={() => toggleTargetRole(role)}
-                  onClick={(e) => e.stopPropagation()}
                 />
-                <Label htmlFor={`role-${role}`} className="font-normal cursor-pointer text-sm flex-1">
+                <span className="font-normal text-sm flex-1 select-none">
                   {role === "mahasiswa" ? "Mahasiswa" : role === "dosen" ? "Dosen" : "Kaprodi"}
-                </Label>
+                </span>
               </div>
             ))}
           </div>

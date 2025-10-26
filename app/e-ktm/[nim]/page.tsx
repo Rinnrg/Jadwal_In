@@ -46,16 +46,48 @@ export default async function EKTMPublicPage({ params }: PageProps) {
         select: {
           name: true,
           email: true,
+          googleId: true,
         },
       },
     },
   })
 
-  console.log('[E-KTM] Profile found by NIM:', profile ? 'Yes' : 'No')
+  console.log('[E-KTM] Profile search result:', {
+    found: !!profile,
+    nim: profile?.nim,
+    userId: profile?.userId,
+    userName: profile?.user.name,
+    userEmail: profile?.user.email,
+    isGoogleAuth: !!profile?.user.googleId,
+  })
 
   // If not found, show 404
   if (!profile) {
     console.log('[E-KTM] No user found, showing 404')
+    console.log('[E-KTM] Debug: Checking all profiles with similar NIM...')
+    
+    // Debug: Check if there are any profiles with NIM containing this value
+    const allProfiles = await prisma.profile.findMany({
+      where: {
+        OR: [
+          { nim: { contains: nim } },
+          { nim: { startsWith: nim } },
+          { nim: { endsWith: nim } },
+        ]
+      },
+      select: {
+        nim: true,
+        userId: true,
+        user: {
+          select: {
+            email: true,
+            googleId: true,
+          }
+        }
+      }
+    })
+    console.log('[E-KTM] Similar NIMs found:', allProfiles)
+    
     notFound()
   }
 

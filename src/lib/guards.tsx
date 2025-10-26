@@ -27,8 +27,10 @@ export function Protected({ children }: { children: React.ReactNode }) {
   const { session, setSession, hasHydrated } = useSessionStore()
   const [hasMounted, setHasMounted] = useState(false)
   const [isCheckingSession, setIsCheckingSession] = useState(true)
+  const [isRedirecting, setIsRedirecting] = useState(false)
   const fetchingRef = useRef(false)
   const hasCheckedRef = useRef(false)
+  const redirectingRef = useRef(false)
   const router = useRouter()
 
   useEffect(() => {
@@ -39,6 +41,7 @@ export function Protected({ children }: { children: React.ReactNode }) {
     if (!hasMounted || !hasHydrated) return
     if (fetchingRef.current) return // Already fetching
     if (hasCheckedRef.current) return // Already checked once
+    if (redirectingRef.current) return // Already redirecting
 
     // If we already have a session from localStorage, use it
     if (session) {
@@ -79,24 +82,36 @@ export function Protected({ children }: { children: React.ReactNode }) {
           setIsCheckingSession(false)
         } else {
           console.log('[Protected] No session from API, redirecting to login...')
+          // Set redirecting flags to prevent re-renders and loops
+          redirectingRef.current = true
+          setIsRedirecting(true)
           setIsCheckingSession(false)
           // Use window.location for hard redirect to clear all state
-          window.location.href = '/login'
+          // Add small delay to ensure state is set before redirect
+          setTimeout(() => {
+            window.location.href = '/login'
+          }, 100)
         }
       })
       .catch((error) => {
         console.error('[Protected] Failed to fetch session:', error)
+        // Set redirecting flags to prevent re-renders and loops
+        redirectingRef.current = true
+        setIsRedirecting(true)
         setIsCheckingSession(false)
         // Use window.location for hard redirect to clear all state
-        window.location.href = '/login'
+        // Add small delay to ensure state is set before redirect
+        setTimeout(() => {
+          window.location.href = '/login'
+        }, 100)
       })
       .finally(() => {
         fetchingRef.current = false
       })
-  }, [hasMounted, hasHydrated, session, setSession, router])
+  }, [hasMounted, hasHydrated, setSession, router]) // Removed 'session' to prevent loop on logout
 
-  // Show loading during hydration OR session check
-  if (!hasMounted || !hasHydrated || isCheckingSession) {
+  // Show loading during hydration OR session check OR redirecting
+  if (!hasMounted || !hasHydrated || isCheckingSession || isRedirecting) {
     return <PageLoading message="Memuat sesi..." />
   }
 
