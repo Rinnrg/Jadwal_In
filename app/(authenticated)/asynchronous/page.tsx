@@ -235,8 +235,8 @@ export default function AsynchronousPage() {
 
           {/* For Dosen/Kaprodi: Show angkatan grouping with Folder component */}
           {canManage && !selectedClass ? (
-            <div className="px-3 md:px-4">
-              <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 gap-4 md:gap-6">
+            <div className="px-4 md:px-6 lg:px-8">
+              <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 gap-4 md:gap-6 py-2">
                 {Object.entries(subjectsByAngkatan)
                   .sort(([a], [b]) => b.localeCompare(a)) // Sort descending (newest first)
                   .map(([angkatan, classes]) => {
@@ -259,7 +259,14 @@ export default function AsynchronousPage() {
                               />
                             </div>
                           </PopoverTrigger>
-                          <PopoverContent className="w-72 p-3" align="center">
+                          <PopoverContent 
+                            className="w-72 p-3" 
+                            align="center"
+                            side="bottom"
+                            sideOffset={8}
+                            alignOffset={0}
+                            collisionPadding={16}
+                          >
                             <div className="space-y-2">
                               <h4 className="font-bold text-base mb-3 px-2 text-foreground">
                                 Pilih Kelas - Angkatan {angkatan}
