@@ -4,6 +4,7 @@ import { useState } from "react"
 import { useSubjectsStore } from "@/stores/subjects.store"
 import { useUsersStore } from "@/stores/users.store"
 import { useOfferingsStore } from "@/stores/offerings.store"
+import { useNotificationStore } from "@/stores/notification.store"
 import type { Subject } from "@/data/schema"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
@@ -22,6 +23,35 @@ const getCurrentTerm = () => {
   const currentMonth = new Date().getMonth()
   const isOddSemester = currentMonth >= 8 || currentMonth <= 1
   return `${currentYear}/${currentYear + 1}-${isOddSemester ? "Ganjil" : "Genap"}`
+}
+
+// Helper function to notify students about new subject
+const notifyStudentsAboutNewSubject = async (subject: Subject) => {
+  try {
+    const { triggerNotification } = useNotificationStore.getState()
+    
+    // Fetch all students with the same angkatan
+    const usersResponse = await fetch('/api/users')
+    if (!usersResponse.ok) return
+    
+    const allUsers = await usersResponse.json()
+    const studentsInAngkatan = allUsers.filter(
+      (user: any) => 
+        user.role === 'mahasiswa' && 
+        user.angkatan === subject.angkatan
+    )
+    
+    const message = `Mata kuliah baru tersedia: "${subject.nama}" (${subject.kode})`
+    
+    // Notify each student
+    studentsInAngkatan.forEach((student: any) => {
+      triggerNotification('krs', student.id, message, 1)
+    })
+    
+    console.log('[SubjectTable] Notified', studentsInAngkatan.length, 'students about new subject:', subject.nama)
+  } catch (error) {
+    console.error('[SubjectTable] Failed to notify students:', error)
+  }
 }
 
 interface SubjectTableProps {
@@ -341,6 +371,48 @@ export function SubjectTable({ subjects: subjectsProp, onEdit }: SubjectTablePro
   const handleToggleSubjectStatus = async (subject: Subject) => {
     try {
       const newStatus = subject.status === "aktif" ? "arsip" : "aktif"
+      
+      // If turning OFF (aktif → arsip), check for enrolled students
+      if (newStatus === "arsip") {
+        // Check if any students have enrolled in this subject
+        const krsCheckResponse = await fetch(`/api/krs?subjectId=${subject.id}`)
+        if (krsCheckResponse.ok) {
+          const enrolledStudents = await krsCheckResponse.json()
+          
+          if (enrolledStudents.length > 0) {
+            // Students enrolled - show options
+            const result = await confirmAction(
+              "Mahasiswa Terdeteksi",
+              `Terdapat ${enrolledStudents.length} mahasiswa yang mengambil mata kuliah "${subject.nama}".\n\nPilih tindakan:`,
+              "Force Off & Hapus KRS",
+              "Batal",
+              "destructive"
+            )
+            
+            if (!result) {
+              // User cancelled
+              return
+            }
+            
+            // Force off - delete all KRS entries
+            try {
+              const deletePromises = enrolledStudents.map((krs: any) =>
+                fetch(`/api/krs?id=${krs.id}`, { method: 'DELETE' })
+              )
+              
+              await Promise.all(deletePromises)
+              
+              showSuccess(
+                `✅ "${subject.nama}" di-force off!\n\n${enrolledStudents.length} mahasiswa telah dihapus dari KRS.`
+              )
+            } catch (error) {
+              showError("Gagal menghapus KRS mahasiswa")
+              return
+            }
+          }
+        }
+      }
+      
       await updateSubject(subject.id, { status: newStatus })
       
       const offerings = getOfferingsBySubject(subject.id)
@@ -366,6 +438,9 @@ export function SubjectTable({ subjects: subjectsProp, onEdit }: SubjectTablePro
             showSuccess(
               `✅ "${subject.nama}" diaktifkan!\n\nPenawaran dibuat untuk Angkatan ${subject.angkatan} Kelas ${subject.kelas || "A"}.\nMata kuliah sekarang tersedia di halaman KRS.`
             )
+            
+            // Notify all students in the same angkatan about new subject
+            notifyStudentsAboutNewSubject(subject)
           } catch (error) {
             showError(`Mata kuliah "${subject.nama}" diaktifkan, tapi gagal membuat penawaran.\n\nSilakan gunakan tombol "Tambahkan Semua MK Kelas ${subject.kelas}" untuk membuat penawaran.`)
           }
@@ -380,10 +455,16 @@ export function SubjectTable({ subjects: subjectsProp, onEdit }: SubjectTablePro
             showSuccess(
               `✅ "${subject.nama}" diaktifkan!\n\nMata kuliah sekarang tersedia di halaman KRS.`
             )
+            
+            // Notify all students in the same angkatan about subject reactivation
+            notifyStudentsAboutNewSubject(subject)
           } catch (error) {
             showSuccess(
               `✅ "${subject.nama}" diaktifkan!\n\nMata kuliah sekarang tersedia di halaman KRS.`
             )
+            
+            // Still notify even if offering update fails
+            notifyStudentsAboutNewSubject(subject)
           }
         }
       } else {

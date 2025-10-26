@@ -78,10 +78,16 @@ export function AssignmentTab({ subjectId, canManage, userRole }: AssignmentTabP
     feedback: "",
   })
 
-  // Fetch assignments on mount
+  // Fetch assignments on mount and when subjectId changes
   useEffect(() => {
+    console.log('[AssignmentTab] Fetching assignments for subject:', subjectId)
     fetchAssignments(subjectId)
   }, [subjectId, fetchAssignments])
+
+  // Log assignments count for debugging
+  useEffect(() => {
+    console.log('[AssignmentTab] Assignments count for subject', subjectId, ':', assignments.length)
+  }, [assignments.length, subjectId])
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
     if (!file) return
@@ -633,7 +639,7 @@ export function AssignmentTab({ subjectId, canManage, userRole }: AssignmentTabP
                           <img
                             src={assignment.imageUrl}
                             alt={assignment.title}
-                            className="w-full h-full object-cover"
+                            className="w-full h-full object-contain"
                             onError={(e) => {
                               e.currentTarget.style.display = "none"
                             }}

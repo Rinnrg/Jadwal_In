@@ -2,7 +2,7 @@
 
 import { useState, useRef } from "react"
 import { Button } from "@/components/ui/button"
-import { Download } from "lucide-react"
+import { Download, X } from "lucide-react"
 import { EKTMCardWithTilt } from "./EKTMCardWithTilt"
 
 interface EKTMFullViewProps {
@@ -316,11 +316,22 @@ export function EKTMFullView({
           onClick={handleDownload}
           variant="default"
           size="lg"
-          className="gap-2 text-sm sm:text-base font-semibold shadow-2xl bg-white text-blue-600 hover:bg-blue-50 border-2 border-white/20 mb-8 hover:scale-105 transition-transform"
+          className="gap-2 text-sm sm:text-base font-semibold shadow-2xl bg-white text-blue-600 hover:bg-blue-50 border-2 border-white/20 hover:scale-105 transition-transform"
           disabled={isDownloading}
         >
           <Download className="h-5 w-5" />
           {isDownloading ? 'Mengunduh E-KTM...' : 'Unduh E-KTM'}
+        </Button>
+
+        {/* Close Button - Below download button */}
+        <Button
+          onClick={() => onOpenChange(false)}
+          variant="outline"
+          size="lg"
+          className="gap-2 text-sm sm:text-base font-semibold shadow-lg bg-white/10 text-white hover:bg-white/20 border-2 border-white/30 mt-3 mb-8 hover:scale-105 transition-transform backdrop-blur-sm"
+        >
+          <X className="h-5 w-5" />
+          Tutup
         </Button>
       </div>
     </div>

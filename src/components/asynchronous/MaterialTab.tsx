@@ -41,10 +41,16 @@ export function MaterialTab({ subjectId, canManage, userRole }: MaterialTabProps
 
   const materials = arr(getMaterialsBySubject(subjectId)).sort((a, b) => b.createdAt - a.createdAt)
 
-  // Fetch materials on mount
+  // Fetch materials on mount and when subjectId changes
   useEffect(() => {
+    console.log('[MaterialTab] Fetching materials for subject:', subjectId)
     fetchMaterials(subjectId)
   }, [subjectId, fetchMaterials])
+
+  // Log materials count for debugging
+  useEffect(() => {
+    console.log('[MaterialTab] Materials count for subject', subjectId, ':', materials.length)
+  }, [materials.length, subjectId])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()

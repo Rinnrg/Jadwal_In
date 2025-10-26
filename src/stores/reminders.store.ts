@@ -35,24 +35,10 @@ export const useRemindersStore = create<RemindersState>()(
           const now = nowUTC()
           const thirtyMinutesLater = now + 30 * 60 * 1000
           
-          // Only notify if reminder is within next 30 minutes
-          if (newReminder.dueUTC > now && newReminder.dueUTC <= thirtyMinutesLater) {
-            try {
-              ;(async () => {
-                const { useNotificationStore } = await import('./notification.store')
-                const { triggerNotification } = useNotificationStore.getState()
-                
-                const message = newReminder.title 
-                  ? `Pengingat: "${newReminder.title}"` 
-                  : 'Pengingat baru telah ditambahkan'
-                
-                triggerNotification('reminder', newReminder.userId, message, 1)
-                console.log('[Reminders Store] Notification triggered for user:', newReminder.userId)
-              })()
-            } catch (error) {
-              console.error('[Reminders Store] Failed to trigger notification:', error)
-            }
-          }
+          // DO NOT trigger notification for user's own reminders
+          // Users shouldn't be notified when they add their own reminders
+          // Only notify if reminder is within next 30 minutes (kept for future use if needed)
+          // Notification is disabled as per user requirement
         }
       },
       updateReminder: (id, updates) => {

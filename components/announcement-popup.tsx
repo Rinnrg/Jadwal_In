@@ -120,7 +120,7 @@ export function AnnouncementPopup() {
                   src={currentAnnouncement.imageUrl}
                   alt={currentAnnouncement.title}
                   fill
-                  className="object-cover"
+                  className="object-contain"
                   onError={(e) => {
                     // Hide image if failed to load
                     e.currentTarget.style.display = "none"

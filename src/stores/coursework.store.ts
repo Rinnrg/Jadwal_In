@@ -51,6 +51,8 @@ export const useCourseworkStore = create<CourseworkState>()(
             ? `/api/assignments?subjectId=${subjectId}&_t=${Date.now()}` 
             : `/api/assignments?_t=${Date.now()}`
           
+          console.log('[Coursework Store] Fetching assignments from:', url)
+          
           const response = await fetch(url, {
             cache: 'no-store',
             headers: {
@@ -63,6 +65,7 @@ export const useCourseworkStore = create<CourseworkState>()(
           }
           
           const data = await response.json()
+          console.log('[Coursework Store] Raw API response:', data)
           
           // Convert BigInt dueUTC to number
           const assignments = data.map((a: any) => ({
@@ -70,6 +73,9 @@ export const useCourseworkStore = create<CourseworkState>()(
             dueUTC: a.dueUTC ? Number(a.dueUTC) : undefined,
             createdAt: new Date(a.createdAt).getTime(),
           }))
+          
+          console.log('[Coursework Store] Processed assignments:', assignments)
+          console.log('[Coursework Store] Assignments for subject', subjectId, ':', assignments.filter((a: any) => a.subjectId === subjectId).length)
           
           set({ assignments, isFetching: false })
           console.log('[Coursework Store] Fetched assignments:', assignments.length)
@@ -86,6 +92,8 @@ export const useCourseworkStore = create<CourseworkState>()(
             ? `/api/materials?subjectId=${subjectId}&_t=${Date.now()}` 
             : `/api/materials?_t=${Date.now()}`
           
+          console.log('[Coursework Store] Fetching materials from:', url)
+          
           const response = await fetch(url, {
             cache: 'no-store',
             headers: {
@@ -98,12 +106,16 @@ export const useCourseworkStore = create<CourseworkState>()(
           }
           
           const data = await response.json()
+          console.log('[Coursework Store] Raw materials API response:', data)
           
           // Convert timestamps
           const materials = data.map((m: any) => ({
             ...m,
             createdAt: new Date(m.createdAt).getTime(),
           }))
+          
+          console.log('[Coursework Store] Processed materials:', materials)
+          console.log('[Coursework Store] Materials for subject', subjectId, ':', materials.filter((m: any) => m.subjectId === subjectId).length)
           
           set({ materials, isFetching: false })
           console.log('[Coursework Store] Fetched materials:', materials.length)

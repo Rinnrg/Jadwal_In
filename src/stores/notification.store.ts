@@ -20,7 +20,7 @@ interface NotificationState {
   updateBadge: (type: NotificationBadge["type"], userId: string, count: number) => void
   
   // Trigger notification event (shows notification)
-  triggerNotification: (type: NotificationBadge["type"], userId: string, message?: string, incrementBy?: number) => void
+  triggerNotification: (type: NotificationBadge["type"], userId: string, message?: string, incrementBy?: number, currentUserId?: string) => void
   
   // Increment badge count
   incrementBadge: (type: NotificationBadge["type"], userId: string) => void
@@ -95,7 +95,12 @@ export const useNotificationStore = create<NotificationState>()(
       },
       
       // Trigger notification - shows unread badge and notification
-      triggerNotification: (type, userId, message, incrementBy = 1) => {
+      triggerNotification: (type, userId, message, incrementBy = 1, currentUserId) => {
+        // Skip self-notifications (user shouldn't be notified of their own actions)
+        if (currentUserId && userId === currentUserId) {
+          return
+        }
+        
         set((state) => {
           const existingIndex = state.badges.findIndex(
             (b) => b.type === type && b.userId === userId

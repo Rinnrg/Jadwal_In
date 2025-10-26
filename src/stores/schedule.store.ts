@@ -39,18 +39,9 @@ export const useScheduleStore = create<ScheduleState>()(
           const updated = [...state.events, newEvent]
           console.log('Total events after add:', updated.length)
           
-          // Trigger notification for the user
-          try {
-            ;(async () => {
-              const { useNotificationStore } = await import('./notification.store')
-              const { triggerNotification } = useNotificationStore.getState()
-              const message = 'Jadwal baru telah ditambahkan'
-              triggerNotification('jadwal', event.userId, message, 1)
-              console.log('[Schedule Store] Notification triggered for user:', event.userId)
-            })()
-          } catch (error) {
-            console.error('[Schedule Store] Failed to trigger notification:', error)
-          }
+          // DO NOT trigger notification for user's own schedule
+          // Users shouldn't be notified when they add their own jadwal
+          // Notification is disabled as per user requirement
           
           return { events: updated }
         })
