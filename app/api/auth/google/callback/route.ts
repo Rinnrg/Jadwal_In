@@ -184,40 +184,60 @@ export async function GET(request: NextRequest) {
     } else {
       console.log('✅ User found:', user.id)
       
+      // Extract NIM from email
+      const extractedNim = extractNIMFromEmail(googleUser.email)
+      console.log('📧 NIM extracted from email:', extractedNim)
+      
+      let needsUpdate = false
+      const updateData: any = {}
+      
       // Update image if Google has newer one
       if (googleUser.picture && user.image !== googleUser.picture) {
         console.log('🖼️ Updating user image from Google...')
-        user = await prisma.user.update({
-          where: { id: user.id },
-          data: { image: googleUser.picture },
-          include: { profile: true },
-        })
+        updateData.image = googleUser.picture
+        needsUpdate = true
       }
       
       // Check if user has profile, if not create one
       if (!user.profile) {
         console.log('⚠️ User has no profile, creating...')
-        const extractedNim = extractNIMFromEmail(googleUser.email)
-        console.log('✅ NIM extracted from email:', extractedNim)
-        
-        await prisma.profile.create({
-          data: {
-            userId: user.id,
+        updateData.profile = {
+          create: {
             nim: extractedNim,
             angkatan: extractAngkatan(extractedNim),
             kelas: 'A',
             prodi: null,
             bio: null,
           }
-        })
+        }
+        needsUpdate = true
+      } else {
+        // Check if NIM needs to be updated (null or too short)
+        const currentNim = user.profile.nim
+        const nimNeedsUpdate = !currentNim || currentNim.length < 8
         
-        // Reload user with profile
-        user = await prisma.user.findUnique({
+        if (nimNeedsUpdate && extractedNim) {
+          console.log(`🔄 Updating NIM: "${currentNim || 'NULL'}" → "${extractedNim}"`)
+          updateData.profile = {
+            update: {
+              nim: extractedNim,
+              angkatan: extractAngkatan(extractedNim),
+            }
+          }
+          needsUpdate = true
+        } else {
+          console.log(`✅ NIM already valid: ${currentNim}`)
+        }
+      }
+      
+      // Apply updates if needed
+      if (needsUpdate) {
+        user = await prisma.user.update({
           where: { id: user.id },
+          data: updateData,
           include: { profile: true },
-        }) as any
-        
-        console.log('✅ Profile created for existing user')
+        })
+        console.log('✅ User profile updated with NIM:', user.profile?.nim)
       }
     }
 
@@ -228,6 +248,15 @@ export async function GET(request: NextRequest) {
         new URL('/login?error=user_creation_failed', request.url)
       )
     }
+
+    // Final verification: Log user profile details
+    console.log('📊 Final User Profile Status:')
+    console.log('   - User ID:', user.id)
+    console.log('   - Email:', user.email)
+    console.log('   - Has Profile:', !!user.profile)
+    console.log('   - NIM:', user.profile?.nim || 'NULL')
+    console.log('   - Angkatan:', user.profile?.angkatan || 'NULL')
+    console.log('   - Google ID:', user.googleId || 'NULL')
 
     // Create session token
     console.log('🔐 Creating session...')

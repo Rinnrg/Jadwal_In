@@ -46,7 +46,7 @@ export default async function EKTMPublicPage({ params }: PageProps) {
       : { 
           OR: [
             { nim: nim },    // First try exact NIM match
-            { userId: nim }, // Also try userId for Google Auth users
+            { userId: nim }, // Also try userId for Google Auth users (fallback)
           ]
         },
     include: {
@@ -63,6 +63,7 @@ export default async function EKTMPublicPage({ params }: PageProps) {
   console.log('[E-KTM] Profile search result:', {
     found: !!profile,
     searchType: isUUID ? 'userId' : 'nim',
+    searchedValue: nim,
     nim: profile?.nim,
     userId: profile?.userId,
     userName: profile?.user.name,

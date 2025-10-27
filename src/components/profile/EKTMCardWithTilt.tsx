@@ -24,8 +24,8 @@ export function EKTMCardWithTilt({ name, nim, fakultas, programStudi, avatarUrl,
   const [cardImageUrl, setCardImageUrl] = useState<string>("")
   const [isGenerating, setIsGenerating] = useState(true)
 
-  // Use userId for Google Auth users, NIM for regular users
-  const qrIdentifier = userId || nim
+  // Always use NIM for QR code if available, fallback to userId for Google Auth users without NIM
+  const qrIdentifier = nim || userId || 'unknown'
   const qrData = `${typeof window !== 'undefined' ? window.location.origin : ''}/e-ktm/${qrIdentifier}`
 
   // Generate E-KTM card as image

@@ -5,7 +5,7 @@ import { Card } from "@/components/ui/card"
 
 export default function NotFound() {
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-blue-100 p-4">
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-blue-100 dark:from-gray-900 dark:to-gray-950 p-4">
       <Card className="w-full max-w-md p-8 text-center">
         <div className="flex justify-center mb-4">
           <div className="w-20 h-20 rounded-full bg-red-100 dark:bg-red-900/20 flex items-center justify-center">
@@ -21,7 +21,7 @@ export default function NotFound() {
           Mohon maaf, E-KTM dengan NIM yang Anda scan tidak ditemukan dalam sistem.
         </p>
 
-        <div className="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg p-4 mb-6 text-left">
+        <div className="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg p-4 mb-4 text-left">
           <h3 className="font-semibold text-yellow-800 dark:text-yellow-200 mb-2 text-sm">
             Kemungkinan Penyebab:
           </h3>
@@ -31,6 +31,22 @@ export default function NotFound() {
             <li>QR Code sudah kadaluarsa atau tidak valid</li>
             <li>Data sedang dalam proses sinkronisasi</li>
           </ul>
+        </div>
+
+        <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4 mb-6 text-left">
+          <h3 className="font-semibold text-blue-800 dark:text-blue-200 mb-2 text-sm">
+            📝 Untuk User Google Auth:
+          </h3>
+          <div className="text-xs text-blue-700 dark:text-blue-300 space-y-1">
+            <p>Jika Anda login dengan Google, coba langkah berikut:</p>
+            <ol className="list-decimal list-inside space-y-1 ml-2">
+              <li>Logout dari aplikasi</li>
+              <li>Login kembali dengan akun Google</li>
+              <li>Buka halaman Profil</li>
+              <li>Sistem akan otomatis sinkronisasi NIM Anda</li>
+              <li>Generate E-KTM baru dari halaman Profil</li>
+            </ol>
+          </div>
         </div>
 
         <div className="space-y-3">

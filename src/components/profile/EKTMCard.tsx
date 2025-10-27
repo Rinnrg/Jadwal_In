@@ -27,8 +27,8 @@ export function EKTMCard({ name, nim, fakultas, programStudi, avatarUrl, userId 
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const [isDownloading, setIsDownloading] = useState(false)
 
-  // Generate QR Code data - use userId for Google Auth users, NIM for regular users
-  const qrIdentifier = userId || nim
+  // Always use NIM for QR code if available, fallback to userId for Google Auth users without NIM
+  const qrIdentifier = nim || userId || 'unknown'
   const qrData = `${typeof window !== 'undefined' ? window.location.origin : ''}/e-ktm/${qrIdentifier}`
 
   // Function to load image from URL with better CORS handling

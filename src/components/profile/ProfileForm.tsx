@@ -53,6 +53,57 @@ export function ProfileForm({ profile, onSuccess, onChangePassword, onSetPasswor
     checkPassword()
   }, [session])
 
+  // Auto-sync NIM for Google Auth users on profile load
+  useEffect(() => {
+    const syncNIM = async () => {
+      if (!session) return
+      
+      // Only sync if user has no NIM or NIM is too short
+      const needsSync = !profile?.nim || (profile.nim.length < 8)
+      
+      if (needsSync && session.email) {
+        try {
+          console.log('[ProfileForm] Syncing NIM for user:', session.email)
+          const response = await fetch('/api/profile/sync-nim', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              userId: session.id,
+              email: session.email
+            })
+          })
+          
+          if (response.ok) {
+            const data = await response.json()
+            if (data.updated) {
+              console.log('[ProfileForm] NIM synced successfully:', data.nim)
+              // Update profile in store
+              if (profile) {
+                updateProfile(session.id, {
+                  nim: data.nim,
+                  angkatan: data.angkatan
+                })
+              } else {
+                createProfile({
+                  userId: session.id,
+                  nim: data.nim,
+                  angkatan: data.angkatan,
+                  kelas: 'A',
+                  prodi: null,
+                  bio: null
+                })
+              }
+            }
+          }
+        } catch (error) {
+          console.error('[ProfileForm] Error syncing NIM:', error)
+        }
+      }
+    }
+    
+    syncNIM()
+  }, [session, profile])
+
   // Helper untuk extract NIM dari email
   const getNIMFromEmail = (email: string): string | undefined => {
     // Format email: namapertamanamakedua.22002@mhs.unesa.ac.id
