@@ -13,6 +13,7 @@ interface EKTMFullViewProps {
   fakultas: string
   programStudi: string
   avatarUrl?: string
+  userId?: string // For Google Auth users
 }
 
 export function EKTMFullView({
@@ -23,11 +24,15 @@ export function EKTMFullView({
   fakultas,
   programStudi,
   avatarUrl,
+  userId,
 }: EKTMFullViewProps) {
   const cardRef = useRef<HTMLDivElement>(null)
   const [isDownloading, setIsDownloading] = useState(false)
 
   if (!open) return null
+
+  // Use userId for Google Auth users, NIM for regular users
+  const qrIdentifier = userId || nim
 
   const handleDownload = async () => {
     if (!nim) return
@@ -218,7 +223,7 @@ export function EKTMFullView({
         currentY += lineHeight
       })
 
-      const qrData = `${typeof window !== 'undefined' ? window.location.origin : ''}/e-ktm/${nim}`
+      const qrData = `${typeof window !== 'undefined' ? window.location.origin : ''}/e-ktm/${qrIdentifier}`
       const QRCode = (await import('qrcode')).default
       const qrDataUrl = await QRCode.toDataURL(qrData, {
         width: 126,
@@ -284,8 +289,7 @@ export function EKTMFullView({
 
   return (
     <div 
-      className="fixed inset-0 z-[100] m-0 p-0"
-      style={{ background: 'transparent' }}
+      className="fixed inset-0 z-[100] m-0 p-0 backdrop-blur-md bg-black/20"
       onClick={(e) => {
         // Klik di luar E-KTM akan menutup
         if (e.target === e.currentTarget) {
@@ -308,6 +312,7 @@ export function EKTMFullView({
             fakultas={fakultas}
             programStudi={programStudi}
             avatarUrl={avatarUrl}
+            userId={userId}
           />
         </div>
 
@@ -323,12 +328,12 @@ export function EKTMFullView({
           {isDownloading ? 'Mengunduh E-KTM...' : 'Unduh E-KTM'}
         </Button>
 
-        {/* Close Button - Below download button */}
+        {/* Close Button - Below download button with matching style */}
         <Button
           onClick={() => onOpenChange(false)}
-          variant="outline"
+          variant="default"
           size="lg"
-          className="gap-2 text-sm sm:text-base font-semibold shadow-lg bg-white/10 text-white hover:bg-white/20 border-2 border-white/30 mt-3 mb-8 hover:scale-105 transition-transform backdrop-blur-sm"
+          className="gap-2 text-sm sm:text-base font-semibold shadow-2xl bg-white text-blue-600 hover:bg-blue-50 border-2 border-white/20 mt-3 mb-8 hover:scale-105 transition-transform"
         >
           <X className="h-5 w-5" />
           Tutup

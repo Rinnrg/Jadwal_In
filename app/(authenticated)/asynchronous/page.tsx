@@ -1,28 +1,26 @@
 "use client"
 
 import { useState, useMemo, useEffect } from "react"
+import { useRouter } from "next/navigation"
 import { useSessionStore } from "@/stores/session.store"
 import { useSubjectsStore } from "@/stores/subjects.store"
 import { useKrsStore } from "@/stores/krs.store"
 import { useNotificationStore } from "@/stores/notification.store"
 import { useRealtimeSync } from "@/hooks/use-realtime-sync"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { AlertCircle, BookOpen, FileText, ChevronRight, GraduationCap, ArrowLeft } from "lucide-react"
-import { AssignmentTab } from "@/components/asynchronous/AssignmentTab"
-import { MaterialTab } from "@/components/asynchronous/MaterialTab"
+import { AlertCircle, BookOpen, ChevronRight, GraduationCap, ArrowLeft } from "lucide-react"
 import { arr } from "@/lib/utils"
 import type { Subject } from "@/data/schema"
 import Folder from "@/components/ui/folder"
 
 export default function AsynchronousPage() {
+  const router = useRouter()
   const { session } = useSessionStore()
   const { subjects, getSubjectsByPengampu, getActiveSubjects, getSubjectById, fetchSubjects, isLoading } = useSubjectsStore()
   const { krsItems, getKrsByUser } = useKrsStore()
   const { markAsRead } = useNotificationStore()
-  const [selectedSubject, setSelectedSubject] = useState<Subject | null>(null)
   const [selectedClass, setSelectedClass] = useState<string | null>(null)
   const [selectedAngkatan, setSelectedAngkatan] = useState<string | null>(null)
   
@@ -118,11 +116,10 @@ export default function AsynchronousPage() {
   }, [availableSubjects, canManage])
 
   const handleSubjectClick = (subject: Subject) => {
-    setSelectedSubject(subject)
+    router.push(`/asynchronous/${subject.id}`)
   }
 
   const handleBackToList = () => {
-    setSelectedSubject(null)
     setSelectedClass(null)
     setSelectedAngkatan(null)
   }
@@ -135,20 +132,14 @@ export default function AsynchronousPage() {
     setSelectedAngkatan(angkatan)
     setSelectedClass(className)
   }
-
-  const handleBackToClasses = () => {
-    setSelectedSubject(null)
-  }
   
   const handleBackToClassList = () => {
     setSelectedClass(null)
-    setSelectedSubject(null)
   }
 
   const handleBackToAngkatanList = () => {
     setSelectedAngkatan(null)
     setSelectedClass(null)
-    setSelectedSubject(null)
   }
 
   if (!session) {
@@ -218,17 +209,15 @@ export default function AsynchronousPage() {
 
   return (
     <div className="space-y-4 md:space-y-6">
-      {!selectedSubject ? (
-        <>
-          {/* Header */}
-          <div className="px-3 md:px-4">
-            <h1 className="text-lg md:text-2xl lg:text-3xl font-bold tracking-tight">Konten Asynchronous</h1>
-            <p className="text-muted-foreground text-xs md:text-sm mt-1">
-              {canManage
-                ? "Kelola tugas dan materi untuk mata kuliah yang Anda ampu"
-                : "Lihat tugas dan materi untuk mata kuliah yang Anda ambil"}
-            </p>
-          </div>
+      {/* Header */}
+      <div className="px-3 md:px-4">
+        <h1 className="text-lg md:text-2xl lg:text-3xl font-bold tracking-tight">Konten Asynchronous</h1>
+        <p className="text-muted-foreground text-xs md:text-sm mt-1">
+          {canManage
+            ? "Kelola tugas dan materi untuk mata kuliah yang Anda ampu"
+            : "Lihat tugas dan materi untuk mata kuliah yang Anda ambil"}
+        </p>
+      </div>
 
           {/* For Dosen/Kaprodi: Show angkatan grouping with Folder component */}
           {canManage && !selectedClass ? (
@@ -414,70 +403,6 @@ export default function AsynchronousPage() {
               ))}
             </div>
           )}
-        </>
-      ) : (
-        <>
-          {/* Back Button & Header */}
-          <div className="px-3 md:px-4 space-y-3">
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={handleBackToClasses}
-              className="gap-2 -ml-2 hover:bg-muted"
-            >
-              <ArrowLeft className="h-4 w-4" />
-              {canManage && selectedClass ? 'Kembali ke Daftar Mata Kuliah' : 'Kembali ke Daftar Mata Kuliah'}
-            </Button>
-            
-            <div className="flex items-start gap-3 p-4 bg-card border rounded-lg">
-              <div className="w-12 h-12 rounded-lg bg-primary/10 flex items-center justify-center flex-shrink-0">
-                <BookOpen className="h-6 w-6 text-primary" />
-              </div>
-              <div className="flex-1 min-w-0">
-                <h1 className="text-base md:text-xl lg:text-2xl font-bold leading-tight mb-1">
-                  {selectedSubject.nama}
-                </h1>
-                <p className="text-xs md:text-sm text-muted-foreground">
-                  {selectedSubject.kode} • Semester {selectedSubject.semester} • {selectedSubject.sks} SKS
-                  {selectedSubject.kelas && ` • Kelas ${selectedSubject.kelas}`}
-                  {selectedSubject.angkatan && ` • Angkatan ${selectedSubject.angkatan}`}
-                </p>
-                {selectedSubject.prodi && (
-                  <p className="text-xs text-muted-foreground mt-1">
-                    {selectedSubject.prodi}
-                  </p>
-                )}
-              </div>
-            </div>
-          </div>
-
-          {/* Tabs Content */}
-          <div className="px-3 md:px-4">
-            <Tabs defaultValue="assignments" className="w-full">
-              <div className="sticky top-0 z-10 bg-background pb-3">
-                <TabsList className="w-full grid grid-cols-2 h-10 md:h-11">
-                  <TabsTrigger value="assignments" className="flex items-center gap-2 text-xs md:text-sm">
-                    <FileText className="h-4 w-4" />
-                    Tugas
-                  </TabsTrigger>
-                  <TabsTrigger value="materials" className="flex items-center gap-2 text-xs md:text-sm">
-                    <BookOpen className="h-4 w-4" />
-                    Materi
-                  </TabsTrigger>
-                </TabsList>
-              </div>
-
-              <TabsContent value="assignments" className="mt-0">
-                <AssignmentTab subjectId={selectedSubject.id} canManage={canManage} userRole={session?.role || ""} />
-              </TabsContent>
-
-              <TabsContent value="materials" className="mt-0">
-                <MaterialTab subjectId={selectedSubject.id} canManage={canManage} userRole={session?.role || ""} />
-              </TabsContent>
-            </Tabs>
-          </div>
-        </>
-      )}
     </div>
   )
 }

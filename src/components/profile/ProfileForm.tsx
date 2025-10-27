@@ -254,6 +254,7 @@ export function ProfileForm({ profile, onSuccess, onChangePassword, onSetPasswor
         fakultas={getFakultasFromNIM(currentNIM)}
         programStudi={getProdiFromNIM(currentNIM)}
         avatarUrl={currentAvatar}
+        userId={session.id}
       />
       
       <div className="grid gap-6 lg:grid-cols-3">
