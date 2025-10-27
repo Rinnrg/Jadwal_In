@@ -564,6 +564,81 @@ export function SubjectTable({ subjects: subjectsProp, onEdit }: SubjectTablePro
     }
   }
 
+  const handleBulkForceClose = async () => {
+    const selectedSubjectsList = subjects.filter(s => selectedSubjects.has(s.id))
+    
+    const confirmed = await confirmAction(
+      `Force Tutup ${selectedSubjects.size} Mata Kuliah`,
+      `Yakin ingin Force Tutup ${selectedSubjects.size} mata kuliah yang dipilih?\n\nSemua mahasiswa yang sudah mengambil mata kuliah ini akan dihapus dari KRS mereka.`,
+      "Ya, Force Tutup",
+      "Batal",
+      "destructive"
+    )
+
+    if (!confirmed) return
+
+    try {
+      let totalKrsDeleted = 0
+      const affectedUserIds = new Set<string>()
+
+      for (const subject of selectedSubjectsList) {
+        // Delete all KRS entries for this subject
+        const krsItems = useKrsStore.getState().krsItems.filter(
+          (krs: any) => krs.subjectId === subject.id
+        )
+        
+        totalKrsDeleted += krsItems.length
+        krsItems.forEach((krs: any) => affectedUserIds.add(krs.userId))
+        
+        const { removeKrsItem } = useKrsStore.getState()
+        for (const krs of krsItems) {
+          await removeKrsItem(krs.id, krs.userId, subject.nama)
+        }
+
+        // Update offerings to "tutup"
+        const { offerings, updateOffering } = useOfferingsStore.getState()
+        const subjectOfferings = offerings.filter((o) => o.subjectId === subject.id)
+        
+        for (const offering of subjectOfferings) {
+          await updateOffering(offering.id, { status: "tutup" })
+        }
+      }
+
+      // Send notifications to all affected students
+      const { triggerNotification } = useNotificationStore.getState()
+      const users = useUsersStore.getState().users
+      
+      for (const userId of affectedUserIds) {
+        const user = users.find(u => u.id === userId)
+        if (!user) continue
+        
+        triggerNotification(
+          "krs",
+          String(userId),
+          `${selectedSubjects.size} mata kuliah telah ditutup paksa. KRS Anda telah diperbarui.`,
+          selectedSubjects.size
+        )
+      }
+
+      showSuccess(
+        `✅ ${selectedSubjects.size} mata kuliah berhasil ditutup paksa!\n\n${totalKrsDeleted} KRS mahasiswa telah dihapus.`
+      )
+
+      // Clear selection
+      setSelectedSubjects(new Set())
+
+      // Force refresh all data
+      const { fetchOfferings } = useOfferingsStore.getState()
+      const { fetchKrsItems } = useKrsStore.getState()
+      setTimeout(() => {
+        fetchOfferings(undefined, true)
+        fetchKrsItems(undefined, undefined, true)
+      }, 100)
+    } catch (error) {
+      showError("Gagal force tutup mata kuliah")
+    }
+  }
+
   const getGroupOfferingsStatus = (angkatan: number | string, kelas: string): "buka" | "tutup" | "mixed" => {
     const allOfferings = useOfferingsStore.getState().offerings.filter(
       (o) => o.angkatan === angkatan && o.kelas === kelas
@@ -622,7 +697,7 @@ export function SubjectTable({ subjects: subjectsProp, onEdit }: SubjectTablePro
             <p className="text-xs md:text-base text-muted-foreground">Kelola mata kuliah dalam katalog program studi</p>
           </div>
           
-          {/* Force Delete Button - Muncul saat ada yang dipilih */}
+          {/* Bulk Actions - Muncul saat ada yang dipilih */}
           {selectedSubjects.size > 0 && (
             <div className="flex items-center gap-3 p-3 bg-destructive/10 border border-destructive/20 rounded-lg">
               <AlertTriangle className="h-5 w-5 text-destructive" />
@@ -631,7 +706,7 @@ export function SubjectTable({ subjects: subjectsProp, onEdit }: SubjectTablePro
                   {selectedSubjects.size} mata kuliah dipilih
                 </p>
                 <p className="text-xs text-muted-foreground">
-                  Klik tombol force delete untuk menghapus mata kuliah dan semua KRS mahasiswa terkait
+                  Force delete untuk menghapus mata kuliah dan semua KRS mahasiswa terkait, atau force tutup untuk menutup paksa dan menghapus dari KRS mahasiswa
                 </p>
               </div>
               <div className="flex gap-2">
@@ -641,6 +716,15 @@ export function SubjectTable({ subjects: subjectsProp, onEdit }: SubjectTablePro
                   onClick={() => setSelectedSubjects(new Set())}
                 >
                   Batal
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleBulkForceClose}
+                  className="gap-2 text-orange-600 hover:bg-orange-50 border-orange-300 dark:hover:bg-orange-900/20"
+                >
+                  <AlertTriangle className="h-4 w-4" />
+                  Force Tutup
                 </Button>
                 <Button
                   variant="destructive"
@@ -802,15 +886,6 @@ export function SubjectTable({ subjects: subjectsProp, onEdit }: SubjectTablePro
                                 <Button
                                   variant="ghost"
                                   size="sm"
-                                  className="h-8 px-3 cursor-pointer text-orange-600 hover:bg-orange-50 hover:text-orange-700 dark:text-orange-400 dark:hover:bg-orange-900/20 dark:hover:text-orange-300 transition-colors duration-200"
-                                  onClick={() => handleForceCloseSubject(subject)}
-                                >
-                                  <AlertTriangle className="h-4 w-4 mr-1.5" />
-                                  Force Tutup
-                                </Button>
-                                <Button
-                                  variant="ghost"
-                                  size="sm"
                                   className="h-8 w-8 p-0 cursor-pointer hover:bg-destructive/10 text-destructive hover:text-destructive transition-colors duration-200"
                                   onClick={() => handleDelete(subject)}
                                 >
@@ -894,15 +969,6 @@ export function SubjectTable({ subjects: subjectsProp, onEdit }: SubjectTablePro
                                 Edit
                               </Button>
                             )}
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              className="h-7 text-[10px] px-2 text-orange-600 hover:bg-orange-50 border-orange-300"
-                              onClick={() => handleForceCloseSubject(subject)}
-                            >
-                              <AlertTriangle className="h-3 w-3 mr-1" />
-                              Force Tutup
-                            </Button>
                             <Button
                               variant="ghost"
                               size="sm"

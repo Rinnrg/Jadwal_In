@@ -33,7 +33,7 @@ export function useRealtimeSync(options: RealtimeSyncOptions = {}) {
   const { assignments, materials } = useCourseworkStore()
   const { reminders } = useRemindersStore()
   const { events } = useScheduleStore()
-  const { updateBadge } = useNotificationStore()
+  const { updateBadge, triggerNotification } = useNotificationStore()
 
   const [isPolling, setIsPolling] = useState(false)
   const previousSubjectsCount = useRef(subjects.length)
@@ -173,12 +173,10 @@ export function useRealtimeSync(options: RealtimeSyncOptions = {}) {
               previousGradesCount.current = currentGrades.filter((g: any) => g.nilaiHuruf).length
               
               const now = nowUTC()
-              const thirtyMinutesLater = now + 30 * 60 * 1000
               const activeReminders = getActiveReminders(session.id)
-              const upcomingReminders = activeReminders.filter(
-                (r: any) => r.dueUTC > now && r.dueUTC <= thirtyMinutesLater
-              )
-              previousRemindersCount.current = upcomingReminders.length
+              // Count all active reminders (not just upcoming in 30 minutes)
+              const currentActiveReminders = activeReminders.filter((r: any) => r.dueUTC > now)
+              previousRemindersCount.current = currentActiveReminders.length
               
               const userEvents = getEventsByUser(session.id)
               previousScheduleCount.current = userEvents.length
@@ -222,8 +220,9 @@ export function useRealtimeSync(options: RealtimeSyncOptions = {}) {
               
               // If KRS count increased, update badge (FloatingNotifications will show toast)
               if (currentKrsLength > previousKrsLength && !isInitialMount.current && hasShownInitialNotification.current) {
-                // Update badge - FloatingNotifications will handle the toast
-                updateBadge("krs", session.id, currentKrsLength)
+                // Trigger notification to show badge and toast
+                const addedCount = currentKrsLength - previousKrsLength
+                triggerNotification("krs", session.id, `${addedCount} mata kuliah baru ditambahkan ke KRS`, addedCount)
               }
               
               previousKrsCount.current = currentKrsLength
@@ -242,8 +241,9 @@ export function useRealtimeSync(options: RealtimeSyncOptions = {}) {
               const previousGradesLength = previousGradesCount.current
               
               if (currentGradesWithValue > previousGradesLength && hasShownInitialNotification.current) {
-                // Update badge - FloatingNotifications will handle the toast
-                updateBadge("khs", session.id, currentGradesWithValue)
+                // Trigger notification to show badge and toast
+                const addedCount = currentGradesWithValue - previousGradesLength
+                triggerNotification("khs", session.id, `${addedCount} nilai baru ditambahkan`, addedCount)
               }
               
               previousGradesCount.current = currentGradesWithValue
@@ -259,8 +259,9 @@ export function useRealtimeSync(options: RealtimeSyncOptions = {}) {
               const previousAsyncCount = previousAssignmentsCount.current + previousMaterialsCount.current
               
               if (totalAsyncCount > previousAsyncCount && hasShownInitialNotification.current) {
-                // Update badge - FloatingNotifications will handle the toast
-                updateBadge("asynchronous", session.id, totalAsyncCount)
+                // Trigger notification to show badge and toast
+                const addedCount = totalAsyncCount - previousAsyncCount
+                triggerNotification("asynchronous", session.id, `${addedCount} tugas/materi baru ditambahkan`, addedCount)
               }
               
               previousAssignmentsCount.current = currentAssignmentsCount
@@ -271,17 +272,16 @@ export function useRealtimeSync(options: RealtimeSyncOptions = {}) {
             if (session.role === "mahasiswa") {
               const { getActiveReminders } = useRemindersStore.getState()
               const now = nowUTC()
-              const thirtyMinutesLater = now + 30 * 60 * 1000
               const activeReminders = getActiveReminders(session.id)
-              const upcomingReminders = activeReminders.filter(
-                (r: any) => r.dueUTC > now && r.dueUTC <= thirtyMinutesLater
-              )
-              const currentRemindersCount = upcomingReminders.length
+              // Count all active reminders (not just upcoming in 30 minutes)
+              const currentActiveReminders = activeReminders.filter((r: any) => r.dueUTC > now)
+              const currentRemindersCount = currentActiveReminders.length
               const previousRemindersLength = previousRemindersCount.current
               
               if (currentRemindersCount > previousRemindersLength && hasShownInitialNotification.current) {
-                // Update badge - FloatingNotifications will handle the toast
-                updateBadge("reminder", session.id, currentRemindersCount)
+                // Trigger notification to show badge and toast
+                const addedCount = currentRemindersCount - previousRemindersLength
+                triggerNotification("reminder", session.id, `${addedCount} pengingat baru ditambahkan`, addedCount)
               }
               
               previousRemindersCount.current = currentRemindersCount
@@ -295,8 +295,11 @@ export function useRealtimeSync(options: RealtimeSyncOptions = {}) {
               const previousScheduleLength = previousScheduleCount.current
               
               if (currentScheduleCount !== previousScheduleLength && hasShownInitialNotification.current) {
-                // Update badge - FloatingNotifications will handle the toast
-                updateBadge("jadwal", session.id, currentScheduleCount > 0 ? 1 : 0)
+                // Trigger notification to show badge and toast
+                if (currentScheduleCount > previousScheduleLength) {
+                  const addedCount = currentScheduleCount - previousScheduleLength
+                  triggerNotification("jadwal", session.id, `${addedCount} jadwal baru ditambahkan`, addedCount)
+                }
               }
               
               previousScheduleCount.current = currentScheduleCount

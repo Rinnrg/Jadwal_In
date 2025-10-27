@@ -38,12 +38,17 @@ export default async function EKTMPublicPage({ params }: PageProps) {
 
   // Find profile by NIM (works for both regular and Google Auth users)
   // Also try to find by userId if NIM format looks like a UUID (for Google Auth users)
-  const isUUID = nim.length > 20 && nim.includes('-')
+  const isUUID = nim.length > 20 || nim.includes('-')
   
   const profile = await prisma.profile.findFirst({
     where: isUUID 
       ? { userId: nim } // If it looks like UUID, search by userId
-      : { nim: nim },    // Otherwise search by NIM
+      : { 
+          OR: [
+            { nim: nim },    // First try exact NIM match
+            { userId: nim }, // Also try userId for Google Auth users
+          ]
+        },
     include: {
       user: {
         select: {
@@ -101,20 +106,35 @@ export default async function EKTMPublicPage({ params }: PageProps) {
   const displayNIM = profile.nim || profile.userId.slice(0, 12) // Use first 12 chars of userId as fallback
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-4 bg-gradient-to-br from-blue-50 via-white to-indigo-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900">
-      <div className="w-full max-w-lg scale-90 sm:scale-100">
-        <EKTMCardWithTilt
-          name={profile.user.name}
-          nim={displayNIM}
-          fakultas={getFakultasFromNIM(displayNIM)}
-          programStudi={getProdiFromNIM(displayNIM)}
-          avatarUrl={profile.avatarUrl || undefined}
-          userId={profile.userId} // Pass userId for QR code generation
-        />
+    <div className="min-h-screen flex items-center justify-center p-4 bg-white dark:bg-gray-950">
+      <div className="w-full max-w-lg">
+        {/* Header */}
+        <div className="text-center mb-8">
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-1">
+            Kartu Tanda Mahasiswa
+          </h1>
+          <p className="text-sm text-gray-600 dark:text-gray-400 uppercase tracking-wide">
+            Universitas Negeri Surabaya
+          </p>
+        </div>
 
-        <div className="text-center mt-6 text-sm text-gray-700 dark:text-gray-300 drop-shadow">
-          <p className="font-semibold">Universitas Negeri Surabaya</p>
-          <p className="text-xs mt-1">Dokumen resmi mahasiswa aktif</p>
+        {/* E-KTM Card */}
+        <div className="w-full scale-90 sm:scale-100">
+          <EKTMCardWithTilt
+            name={profile.user.name}
+            nim={displayNIM}
+            fakultas={getFakultasFromNIM(displayNIM)}
+            programStudi={getProdiFromNIM(displayNIM)}
+            avatarUrl={profile.avatarUrl || undefined}
+            userId={profile.userId} // Pass userId for QR code generation
+          />
+        </div>
+
+        {/* Footer */}
+        <div className="text-center mt-6">
+          <p className="text-xs text-gray-500 dark:text-gray-500">
+            design by gacor
+          </p>
         </div>
       </div>
     </div>

@@ -56,14 +56,17 @@ export default function DashboardPage() {
   const { getActivitiesByUser } = useActivityStore()
   const { getEventsByDay } = useScheduleStore()
   const { getSubjectById, subjects, fetchSubjects } = useSubjectsStore()
-  const { getKrsByUser } = useKrsStore()
+  const { getKrsByUser, krsItems } = useKrsStore()
   const { assignments, materials } = useCourseworkStore()
-  const { getActiveReminders } = useRemindersStore()
+  const { getActiveReminders, reminders } = useRemindersStore()
   const [currentTime, setCurrentTime] = useState(new Date())
   const [showAssignments, setShowAssignments] = useState(true)
   const [dialogOpen, setDialogOpen] = useState(false)
   const [dialogType, setDialogType] = useState<"schedule" | "subjects" | "reminders" | "coursework">("schedule")
   const [dialogData, setDialogData] = useState<any[]>([])
+  
+  // Force re-render trigger for reactive updates
+  const [, setForceUpdate] = useState(0)
 
   // Enable real-time sync for this page
   const { isPolling } = useRealtimeSync({
@@ -84,11 +87,17 @@ export default function DashboardPage() {
     }
   }, [])
   
+  // Force update when store data changes (for real-time updates)
+  useEffect(() => {
+    setForceUpdate(prev => prev + 1)
+  }, [subjects.length, krsItems.length, assignments.length, materials.length, reminders.length])
+  
   // Debug log
   useEffect(() => {
     console.log('[Dashboard] Session state:', session)
     console.log('[Dashboard] Subjects count:', subjects.length)
-  }, [session, subjects])
+    console.log('[Dashboard] Reminders count:', reminders.length)
+  }, [session, subjects, reminders])
 
   // Fungsi untuk menentukan ucapan berdasarkan waktu
   const getGreeting = () => {
@@ -338,9 +347,19 @@ export default function DashboardPage() {
     color: activity.color,
   }))
 
-  // Get active reminders count
+  // Get active reminders count (all future reminders, not just urgent ones)
   const activeReminders = session ? getActiveReminders(session.id).filter(r => r.dueUTC > Date.now()) : []
   const urgentReminders = activeReminders.filter(r => r.dueUTC < Date.now() + 24 * 60 * 60 * 1000) // within 24 hours
+  
+  // Debug log for reminders (real-time updates)
+  useEffect(() => {
+    if (session) {
+      console.log('[Dashboard] Total Reminders in Store:', reminders.length)
+      console.log('[Dashboard] Active Reminders (future):', activeReminders.length)
+      console.log('[Dashboard] Urgent Reminders (24h):', urgentReminders.length)
+      console.log('[Dashboard] All Reminders:', reminders)
+    }
+  }, [reminders.length, activeReminders.length, urgentReminders.length])
 
   // Get assignments and materials
   // For dosen/kaprodi: only show from their taught subjects

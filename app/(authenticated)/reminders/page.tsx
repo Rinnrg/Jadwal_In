@@ -24,6 +24,7 @@ export default function RemindersPage() {
   const { markAsRead } = useNotificationStore()
   const [editingReminder, setEditingReminder] = useState<Reminder | null>(null)
   const [isFormOpen, setIsFormOpen] = useState(false)
+  const [showForm, setShowForm] = useState(false)
   
   // Force re-render trigger for reactive updates
   const [, setForceUpdate] = useState(0)
@@ -48,6 +49,22 @@ export default function RemindersPage() {
 
   if (!session) return null
 
+  // If showing form, render form view like jadwal page
+  if (showForm) {
+    return (
+      <div className="space-y-4 md:space-y-6 animate-fade-in">
+        <div className="animate-slide-up">
+          <ReminderForm
+            userId={session.id}
+            reminder={editingReminder || undefined}
+            onSuccess={handleFormSuccess}
+            onCancel={handleCancel}
+          />
+        </div>
+      </div>
+    )
+  }
+
   const activeReminders = getActiveReminders(session.id)
   const upcomingReminders = getUpcomingReminders(session.id, 24)
   const overdueReminders = getOverdueReminders(session.id)
@@ -64,17 +81,28 @@ export default function RemindersPage() {
 
   const handleEdit = (reminder: Reminder) => {
     setEditingReminder(reminder)
-    setIsFormOpen(true)
+    setShowForm(true)
   }
 
   const handleFormSuccess = () => {
     setEditingReminder(null)
-    setIsFormOpen(false)
+    setShowForm(false)
   }
 
   const handleCancel = () => {
     setEditingReminder(null)
-    setIsFormOpen(false)
+    setShowForm(false)
+  }
+
+  const handleAddReminder = () => {
+    if (!hasKrsItems) {
+      // Allow adding manual reminders even without KRS
+      setEditingReminder(null)
+      setShowForm(true)
+      return
+    }
+    setEditingReminder(null)
+    setShowForm(true)
   }
 
   const handleClearAll = async () => {
@@ -100,7 +128,7 @@ export default function RemindersPage() {
             Kelola pengingat tugas dan kegiatan Anda
           </p>
         </div>
-        <Button onClick={() => setIsFormOpen(true)}>
+        <Button onClick={handleAddReminder}>
           <Plus className="h-4 w-4 mr-2" />
           Tambah
         </Button>
@@ -108,24 +136,7 @@ export default function RemindersPage() {
 
       {/* Main Content */}
       <div className="space-y-4 md:space-y-6">
-        {/* Dialog Form */}
-        <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>
-          <DialogContent className="max-w-2xl max-h-[calc(100vh-4rem)]">
-            <DialogHeader>
-              <DialogTitle className="text-xl md:text-2xl">
-                {editingReminder ? "Edit Pengingat" : "Tambah Pengingat Baru"}
-              </DialogTitle>
-            </DialogHeader>
-            <ReminderForm
-              userId={session.id}
-              reminder={editingReminder || undefined}
-              onSuccess={handleFormSuccess}
-              onCancel={handleCancel}
-            />
-          </DialogContent>
-        </Dialog>
-
-        {/* KRS Info Alert */}
+        {/* KRS Info Alert - Show only if no KRS and trying to use schedule feature */}
         {!hasKrsItems && (
           <div className="bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-950/30 dark:to-indigo-950/30 border-l-4 border-blue-500 dark:border-blue-400 rounded-lg p-4 md:p-5 shadow-sm animate-slide-down">
             <div className="flex items-start gap-3 md:gap-4">

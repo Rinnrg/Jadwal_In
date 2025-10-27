@@ -35,10 +35,9 @@ interface ReminderFormProps {
   reminder?: Reminder
   onSuccess?: () => void
   onCancel?: () => void
-  showCard?: boolean // Add option to show/hide card wrapper
 }
 
-export function ReminderForm({ userId, reminder, onSuccess, onCancel, showCard = false }: ReminderFormProps) {
+export function ReminderForm({ userId, reminder, onSuccess, onCancel }: ReminderFormProps) {
   const { subjects, getSubjectById } = useSubjectsStore()
   const { addReminder, updateReminder } = useRemindersStore()
   const { getEventsByUser } = useScheduleStore()
@@ -150,45 +149,7 @@ export function ReminderForm({ userId, reminder, onSuccess, onCancel, showCard =
 
   const formContent = (
     <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-      {/* Warning if no KRS */}
-      {userKrs.length === 0 && (
-        <div className="p-3 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-lg">
-          <div className="flex items-start gap-2">
-            <svg className="h-5 w-5 text-amber-600 dark:text-amber-400 flex-shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-            </svg>
-            <div className="flex-1">
-              <p className="text-sm font-medium text-amber-800 dark:text-amber-200">
-                Belum Ada Mata Kuliah di KRS
-              </p>
-              <p className="text-xs text-amber-700 dark:text-amber-300 mt-1">
-                Anda belum mengambil mata kuliah di KRS. Fitur jadwal otomatis hanya tersedia untuk mata kuliah yang sudah diambil di KRS.
-              </p>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Info if no schedule */}
-      {userKrs.length > 0 && subjectsWithSchedule.length === 0 && (
-        <div className="p-3 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg">
-          <div className="flex items-start gap-2">
-            <svg className="h-5 w-5 text-blue-600 dark:text-blue-400 flex-shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-            </svg>
-            <div className="flex-1">
-              <p className="text-sm font-medium text-blue-800 dark:text-blue-200">
-                Belum Ada Jadwal
-              </p>
-              <p className="text-xs text-blue-700 dark:text-blue-300 mt-1">
-                Tambahkan jadwal untuk mata kuliah KRS Anda terlebih dahulu untuk menggunakan fitur quick select.
-              </p>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Schedule Selector - Top Position */}
+      {/* Schedule Selector - Top Position (only show if user has schedules) */}
       {subjectsWithSchedule.length > 0 && (
         <div className="space-y-2">
           <Label className="text-xs md:text-sm">Pilih dari Jadwal (Opsional)</Label>
@@ -216,6 +177,25 @@ export function ReminderForm({ userId, reminder, onSuccess, onCancel, showCard =
               })}
             </SelectContent>
           </Select>
+        </div>
+      )}
+
+      {/* Info if no schedule but has KRS */}
+      {userKrs.length > 0 && subjectsWithSchedule.length === 0 && (
+        <div className="p-3 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg">
+          <div className="flex items-start gap-2">
+            <svg className="h-5 w-5 text-blue-600 dark:text-blue-400 flex-shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            <div className="flex-1">
+              <p className="text-sm font-medium text-blue-800 dark:text-blue-200">
+                Belum Ada Jadwal
+              </p>
+              <p className="text-xs text-blue-700 dark:text-blue-300 mt-1">
+                Tambahkan jadwal untuk mata kuliah KRS Anda terlebih dahulu untuk menggunakan fitur quick select.
+              </p>
+            </div>
+          </div>
         </div>
       )}
 
@@ -293,20 +273,14 @@ export function ReminderForm({ userId, reminder, onSuccess, onCancel, showCard =
     </form>
   )
 
-  if (!showCard) {
-    return formContent
-  }
-
-  if (!showCard) {
-    return formContent
-  }
-
   return (
     <Card>
       <CardHeader className="px-4 md:px-6 pt-4 md:pt-6 pb-3 md:pb-4">
-        <CardTitle className="text-base md:text-lg">{reminder ? "Edit Pengingat" : "Tambah Pengingat"}</CardTitle>
+        <CardTitle className="text-base md:text-lg">{reminder ? "Edit Pengingat" : "Tambah Pengingat Baru"}</CardTitle>
         <CardDescription className="text-xs md:text-sm">
-          Pilih mata kuliah dari jadwal untuk mengisi otomatis atau isi manual
+          {subjectsWithSchedule.length > 0 
+            ? "Pilih mata kuliah dari jadwal untuk mengisi otomatis atau isi manual"
+            : "Isi form untuk menambahkan pengingat baru"}
         </CardDescription>
       </CardHeader>
       <CardContent className="px-4 md:px-6 pb-4 md:pb-6">
