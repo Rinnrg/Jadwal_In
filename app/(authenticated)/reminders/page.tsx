@@ -47,6 +47,42 @@ export default function RemindersPage() {
     }
   }, [session?.id, markAsRead])
 
+  // Handler functions - defined before being used
+  const handleEdit = (reminder: Reminder) => {
+    setEditingReminder(reminder)
+    setShowForm(true)
+  }
+
+  const handleFormSuccess = () => {
+    setEditingReminder(null)
+    setShowForm(false)
+  }
+
+  const handleCancel = () => {
+    setEditingReminder(null)
+    setShowForm(false)
+  }
+
+  const handleAddReminder = () => {
+    setEditingReminder(null)
+    setShowForm(true)
+  }
+
+  const handleClearAll = async () => {
+    if (!session) return
+    
+    const confirmed = await confirmAction(
+      "Hapus Semua Pengingat",
+      "Apakah Anda yakin ingin menghapus semua pengingat? Tindakan ini tidak dapat dibatalkan.",
+      "Ya, Hapus Semua",
+    )
+
+    if (confirmed) {
+      clearUserReminders(session.id)
+      showSuccess("Semua pengingat berhasil dihapus")
+    }
+  }
+
   if (!session) return null
 
   // If showing form, render form view like jadwal page
@@ -78,45 +114,6 @@ export default function RemindersPage() {
   const hasKrsItems = session?.role === "mahasiswa" 
     ? userKrsItems.length > 0 
     : taughtSubjects.length > 0
-
-  const handleEdit = (reminder: Reminder) => {
-    setEditingReminder(reminder)
-    setShowForm(true)
-  }
-
-  const handleFormSuccess = () => {
-    setEditingReminder(null)
-    setShowForm(false)
-  }
-
-  const handleCancel = () => {
-    setEditingReminder(null)
-    setShowForm(false)
-  }
-
-  const handleAddReminder = () => {
-    if (!hasKrsItems) {
-      // Allow adding manual reminders even without KRS
-      setEditingReminder(null)
-      setShowForm(true)
-      return
-    }
-    setEditingReminder(null)
-    setShowForm(true)
-  }
-
-  const handleClearAll = async () => {
-    const confirmed = await confirmAction(
-      "Hapus Semua Pengingat",
-      "Apakah Anda yakin ingin menghapus semua pengingat? Tindakan ini tidak dapat dibatalkan.",
-      "Ya, Hapus Semua",
-    )
-
-    if (confirmed) {
-      clearUserReminders(session.id)
-      showSuccess("Semua pengingat berhasil dihapus")
-    }
-  }
 
   return (
     <div className="space-y-4 md:space-y-6 px-2 md:px-4">
