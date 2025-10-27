@@ -128,6 +128,7 @@ export async function GET(request: NextRequest) {
               nim: extractedNim,
               angkatan: extractAngkatan(extractedNim),
               kelas: 'A', // Default class, can be updated later
+              avatarUrl: googleUser.picture, // Sync Google photo to profile
             }
           }
         },
@@ -136,6 +137,7 @@ export async function GET(request: NextRequest) {
         }
       })
       console.log('✅ User created with profile:', user.id, 'NIM:', extractedNim)
+      console.log('✅ Avatar synced to profile:', !!googleUser.picture)
     } else if (!user.googleId) {
       console.log('🔄 Updating existing user with Google ID...')
       
@@ -162,13 +164,19 @@ export async function GET(request: NextRequest) {
               update: {
                 nim: extractedNim,
                 angkatan: extractAngkatan(extractedNim),
+                avatarUrl: googleUser.picture, // Sync Google photo
               }
-            } : undefined
+            } : {
+              update: {
+                avatarUrl: googleUser.picture, // Sync Google photo even if NIM exists
+              }
+            }
           ) : {
             create: {
               nim: extractedNim,
               angkatan: extractAngkatan(extractedNim),
               kelas: 'A',
+              avatarUrl: googleUser.picture, // Sync Google photo
             }
           }
         },
@@ -202,6 +210,7 @@ export async function GET(request: NextRequest) {
             nim: extractedNim,
             angkatan: extractAngkatan(extractedNim),
             kelas: 'A',
+            avatarUrl: googleUser.picture, // Sync Google photo to profile
           }
         }
         needsUpdate = true
@@ -210,17 +219,31 @@ export async function GET(request: NextRequest) {
         const currentNim = user.profile.nim
         const nimNeedsUpdate = !currentNim || currentNim.length < 8
         
-        if (nimNeedsUpdate && extractedNim) {
-          console.log(`🔄 Updating NIM: "${currentNim || 'NULL'}" → "${extractedNim}"`)
+        // Check if avatarUrl needs to be synced from Google picture
+        const avatarNeedsUpdate = googleUser.picture && 
+          (!user.profile.avatarUrl || user.profile.avatarUrl !== googleUser.picture)
+        
+        if (nimNeedsUpdate || avatarNeedsUpdate) {
+          const profileUpdateData: any = {}
+          
+          if (nimNeedsUpdate && extractedNim) {
+            console.log(`🔄 Updating NIM: "${currentNim || 'NULL'}" → "${extractedNim}"`)
+            profileUpdateData.nim = extractedNim
+            profileUpdateData.angkatan = extractAngkatan(extractedNim)
+          }
+          
+          if (avatarNeedsUpdate) {
+            console.log(`🖼️ Syncing Google photo to profile.avatarUrl`)
+            profileUpdateData.avatarUrl = googleUser.picture
+          }
+          
           updateData.profile = {
-            update: {
-              nim: extractedNim,
-              angkatan: extractAngkatan(extractedNim),
-            }
+            update: profileUpdateData
           }
           needsUpdate = true
         } else {
           console.log(`✅ NIM already valid: ${currentNim}`)
+          console.log(`✅ Avatar already synced`)
         }
       }
       

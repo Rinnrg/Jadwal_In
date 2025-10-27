@@ -55,6 +55,7 @@ export default async function EKTMPublicPage({ params }: PageProps) {
           name: true,
           email: true,
           googleId: true,
+          image: true, // Include user.image for Google Auth profile pictures
         },
       },
     },
@@ -106,6 +107,11 @@ export default async function EKTMPublicPage({ params }: PageProps) {
   // Use NIM from profile, or fallback to userId if NIM is not set (Google Auth users)
   const displayNIM = profile.nim || profile.userId.slice(0, 12) // Use first 12 chars of userId as fallback
 
+  // Get avatar URL: prioritize profile.avatarUrl, fallback to user.image (for Google Auth)
+  const avatarUrl = profile.avatarUrl || profile.user.image || undefined
+
+  console.log('[E-KTM] Avatar URL:', avatarUrl ? 'Found' : 'Not found')
+
   return (
     <div className="min-h-screen flex items-center justify-center p-4 bg-white dark:bg-gray-950">
       <div className="w-full max-w-lg">
@@ -126,7 +132,7 @@ export default async function EKTMPublicPage({ params }: PageProps) {
             nim={displayNIM}
             fakultas={getFakultasFromNIM(displayNIM)}
             programStudi={getProdiFromNIM(displayNIM)}
-            avatarUrl={profile.avatarUrl || undefined}
+            avatarUrl={avatarUrl}
             userId={profile.userId} // Pass userId for QR code generation
           />
         </div>
