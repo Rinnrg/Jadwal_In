@@ -27,7 +27,7 @@ function DialogOverlay({ className, ...props }: React.ComponentProps<typeof Dial
     <DialogPrimitive.Overlay
       data-slot="dialog-overlay"
       className={cn(
-        "data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 fixed inset-0 z-50 bg-black/50 backdrop-blur-sm",
+        "data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 fixed inset-0 z-[150] bg-black/50 backdrop-blur-sm",
         className,
       )}
       {...props}
@@ -49,7 +49,7 @@ function DialogContent({
       <DialogPrimitive.Content
         data-slot="dialog-content"
         className={cn(
-          "bg-background data-[state=open]:animate-dialog-bounce-in data-[state=closed]:animate-dialog-bounce-out fixed top-[50%] left-[50%] z-50 grid w-full max-w-[calc(100%-3rem)] md:max-w-[calc(100%-2rem)] max-h-[calc(100vh-4rem)] translate-x-[-50%] translate-y-[-50%] gap-4 rounded-lg border p-4 sm:p-6 shadow-lg overflow-y-auto sm:max-w-lg",
+          "bg-background data-[state=open]:animate-dialog-bounce-in data-[state=closed]:animate-dialog-bounce-out fixed top-[50%] left-[50%] z-[150] grid w-full max-w-[calc(100%-3rem)] md:max-w-[calc(100%-2rem)] max-h-[calc(100vh-4rem)] translate-x-[-50%] translate-y-[-50%] gap-4 rounded-lg border p-4 sm:p-6 shadow-lg overflow-y-auto sm:max-w-lg",
           className,
         )}
         {...props}
