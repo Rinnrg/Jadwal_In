@@ -128,8 +128,6 @@ export async function GET(request: NextRequest) {
               nim: extractedNim,
               angkatan: extractAngkatan(extractedNim),
               kelas: 'A', // Default class, can be updated later
-              prodi: null,
-              bio: null,
             }
           }
         },
@@ -171,8 +169,6 @@ export async function GET(request: NextRequest) {
               nim: extractedNim,
               angkatan: extractAngkatan(extractedNim),
               kelas: 'A',
-              prodi: null,
-              bio: null,
             }
           }
         },
@@ -206,8 +202,6 @@ export async function GET(request: NextRequest) {
             nim: extractedNim,
             angkatan: extractAngkatan(extractedNim),
             kelas: 'A',
-            prodi: null,
-            bio: null,
           }
         }
         needsUpdate = true

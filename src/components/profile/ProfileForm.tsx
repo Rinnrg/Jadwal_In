@@ -89,8 +89,8 @@ export function ProfileForm({ profile, onSuccess, onChangePassword, onSetPasswor
                   nim: data.nim,
                   angkatan: data.angkatan,
                   kelas: 'A',
-                  prodi: null,
-                  bio: null
+                  prodi: undefined,
+                  bio: undefined
                 })
               }
             }
