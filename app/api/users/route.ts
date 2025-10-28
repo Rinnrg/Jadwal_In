@@ -33,6 +33,8 @@ const updateUserSchema = z.object({
   email: z.string().email().optional(),
   password: z.string().min(6).optional(),
   role: z.enum(['mahasiswa', 'dosen', 'kaprodi', 'super_admin']).optional(),
+  nim: z.string().length(11).optional(),
+  angkatan: z.number().min(2000).max(2100).optional(),
 })
 
 // GET - Get all users or specific user
@@ -252,6 +254,7 @@ export async function PATCH(request: NextRequest) {
     // Check if user exists
     const existingUser = await prisma.user.findUnique({
       where: { id: userId },
+      include: { profile: true },
     })
 
     if (!existingUser) {
@@ -275,6 +278,21 @@ export async function PATCH(request: NextRequest) {
       }
     }
 
+    // Check if NIM is being changed and if it's already taken
+    if (data.nim && existingUser.profile && data.nim !== existingUser.profile.nim) {
+      const nimTaken = await prisma.profile.findFirst({
+        where: { nim: data.nim },
+      })
+
+      if (nimTaken) {
+        return NextResponse.json(
+          { error: 'NIM sudah digunakan' },
+          { status: 400 }
+        )
+      }
+    }
+
+    // Update user and profile in transaction
     const user = await prisma.user.update({
       where: { id: userId },
       data: {
@@ -282,6 +300,15 @@ export async function PATCH(request: NextRequest) {
         ...(data.email && { email: data.email }),
         ...(data.password && { password: data.password }),
         ...(data.role && { role: data.role }),
+        // Update profile if nim or angkatan provided
+        ...(existingUser.profile && (data.nim || data.angkatan) && {
+          profile: {
+            update: {
+              ...(data.nim && { nim: data.nim }),
+              ...(data.angkatan && { angkatan: data.angkatan }),
+            },
+          },
+        }),
       },
       include: { profile: true },
     })

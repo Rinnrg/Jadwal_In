@@ -21,7 +21,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog"
 
-// Schema untuk mahasiswa
+// Schema untuk mahasiswa (create)
 const mahasiswaFormSchema = z.object({
   name: z.string().min(3, "Nama minimal 3 karakter"),
   nomorHp: z.string().min(10, "Nomor HP minimal 10 digit").regex(/^[0-9]+$/, "Nomor HP hanya boleh berisi angka"),
@@ -31,12 +31,28 @@ const mahasiswaFormSchema = z.object({
   role: z.literal("mahasiswa"),
 })
 
-// Schema untuk dosen/kaprodi/admin
+// Schema untuk edit mahasiswa
+const editMahasiswaFormSchema = z.object({
+  name: z.string().min(3, "Nama minimal 3 karakter"),
+  nim: z.string().min(11, "NIM harus 11 digit").max(11, "NIM harus 11 digit").regex(/^[0-9]+$/, "NIM hanya boleh berisi angka"),
+  angkatan: z.number().min(2000).max(2100, "Tahun angkatan tidak valid"),
+  role: z.enum(["mahasiswa", "dosen", "kaprodi", "super_admin"]),
+})
+
+// Schema untuk dosen/kaprodi/admin (create)
 const staffFormSchema = z.object({
   name: z.string().min(3, "Nama minimal 3 karakter"),
   email: z.string().email("Format email tidak valid"),
   password: z.string().min(6, "Password minimal 6 karakter").optional().or(z.literal("")),
   role: z.enum(["dosen", "kaprodi", "super_admin"]),
+})
+
+// Schema untuk edit staff
+const editStaffFormSchema = z.object({
+  name: z.string().min(3, "Nama minimal 3 karakter"),
+  email: z.string().email("Format email tidak valid"),
+  password: z.string().min(6, "Password minimal 6 karakter").optional().or(z.literal("")),
+  role: z.enum(["mahasiswa", "dosen", "kaprodi", "super_admin"]),
 })
 
 // Union schema
@@ -68,24 +84,38 @@ export function UserForm({ user, onSuccess, onCancel }: UserFormProps) {
   } | null>(null)
 
   const form = useForm<any>({
-    resolver: selectedRole === "mahasiswa" 
-      ? zodResolver(mahasiswaFormSchema) 
-      : zodResolver(staffFormSchema),
-    defaultValues: selectedRole === "mahasiswa" 
-      ? {
-          name: user?.name || "",
-          nomorHp: "",
-          tanggalLahir: "",
-          tempatLahir: "",
-          angkatan: new Date().getFullYear(),
-          role: "mahasiswa",
-        }
-      : {
-          name: user?.name || "",
-          email: user?.email || "",
-          password: "",
-          role: user?.role || "dosen",
-        },
+    resolver: isEdit 
+      ? (selectedRole === "mahasiswa" ? zodResolver(editMahasiswaFormSchema) : zodResolver(editStaffFormSchema))
+      : (selectedRole === "mahasiswa" ? zodResolver(mahasiswaFormSchema) : zodResolver(staffFormSchema)),
+    defaultValues: isEdit
+      ? (user?.role === "mahasiswa"
+          ? {
+              name: user?.name || "",
+              nim: user?.profile?.nim || "",
+              angkatan: user?.profile?.angkatan || new Date().getFullYear(),
+              role: user?.role || "mahasiswa",
+            }
+          : {
+              name: user?.name || "",
+              email: user?.email || "",
+              password: "",
+              role: user?.role || "dosen",
+            })
+      : (selectedRole === "mahasiswa" 
+          ? {
+              name: "",
+              nomorHp: "",
+              tanggalLahir: "",
+              tempatLahir: "",
+              angkatan: new Date().getFullYear(),
+              role: "mahasiswa",
+            }
+          : {
+              name: "",
+              email: "",
+              password: "",
+              role: selectedRole,
+            }),
   })
 
   useEffect(() => {
@@ -93,12 +123,11 @@ export function UserForm({ user, onSuccess, onCancel }: UserFormProps) {
       if (user.role === "mahasiswa") {
         form.reset({
           name: user.name,
-          nomorHp: "",
-          tanggalLahir: "",
-          tempatLahir: "",
+          nim: user.profile?.nim || "",
           angkatan: user.profile?.angkatan || new Date().getFullYear(),
-          role: "mahasiswa",
+          role: user.role,
         })
+        setSelectedRole(user.role)
       } else {
         form.reset({
           name: user.name,
@@ -106,6 +135,7 @@ export function UserForm({ user, onSuccess, onCancel }: UserFormProps) {
           password: "",
           role: user.role,
         })
+        setSelectedRole(user.role)
       }
     }
   }, [user, form])
@@ -140,14 +170,25 @@ export function UserForm({ user, onSuccess, onCancel }: UserFormProps) {
     try {
       if (isEdit && user) {
         // Update existing user
-        const updates: Partial<User> = {
+        const updates: any = {
           name: data.name,
           role: data.role,
         }
         
-        // Only update password if provided (for non-mahasiswa)
-        if (data.password && data.role !== "mahasiswa") {
+        // Update email untuk non-mahasiswa
+        if (data.role !== "mahasiswa" && data.email) {
+          updates.email = data.email
+        }
+        
+        // Update password jika diisi
+        if (data.password) {
           updates.password = data.password
+        }
+        
+        // Update NIM dan angkatan untuk mahasiswa
+        if (data.role === "mahasiswa") {
+          updates.nim = data.nim
+          updates.angkatan = data.angkatan
         }
         
         await updateUser(user.id, updates)
@@ -213,32 +254,40 @@ export function UserForm({ user, onSuccess, onCancel }: UserFormProps) {
         </CardHeader>
       <CardContent>
         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-          {/* Role Selection - Only for new users */}
-          {!isEdit && (
-            <div className="space-y-2">
-              <Label htmlFor="role" className="flex items-center gap-2">
-                <Shield className="h-4 w-4" />
-                Role
-              </Label>
-              <Select
-                value={selectedRole}
-                onValueChange={(value: any) => {
-                  setSelectedRole(value)
-                  form.setValue("role", value)
-                }}
-              >
-                <SelectTrigger className="cursor-pointer">
-                  <SelectValue placeholder="Pilih role" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="mahasiswa" className="cursor-pointer">Mahasiswa</SelectItem>
-                  <SelectItem value="dosen" className="cursor-pointer">Dosen</SelectItem>
-                  <SelectItem value="kaprodi" className="cursor-pointer">Kaprodi</SelectItem>
-                  <SelectItem value="super_admin" className="cursor-pointer">Super Admin</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-          )}
+          {/* Role Selection - For both new and edit users */}
+          <div className="space-y-2">
+            <Label htmlFor="role" className="flex items-center gap-2">
+              <Shield className="h-4 w-4" />
+              Role
+            </Label>
+            <Select
+              value={selectedRole}
+              onValueChange={(value: any) => {
+                setSelectedRole(value)
+                form.setValue("role", value)
+              }}
+            >
+              <SelectTrigger className="cursor-pointer">
+                <SelectValue placeholder="Pilih role" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="mahasiswa" className="cursor-pointer">Mahasiswa</SelectItem>
+                <SelectItem value="dosen" className="cursor-pointer">Dosen</SelectItem>
+                <SelectItem value="kaprodi" className="cursor-pointer">Kaprodi</SelectItem>
+                <SelectItem value="super_admin" className="cursor-pointer">Super Admin</SelectItem>
+              </SelectContent>
+            </Select>
+            {isEdit && (
+              <p className="text-xs text-muted-foreground">
+                ⚠️ Mengubah role user dapat mempengaruhi akses dan data mereka
+              </p>
+            )}
+            {isEdit && user?.role === "mahasiswa" && (
+              <p className="text-xs text-muted-foreground">
+                Role mahasiswa tidak dapat diubah
+              </p>
+            )}
+          </div>
 
           {/* Nama Lengkap - Common for all */}
           <div className="space-y-2">
@@ -258,6 +307,54 @@ export function UserForm({ user, onSuccess, onCancel }: UserFormProps) {
               </p>
             )}
           </div>
+
+          {/* Form untuk Edit Mahasiswa */}
+          {selectedRole === "mahasiswa" && isEdit && (
+            <>
+              <div className="space-y-2">
+                <Label htmlFor="nim" className="flex items-center gap-2">
+                  <UserIcon className="h-4 w-4" />
+                  NIM
+                </Label>
+                <Input
+                  id="nim"
+                  placeholder="22050974025"
+                  maxLength={11}
+                  {...form.register("nim")}
+                  className="cursor-pointer font-mono"
+                />
+                {form.formState.errors.nim && (
+                  <p className="text-sm text-destructive">
+                    {String(form.formState.errors.nim.message || "")}
+                  </p>
+                )}
+                <p className="text-xs text-muted-foreground">
+                  NIM harus 11 digit angka
+                </p>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="angkatan" className="flex items-center gap-2">
+                  <UserIcon className="h-4 w-4" />
+                  Angkatan
+                </Label>
+                <Input
+                  id="angkatan"
+                  type="number"
+                  placeholder="2024"
+                  {...form.register("angkatan", { valueAsNumber: true })}
+                  className="cursor-pointer"
+                  min={2000}
+                  max={2100}
+                />
+                {form.formState.errors.angkatan && (
+                  <p className="text-sm text-destructive">
+                    {String(form.formState.errors.angkatan.message || "")}
+                  </p>
+                )}
+              </div>
+            </>
+          )}
 
           {/* Form untuk Mahasiswa */}
           {selectedRole === "mahasiswa" && !isEdit && (
@@ -360,11 +457,15 @@ export function UserForm({ user, onSuccess, onCancel }: UserFormProps) {
                   placeholder="user@example.com"
                   {...form.register("email")}
                   className="cursor-pointer"
-                  disabled={isEdit}
                 />
                 {form.formState.errors.email && (
                   <p className="text-sm text-destructive">
                     {String(form.formState.errors.email.message || "")}
+                  </p>
+                )}
+                {isEdit && (
+                  <p className="text-xs text-muted-foreground">
+                    Email dapat diubah untuk role non-mahasiswa
                   </p>
                 )}
               </div>

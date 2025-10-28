@@ -573,6 +573,82 @@ export function ProfileForm({ profile, onSuccess, onChangePassword, onSetPasswor
               </div>
             </div>
 
+            {/* Phone Numbers Section - Integrated */}
+            <div className="pt-4 border-t">
+              <div className="mb-3">
+                <Label className="text-base">Nomor Telepon</Label>
+                <p className="text-xs text-muted-foreground mt-1">Tambah dan kelola nomor telepon Anda</p>
+              </div>
+              
+              {/* Add Phone */}
+              <div className="flex gap-2 mb-3">
+                <Input
+                  placeholder="Contoh: 081234567890"
+                  value={newPhone}
+                  onChange={(e) => setNewPhone(e.target.value)}
+                  disabled={isAddingPhone}
+                />
+                <Button
+                  type="button"
+                  onClick={handleAddPhone}
+                  disabled={isAddingPhone || !newPhone.trim()}
+                  size="sm"
+                >
+                  <Plus className="h-4 w-4 mr-2" />
+                  Tambah
+                </Button>
+              </div>
+
+              {/* Phone List */}
+              {isLoadingPhones ? (
+                <div className="text-sm text-muted-foreground">Memuat nomor telepon...</div>
+              ) : phones.length === 0 ? (
+                <div className="text-sm text-muted-foreground">Belum ada nomor telepon</div>
+              ) : (
+                <div className="space-y-2">
+                  {phones.map((phone) => (
+                    <div
+                      key={phone.id}
+                      className="flex items-center justify-between p-3 border rounded-lg bg-muted/30"
+                    >
+                      <div className="flex items-center gap-3">
+                        <Phone className="h-4 w-4 text-muted-foreground" />
+                        <div>
+                          <p className="font-medium">{phone.phoneNumber}</p>
+                          {phone.isPrimary && (
+                            <p className="text-xs text-blue-600 dark:text-blue-400">
+                              Nomor Utama
+                            </p>
+                          )}
+                        </div>
+                      </div>
+                      <div className="flex gap-2">
+                        {!phone.isPrimary && (
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            onClick={() => handleSetPrimary(phone.id)}
+                          >
+                            Jadikan Utama
+                          </Button>
+                        )}
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="icon"
+                          onClick={() => handleDeletePhone(phone.id)}
+                          className="text-destructive hover:text-destructive h-8 w-8"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
             <div className="flex flex-col sm:flex-row gap-2 pt-2">
               {isCheckingPassword ? (
                 <Button type="button" variant="outline" disabled>
@@ -609,84 +685,6 @@ export function ProfileForm({ profile, onSuccess, onChangePassword, onSetPasswor
                 </>
               )}
             </div>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Phone Numbers Card */}
-      <Card className="lg:col-span-2">
-        <CardHeader>
-          <CardTitle>Nomor Telepon</CardTitle>
-          <CardDescription>Kelola nomor telepon Anda</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-4">
-            {/* Add Phone */}
-            <div className="flex gap-2">
-              <Input
-                placeholder="Contoh: 081234567890"
-                value={newPhone}
-                onChange={(e) => setNewPhone(e.target.value)}
-                disabled={isAddingPhone}
-              />
-              <Button
-                type="button"
-                onClick={handleAddPhone}
-                disabled={isAddingPhone || !newPhone.trim()}
-              >
-                <Plus className="h-4 w-4 mr-2" />
-                Tambah
-              </Button>
-            </div>
-
-            {/* Phone List */}
-            {isLoadingPhones ? (
-              <div className="text-sm text-muted-foreground">Memuat nomor telepon...</div>
-            ) : phones.length === 0 ? (
-              <div className="text-sm text-muted-foreground">Belum ada nomor telepon</div>
-            ) : (
-              <div className="space-y-2">
-                {phones.map((phone) => (
-                  <div
-                    key={phone.id}
-                    className="flex items-center justify-between p-3 border rounded-lg"
-                  >
-                    <div className="flex items-center gap-3">
-                      <Phone className="h-4 w-4 text-muted-foreground" />
-                      <div>
-                        <p className="font-medium">{phone.phoneNumber}</p>
-                        {phone.isPrimary && (
-                          <p className="text-xs text-blue-600 dark:text-blue-400">
-                            Nomor Utama
-                          </p>
-                        )}
-                      </div>
-                    </div>
-                    <div className="flex gap-2">
-                      {!phone.isPrimary && (
-                        <Button
-                          type="button"
-                          variant="outline"
-                          size="sm"
-                          onClick={() => handleSetPrimary(phone.id)}
-                        >
-                          Jadikan Utama
-                        </Button>
-                      )}
-                      <Button
-                        type="button"
-                        variant="outline"
-                        size="icon"
-                        onClick={() => handleDeletePhone(phone.id)}
-                        className="text-destructive hover:text-destructive"
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
           </div>
         </CardContent>
       </Card>

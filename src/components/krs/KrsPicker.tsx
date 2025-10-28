@@ -13,8 +13,21 @@ import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible"
-import { Search, Plus, Users, ChevronDown, BookOpen, AlertCircle } from "lucide-react"
+import { Search, Plus, Users, ChevronDown, BookOpen, AlertCircle, Calendar, Clock } from "lucide-react"
 import { showSuccess, showError } from "@/lib/alerts"
+
+// Helper function untuk format hari
+const getDayName = (dayIndex: number): string => {
+  const days = ["Minggu", "Senin", "Selasa", "Rabu", "Kamis", "Jumat", "Sabtu"]
+  return days[dayIndex] || "-"
+}
+
+// Helper function untuk format jam dari UTC milliseconds
+const formatTime = (utcMs: number): string => {
+  const hours = Math.floor(utcMs / (60 * 60 * 1000))
+  const minutes = Math.floor((utcMs % (60 * 60 * 1000)) / (60 * 1000))
+  return `${hours.toString().padStart(2, "0")}:${minutes.toString().padStart(2, "0")}`
+}
 
 interface KrsPickerProps {
   userId: string
@@ -327,6 +340,14 @@ export function KrsPicker({ userId, term }: KrsPickerProps) {
                           if (!subject) return null
 
                           const enrollmentInfo = getEnrollmentInfo(offering)
+                          
+                          // Get schedule info from offering or subject
+                          const slotDay = offering.slotDay ?? subject.slotDay
+                          const slotStartUTC = offering.slotStartUTC ?? subject.slotStartUTC
+                          const slotEndUTC = offering.slotEndUTC ?? subject.slotEndUTC
+                          const slotRuang = offering.slotRuang ?? subject.slotRuang
+                          
+                          const hasSchedule = slotDay !== undefined && slotDay !== null && slotStartUTC && slotEndUTC
 
                           return (
                             <div 
@@ -344,7 +365,7 @@ export function KrsPicker({ userId, term }: KrsPickerProps) {
                                   <h4 className="font-medium text-sm leading-tight mb-1">
                                     {subject.nama}
                                   </h4>
-                                  <div className="flex items-center gap-2 flex-wrap">
+                                  <div className="flex items-center gap-2 flex-wrap mb-2">
                                     <Badge variant="secondary" className="text-xs">
                                       {subject.sks} SKS
                                     </Badge>
@@ -357,6 +378,26 @@ export function KrsPicker({ userId, term }: KrsPickerProps) {
                                       </div>
                                     )}
                                   </div>
+                                  
+                                  {/* Schedule Info */}
+                                  {hasSchedule && (
+                                    <div className="flex items-center gap-1.5 text-xs text-muted-foreground mb-2">
+                                      <Calendar className="h-3 w-3 flex-shrink-0" />
+                                      <span className="font-medium">{getDayName(slotDay!)}</span>
+                                      <span>•</span>
+                                      <Clock className="h-3 w-3 flex-shrink-0" />
+                                      <span>
+                                        {formatTime(slotStartUTC!)} - {formatTime(slotEndUTC!)}
+                                      </span>
+                                      {slotRuang && (
+                                        <>
+                                          <span>•</span>
+                                          <span>{slotRuang}</span>
+                                        </>
+                                      )}
+                                    </div>
+                                  )}
+                                  
                                   {offering.isAlreadyEnrolled && (
                                     <p className="text-xs text-green-600 dark:text-green-400 mt-2 font-medium">
                                       ✓ Mata kuliah sudah diambil
@@ -437,6 +478,14 @@ export function KrsPicker({ userId, term }: KrsPickerProps) {
                             if (!subject) return null
 
                             const enrollmentInfo = getEnrollmentInfo(offering)
+                            
+                            // Get schedule info from offering or subject
+                            const slotDay = offering.slotDay ?? subject.slotDay
+                            const slotStartUTC = offering.slotStartUTC ?? subject.slotStartUTC
+                            const slotEndUTC = offering.slotEndUTC ?? subject.slotEndUTC
+                            const slotRuang = offering.slotRuang ?? subject.slotRuang
+                            
+                            const hasSchedule = slotDay !== undefined && slotDay !== null && slotStartUTC && slotEndUTC
 
                             return (
                               <Card 
@@ -455,7 +504,7 @@ export function KrsPicker({ userId, term }: KrsPickerProps) {
                                       <h4 className="font-medium text-base leading-tight mb-2">
                                         {subject.nama}
                                       </h4>
-                                      <div className="flex items-center gap-2 flex-wrap">
+                                      <div className="flex items-center gap-2 flex-wrap mb-2">
                                         <Badge variant="secondary" className="text-xs">
                                           {subject.kode}
                                         </Badge>
@@ -471,6 +520,26 @@ export function KrsPicker({ userId, term }: KrsPickerProps) {
                                           </div>
                                         )}
                                       </div>
+                                      
+                                      {/* Schedule Info */}
+                                      {hasSchedule && (
+                                        <div className="flex items-center gap-1.5 text-sm text-muted-foreground mb-2">
+                                          <Calendar className="h-4 w-4 flex-shrink-0" />
+                                          <span className="font-medium">{getDayName(slotDay!)}</span>
+                                          <span>•</span>
+                                          <Clock className="h-4 w-4 flex-shrink-0" />
+                                          <span>
+                                            {formatTime(slotStartUTC!)} - {formatTime(slotEndUTC!)}
+                                          </span>
+                                          {slotRuang && (
+                                            <>
+                                              <span>•</span>
+                                              <span>{slotRuang}</span>
+                                            </>
+                                          )}
+                                        </div>
+                                      )}
+                                      
                                       {offering.isAlreadyEnrolled && (
                                         <p className="text-sm text-green-600 dark:text-green-400 mt-2 font-medium flex items-center gap-1">
                                           ✓ Mata kuliah sudah diambil
