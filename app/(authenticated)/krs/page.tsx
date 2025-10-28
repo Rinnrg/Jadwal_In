@@ -29,7 +29,7 @@ export default function KrsPage() {
   // Enable real-time sync for KRS page
   useRealtimeSync({
     enabled: true,
-    pollingInterval: 2000, // 2 seconds for real-time updates
+    pollingInterval: 5000, // 5 seconds for real-time updates
   })
 
   // Fetch data on mount

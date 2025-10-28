@@ -12,7 +12,7 @@ import { AvatarUploader } from "@/components/profile/AvatarUploader"
 import { EKTMFullView } from "@/components/profile/EKTMFullView"
 import { showSuccess, showError } from "@/lib/alerts"
 import { ActivityLogger } from "@/lib/activity-logger"
-import { Lock, IdCard, Edit2, Check, X, KeyRound, Upload } from "lucide-react"
+import { Lock, IdCard, Edit2, Check, X, KeyRound, Upload, Phone, Plus, Trash2 } from "lucide-react"
 
 interface ProfileFormProps {
   profile?: Profile
@@ -31,6 +31,12 @@ export function ProfileForm({ profile, onSuccess, onChangePassword, onSetPasswor
   const [hasPassword, setHasPassword] = useState<boolean | null>(null)
   const [isCheckingPassword, setIsCheckingPassword] = useState(true)
   const fileInputRef = useRef<HTMLInputElement>(null)
+  
+  // Phone state
+  const [phones, setPhones] = useState<Array<{id: string, phoneNumber: string, isPrimary: boolean}>>([])
+  const [newPhone, setNewPhone] = useState("")
+  const [isAddingPhone, setIsAddingPhone] = useState(false)
+  const [isLoadingPhones, setIsLoadingPhones] = useState(true)
 
   // Check if user has password
   useEffect(() => {
@@ -51,6 +57,28 @@ export function ProfileForm({ profile, onSuccess, onChangePassword, onSetPasswor
     }
     
     checkPassword()
+  }, [session])
+
+  // Fetch phones
+  useEffect(() => {
+    const fetchPhones = async () => {
+      if (!session) return
+      
+      try {
+        setIsLoadingPhones(true)
+        const response = await fetch(`/api/profile/${session.id}/phone`)
+        if (response.ok) {
+          const data = await response.json()
+          setPhones(data.phones || [])
+        }
+      } catch (error) {
+        console.error('Error fetching phones:', error)
+      } finally {
+        setIsLoadingPhones(false)
+      }
+    }
+    
+    fetchPhones()
   }, [session])
 
   // Auto-sync NIM for Google Auth users on profile load
@@ -293,6 +321,85 @@ export function ProfileForm({ profile, onSuccess, onChangePassword, onSetPasswor
     setIsEditing(false)
   }
 
+  const handleAddPhone = async () => {
+    if (!session || !newPhone.trim()) return
+    
+    try {
+      setIsAddingPhone(true)
+      const response = await fetch(`/api/profile/${session.id}/phone`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ 
+          phoneNumber: newPhone.trim(),
+          isPrimary: phones.length === 0 // First phone is primary
+        })
+      })
+      
+      if (!response.ok) {
+        const errorData = await response.json()
+        throw new Error(errorData.error || 'Failed to add phone')
+      }
+      
+      const data = await response.json()
+      setPhones([...phones, data.phone])
+      setNewPhone("")
+      showSuccess("Nomor telepon berhasil ditambahkan")
+    } catch (error) {
+      console.error('Add phone error:', error)
+      showError(error instanceof Error ? error.message : "Gagal menambahkan nomor telepon")
+    } finally {
+      setIsAddingPhone(false)
+    }
+  }
+
+  const handleDeletePhone = async (phoneId: string) => {
+    if (!session) return
+    
+    try {
+      const response = await fetch(`/api/profile/${session.id}/phone?phoneId=${phoneId}`, {
+        method: 'DELETE'
+      })
+      
+      if (!response.ok) {
+        const errorData = await response.json()
+        throw new Error(errorData.error || 'Failed to delete phone')
+      }
+      
+      setPhones(phones.filter(p => p.id !== phoneId))
+      showSuccess("Nomor telepon berhasil dihapus")
+    } catch (error) {
+      console.error('Delete phone error:', error)
+      showError(error instanceof Error ? error.message : "Gagal menghapus nomor telepon")
+    }
+  }
+
+  const handleSetPrimary = async (phoneId: string) => {
+    if (!session) return
+    
+    try {
+      const response = await fetch(`/api/profile/${session.id}/phone`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ phoneId, isPrimary: true })
+      })
+      
+      if (!response.ok) {
+        const errorData = await response.json()
+        throw new Error(errorData.error || 'Failed to update phone')
+      }
+      
+      // Update local state
+      setPhones(phones.map(p => ({
+        ...p,
+        isPrimary: p.id === phoneId
+      })))
+      showSuccess("Nomor telepon utama berhasil diubah")
+    } catch (error) {
+      console.error('Update phone error:', error)
+      showError(error instanceof Error ? error.message : "Gagal mengubah nomor telepon utama")
+    }
+  }
+
   if (!session) return null
 
   return (
@@ -502,6 +609,84 @@ export function ProfileForm({ profile, onSuccess, onChangePassword, onSetPasswor
                 </>
               )}
             </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Phone Numbers Card */}
+      <Card className="lg:col-span-2">
+        <CardHeader>
+          <CardTitle>Nomor Telepon</CardTitle>
+          <CardDescription>Kelola nomor telepon Anda</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-4">
+            {/* Add Phone */}
+            <div className="flex gap-2">
+              <Input
+                placeholder="Contoh: 081234567890"
+                value={newPhone}
+                onChange={(e) => setNewPhone(e.target.value)}
+                disabled={isAddingPhone}
+              />
+              <Button
+                type="button"
+                onClick={handleAddPhone}
+                disabled={isAddingPhone || !newPhone.trim()}
+              >
+                <Plus className="h-4 w-4 mr-2" />
+                Tambah
+              </Button>
+            </div>
+
+            {/* Phone List */}
+            {isLoadingPhones ? (
+              <div className="text-sm text-muted-foreground">Memuat nomor telepon...</div>
+            ) : phones.length === 0 ? (
+              <div className="text-sm text-muted-foreground">Belum ada nomor telepon</div>
+            ) : (
+              <div className="space-y-2">
+                {phones.map((phone) => (
+                  <div
+                    key={phone.id}
+                    className="flex items-center justify-between p-3 border rounded-lg"
+                  >
+                    <div className="flex items-center gap-3">
+                      <Phone className="h-4 w-4 text-muted-foreground" />
+                      <div>
+                        <p className="font-medium">{phone.phoneNumber}</p>
+                        {phone.isPrimary && (
+                          <p className="text-xs text-blue-600 dark:text-blue-400">
+                            Nomor Utama
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                    <div className="flex gap-2">
+                      {!phone.isPrimary && (
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handleSetPrimary(phone.id)}
+                        >
+                          Jadikan Utama
+                        </Button>
+                      )}
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="icon"
+                        onClick={() => handleDeletePhone(phone.id)}
+                        className="text-destructive hover:text-destructive"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         </CardContent>
       </Card>

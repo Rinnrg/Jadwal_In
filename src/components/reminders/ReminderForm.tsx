@@ -112,7 +112,7 @@ export function ReminderForm({ userId, reminder, onSuccess, onCancel }: Reminder
     form.setValue("relatedSubjectId", selected.subjectId)
   }
 
-  const onSubmit = (data: ReminderFormData) => {
+  const onSubmit = async (data: ReminderFormData) => {
     try {
       // Combine date and time
       const dueDateTime = new Date(`${data.dueDate}T${data.dueTime}:00`)
@@ -128,13 +128,13 @@ export function ReminderForm({ userId, reminder, onSuccess, onCancel }: Reminder
       }
 
       if (reminder) {
-        updateReminder(reminder.id, reminderData)
+        await updateReminder(reminder.id, reminderData)
         showSuccess("Pengingat berhasil diperbarui")
         
         // Log activity
         ActivityLogger.reminderUpdated(userId, data.title)
       } else {
-        addReminder(reminderData)
+        await addReminder(reminderData)
         showSuccess("Pengingat berhasil ditambahkan")
         
         // Log activity
@@ -143,6 +143,7 @@ export function ReminderForm({ userId, reminder, onSuccess, onCancel }: Reminder
 
       onSuccess?.()
     } catch (error) {
+      console.error('Save reminder error:', error)
       showError("Terjadi kesalahan saat menyimpan pengingat")
     }
   }

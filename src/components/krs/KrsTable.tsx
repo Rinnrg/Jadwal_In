@@ -22,6 +22,19 @@ import { fmtDateTime, nowUTC } from "@/lib/time"
 import { ActivityLogger } from "@/lib/activity-logger"
 import { generateUniqueColor } from "@/lib/utils"
 
+// Helper function untuk format hari
+const getDayName = (dayIndex: number): string => {
+  const days = ["Minggu", "Senin", "Selasa", "Rabu", "Kamis", "Jumat", "Sabtu"]
+  return days[dayIndex] || "-"
+}
+
+// Helper function untuk format jam dari UTC milliseconds
+const formatTime = (utcMs: number): string => {
+  const hours = Math.floor(utcMs / (60 * 60 * 1000))
+  const minutes = Math.floor((utcMs % (60 * 60 * 1000)) / (60 * 1000))
+  return `${hours.toString().padStart(2, "0")}:${minutes.toString().padStart(2, "0")}`
+}
+
 interface KrsTableProps {
   userId: string
   term: string
@@ -374,27 +387,52 @@ export function KrsTable({ userId, term, onScheduleSuggestion }: KrsTableProps) 
                       <TableRow>
                         <TableHead>Nama</TableHead>
                         <TableHead>SKS</TableHead>
+                        <TableHead>Jadwal</TableHead>
                         <TableHead>Ditambahkan</TableHead>
                         <TableHead className="w-[180px]">Aksi</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {group.items.map((item) => (
-                        <TableRow
-                          key={item!.id}
-                          className="hover:bg-muted/50 transition-all duration-300 hover:shadow-md hover:scale-[1.01]"
-                        >
-                          <TableCell>
-                            <div>
-                              <p className="font-medium">{item!.subject.nama}</p>
-                              {item!.subject.prodi && <p className="text-sm text-muted-foreground">{item!.subject.prodi}</p>}
-                              {item!.offering?.term && <p className="text-xs text-muted-foreground">{item!.offering.term}</p>}
-                            </div>
-                          </TableCell>
-                          <TableCell>{item!.subject.sks}</TableCell>
-                          <TableCell className="text-sm text-muted-foreground">{fmtDateTime(item!.createdAt)}</TableCell>
-                          <TableCell>
-                            <div className="flex space-x-1">
+                      {group.items.map((item) => {
+                        // Get schedule info from offering or subject
+                        const slotDay = item!.offering?.slotDay ?? item!.subject.slotDay
+                        const slotStartUTC = item!.offering?.slotStartUTC ?? item!.subject.slotStartUTC
+                        const slotEndUTC = item!.offering?.slotEndUTC ?? item!.subject.slotEndUTC
+                        const slotRuang = item!.offering?.slotRuang ?? item!.subject.slotRuang
+                        
+                        const hasSchedule = slotDay !== undefined && slotDay !== null && slotStartUTC && slotEndUTC
+                        
+                        return (
+                          <TableRow
+                            key={item!.id}
+                            className="hover:bg-muted/50 transition-all duration-300 hover:shadow-md hover:scale-[1.01]"
+                          >
+                            <TableCell>
+                              <div>
+                                <p className="font-medium">{item!.subject.nama}</p>
+                                {item!.subject.prodi && <p className="text-sm text-muted-foreground">{item!.subject.prodi}</p>}
+                                {item!.offering?.term && <p className="text-xs text-muted-foreground">{item!.offering.term}</p>}
+                              </div>
+                            </TableCell>
+                            <TableCell>{item!.subject.sks}</TableCell>
+                            <TableCell>
+                              {hasSchedule ? (
+                                <div className="text-sm">
+                                  <p className="font-medium">{getDayName(slotDay!)}</p>
+                                  <p className="text-muted-foreground">
+                                    {formatTime(slotStartUTC!)} - {formatTime(slotEndUTC!)}
+                                  </p>
+                                  {slotRuang && (
+                                    <p className="text-xs text-muted-foreground">{slotRuang}</p>
+                                  )}
+                                </div>
+                              ) : (
+                                <span className="text-sm text-muted-foreground">Belum ada jadwal</span>
+                              )}
+                            </TableCell>
+                            <TableCell className="text-sm text-muted-foreground">{fmtDateTime(item!.createdAt)}</TableCell>
+                            <TableCell>
+                              <div className="flex space-x-1">
                               {((item!.offering?.slotDay !== undefined && item!.offering?.slotStartUTC) || 
                                 (item!.subject.slotDay !== undefined && item!.subject.slotStartUTC)) && (
                                 <Button
@@ -429,7 +467,8 @@ export function KrsTable({ userId, term, onScheduleSuggestion }: KrsTableProps) 
                             </div>
                           </TableCell>
                         </TableRow>
-                      ))}
+                        )
+                      })}
                     </TableBody>
                   </Table>
                 </CardContent>
@@ -437,63 +476,91 @@ export function KrsTable({ userId, term, onScheduleSuggestion }: KrsTableProps) 
                 {/* Mobile List View - Lebih kompak */}
                 <CardContent className="md:hidden p-2">
                   <div className="space-y-2">
-                    {group.items.map((item) => (
-                      <div 
-                        key={item!.id} 
-                        className="border rounded-lg p-3 bg-card hover:border-primary/50 transition-colors space-y-2"
-                      >
-                        {/* Header Row */}
-                        <div className="flex items-start gap-2">
-                          <div className="flex-1 min-w-0">
-                            <h4 className="font-semibold text-sm leading-tight line-clamp-2">
-                              {item!.subject.nama}
-                            </h4>
-                            {item!.subject.prodi && (
-                              <p className="text-xs text-muted-foreground truncate mt-0.5">{item!.subject.prodi}</p>
-                            )}
+                    {group.items.map((item) => {
+                      // Get schedule info from offering or subject
+                      const slotDay = item!.offering?.slotDay ?? item!.subject.slotDay
+                      const slotStartUTC = item!.offering?.slotStartUTC ?? item!.subject.slotStartUTC
+                      const slotEndUTC = item!.offering?.slotEndUTC ?? item!.subject.slotEndUTC
+                      const slotRuang = item!.offering?.slotRuang ?? item!.subject.slotRuang
+                      
+                      const hasSchedule = slotDay !== undefined && slotDay !== null && slotStartUTC && slotEndUTC
+                      
+                      return (
+                        <div 
+                          key={item!.id} 
+                          className="border rounded-lg p-3 bg-card hover:border-primary/50 transition-colors space-y-2"
+                        >
+                          {/* Header Row */}
+                          <div className="flex items-start gap-2">
+                            <div className="flex-1 min-w-0">
+                              <h4 className="font-semibold text-sm leading-tight line-clamp-2">
+                                {item!.subject.nama}
+                              </h4>
+                              {item!.subject.prodi && (
+                                <p className="text-xs text-muted-foreground truncate mt-0.5">{item!.subject.prodi}</p>
+                              )}
+                            </div>
+                            <Badge className="text-xs flex-shrink-0">{item!.subject.sks} SKS</Badge>
                           </div>
-                          <Badge className="text-xs flex-shrink-0">{item!.subject.sks} SKS</Badge>
-                        </div>
 
-                        {/* Date Info */}
-                        <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
-                          <Calendar className="h-3 w-3 flex-shrink-0" />
-                          <span className="truncate">{fmtDateTime(item!.createdAt)}</span>
-                        </div>
+                          {/* Schedule Info */}
+                          {hasSchedule && (
+                            <div className="flex items-center gap-1.5 text-xs">
+                              <Calendar className="h-3 w-3 flex-shrink-0 text-muted-foreground" />
+                              <span className="font-medium">{getDayName(slotDay!)}</span>
+                              <span className="text-muted-foreground">•</span>
+                              <span className="text-muted-foreground">
+                                {formatTime(slotStartUTC!)} - {formatTime(slotEndUTC!)}
+                              </span>
+                              {slotRuang && (
+                                <>
+                                  <span className="text-muted-foreground">•</span>
+                                  <span className="text-muted-foreground">{slotRuang}</span>
+                                </>
+                              )}
+                            </div>
+                          )}
 
-                        {/* Actions - Horizontal layout */}
-                        <div className="flex items-center gap-2 pt-1">
-                          {((item!.offering?.slotDay !== undefined && item!.offering?.slotStartUTC) || 
-                            (item!.subject.slotDay !== undefined && item!.subject.slotStartUTC)) && (
+                          {/* Date Info */}
+                          <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                            <Calendar className="h-3 w-3 flex-shrink-0" />
+                            <span className="truncate">{fmtDateTime(item!.createdAt)}</span>
+                          </div>
+
+                          {/* Actions - Horizontal layout */}
+                          <div className="flex items-center gap-2 pt-1">
+                            {((item!.offering?.slotDay !== undefined && item!.offering?.slotStartUTC) || 
+                              (item!.subject.slotDay !== undefined && item!.subject.slotStartUTC)) && (
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={() => handleAddToSchedule(item!, item!.subject, item!.offering)}
+                                className="h-8 px-2"
+                                disabled={userSchedule.some(e => e.subjectId === item!.subject.id)}
+                              >
+                                <Calendar className="h-3 w-3" />
+                              </Button>
+                            )}
                             <Button
                               size="sm"
                               variant="outline"
-                              onClick={() => handleAddToSchedule(item!, item!.subject, item!.offering)}
+                              onClick={() => handleOpenReminderDialog(item!.subject.id, item!.subject.nama)}
                               className="h-8 px-2"
-                              disabled={userSchedule.some(e => e.subjectId === item!.subject.id)}
                             >
-                              <Calendar className="h-3 w-3" />
+                              <Bell className="h-3 w-3" />
                             </Button>
-                          )}
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            onClick={() => handleOpenReminderDialog(item!.subject.id, item!.subject.nama)}
-                            className="h-8 px-2"
-                          >
-                            <Bell className="h-3 w-3" />
-                          </Button>
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            onClick={() => handleRemoveSubject(item!, item!.subject.nama, item!.offering?.kelas)}
-                            className="text-destructive hover:text-destructive h-8 px-2"
-                          >
-                            <Trash2 className="h-3 w-3" />
-                          </Button>
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => handleRemoveSubject(item!, item!.subject.nama, item!.offering?.kelas)}
+                              className="text-destructive hover:text-destructive h-8 px-2"
+                            >
+                              <Trash2 className="h-3 w-3" />
+                            </Button>
+                          </div>
                         </div>
-                      </div>
-                    ))}
+                      )
+                    })}
                   </div>
                 </CardContent>
               </Card>

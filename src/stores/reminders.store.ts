@@ -6,57 +6,138 @@ import { nowUTC } from "@/lib/time"
 
 interface RemindersState {
   reminders: Reminder[]
-  addReminder: (reminder: Omit<Reminder, "id">) => void
-  updateReminder: (id: string, updates: Partial<Reminder>) => void
-  deleteReminder: (id: string) => void
-  toggleReminder: (id: string) => void
+  isLoading: boolean
+  fetchReminders: (userId: string) => Promise<void>
+  addReminder: (reminder: Omit<Reminder, "id">) => Promise<void>
+  updateReminder: (id: string, updates: Partial<Reminder>) => Promise<void>
+  deleteReminder: (id: string, userId: string) => Promise<void>
+  toggleReminder: (id: string, userId: string) => Promise<void>
   getRemindersByUser: (userId: string) => Reminder[]
   getActiveReminders: (userId: string) => Reminder[]
   getUpcomingReminders: (userId: string, hours?: number) => Reminder[]
   getOverdueReminders: (userId: string) => Reminder[]
-  clearUserReminders: (userId: string) => void
+  clearUserReminders: (userId: string) => Promise<void>
 }
 
 export const useRemindersStore = create<RemindersState>()(
   persist(
     (set, get) => ({
       reminders: [],
-      addReminder: (reminder) => {
-        const newReminder: Reminder = {
-          ...reminder,
-          id: generateId(),
+      isLoading: false,
+      
+      fetchReminders: async (userId: string) => {
+        set({ isLoading: true })
+        try {
+          const response = await fetch(`/api/reminders?userId=${userId}`)
+          if (response.ok) {
+            const reminders = await response.json()
+            set({ reminders })
+          }
+        } catch (error) {
+          console.error('Fetch reminders error:', error)
+        } finally {
+          set({ isLoading: false })
         }
-        set((state) => ({
-          reminders: [...state.reminders, newReminder],
-        }))
-        
-        // Trigger notification for the user if reminder is active and upcoming
-        if (newReminder.isActive) {
-          const now = nowUTC()
-          const thirtyMinutesLater = now + 30 * 60 * 1000
+      },
+      
+      addReminder: async (reminder) => {
+        try {
+          const response = await fetch('/api/reminders', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(reminder),
+          })
           
-          // DO NOT trigger notification for user's own reminders
-          // Users shouldn't be notified when they add their own reminders
-          // Only notify if reminder is within next 30 minutes (kept for future use if needed)
-          // Notification is disabled as per user requirement
+          if (response.ok) {
+            const data = await response.json()
+            set((state) => ({
+              reminders: [...state.reminders, data.reminder],
+            }))
+          } else {
+            throw new Error('Failed to add reminder')
+          }
+        } catch (error) {
+          console.error('Add reminder error:', error)
+          throw error
         }
       },
-      updateReminder: (id, updates) => {
-        set((state) => ({
-          reminders: state.reminders.map((reminder) => (reminder.id === id ? { ...reminder, ...updates } : reminder)),
-        }))
+      
+      updateReminder: async (id, updates) => {
+        const reminder = get().reminders.find(r => r.id === id)
+        if (!reminder) return
+        
+        try {
+          const response = await fetch('/api/reminders', {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ 
+              id, 
+              userId: reminder.userId,
+              ...updates 
+            }),
+          })
+          
+          if (response.ok) {
+            const data = await response.json()
+            set((state) => ({
+              reminders: state.reminders.map((r) => 
+                r.id === id ? data.reminder : r
+              ),
+            }))
+          } else {
+            throw new Error('Failed to update reminder')
+          }
+        } catch (error) {
+          console.error('Update reminder error:', error)
+          throw error
+        }
       },
-      deleteReminder: (id) => {
-        set((state) => ({
-          reminders: state.reminders.filter((reminder) => reminder.id !== id),
-        }))
+      
+      deleteReminder: async (id: string, userId: string) => {
+        try {
+          const response = await fetch(`/api/reminders?id=${id}&userId=${userId}`, {
+            method: 'DELETE',
+          })
+          
+          if (response.ok) {
+            set((state) => ({
+              reminders: state.reminders.filter((r) => r.id !== id),
+            }))
+          } else {
+            throw new Error('Failed to delete reminder')
+          }
+        } catch (error) {
+          console.error('Delete reminder error:', error)
+          throw error
+        }
       },
-      toggleReminder: (id) => {
-        set((state) => ({
-          reminders: state.reminders.map((reminder) =>
-            reminder.id === id ? { ...reminder, isActive: !reminder.isActive } : reminder,
-          ),
-        }))
+      
+      toggleReminder: async (id: string, userId: string) => {
+        const reminder = get().reminders.find(r => r.id === id)
+        if (!reminder) return
+        
+        try {
+          const response = await fetch('/api/reminders', {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ 
+              id, 
+              userId,
+              isActive: !reminder.isActive 
+            }),
+          })
+          
+          if (response.ok) {
+            const data = await response.json()
+            set((state) => ({
+              reminders: state.reminders.map((r) =>
+                r.id === id ? data.reminder : r
+              ),
+            }))
+          }
+        } catch (error) {
+          console.error('Toggle reminder error:', error)
+        }
       },
       getRemindersByUser: (userId) => {
         return get()
@@ -84,10 +165,28 @@ export const useRemindersStore = create<RemindersState>()(
           .reminders.filter((reminder) => reminder.userId === userId && reminder.isActive && reminder.dueUTC < now)
           .sort((a, b) => b.dueUTC - a.dueUTC)
       },
-      clearUserReminders: (userId) => {
-        set((state) => ({
-          reminders: state.reminders.filter((reminder) => reminder.userId !== userId),
-        }))
+      clearUserReminders: async (userId: string) => {
+        try {
+          // Get all reminders for user
+          const userReminders = get().reminders.filter(r => r.userId === userId)
+          
+          // Delete each reminder from database
+          await Promise.all(
+            userReminders.map(reminder =>
+              fetch(`/api/reminders?id=${reminder.id}&userId=${userId}`, {
+                method: 'DELETE',
+              })
+            )
+          )
+          
+          // Update local state
+          set((state) => ({
+            reminders: state.reminders.filter((r) => r.userId !== userId),
+          }))
+        } catch (error) {
+          console.error('Clear reminders error:', error)
+          throw error
+        }
       },
     }),
     {

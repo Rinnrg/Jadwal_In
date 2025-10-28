@@ -71,7 +71,7 @@ export function ReminderList({ userId, onEdit, onClearAll, hasReminders = false 
     )
 
     if (confirmed) {
-      deleteReminder(reminder.id)
+      await deleteReminder(reminder.id, userId)
       showSuccess("Pengingat berhasil dihapus")
       
       // Log activity
@@ -79,8 +79,8 @@ export function ReminderList({ userId, onEdit, onClearAll, hasReminders = false 
     }
   }
 
-  const handleToggle = (reminder: Reminder) => {
-    toggleReminder(reminder.id)
+  const handleToggle = async (reminder: Reminder) => {
+    await toggleReminder(reminder.id, userId)
     showSuccess(`Pengingat ${reminder.isActive ? "dinonaktifkan" : "diaktifkan"}`)
     
     // Log activity for completion

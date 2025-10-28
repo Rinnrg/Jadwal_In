@@ -20,7 +20,7 @@ interface RealtimeSyncOptions {
 export function useRealtimeSync(options: RealtimeSyncOptions = {}) {
   const {
     enabled = true,
-    pollingInterval = 2000, // 2 detik untuk realtime (lebih cepat dari sebelumnya)
+    pollingInterval = 5000, // 5 detik untuk realtime sesuai permintaan user
     onSubjectAdded,
     onKrsUpdated,
   } = options
@@ -57,8 +57,8 @@ export function useRealtimeSync(options: RealtimeSyncOptions = {}) {
       if (isPolling) return // Prevent overlapping polls
       
       const now = Date.now()
-      // Prevent polling too frequently (minimum 2 second between polls for realtime)
-      if (now - lastPollTime.current < 2000) {
+      // Prevent polling too frequently (minimum 5 second between polls for realtime)
+      if (now - lastPollTime.current < 5000) {
         return
       }
       lastPollTime.current = now
@@ -188,10 +188,10 @@ export function useRealtimeSync(options: RealtimeSyncOptions = {}) {
             }
             
             isInitialMount.current = false
-            // Wait a bit before allowing notifications (reduced to 3 seconds for faster realtime)
+            // Wait a bit before allowing notifications (5 seconds for realtime)
             setTimeout(() => {
               hasShownInitialNotification.current = true
-            }, 3000) // 3 second grace period
+            }, 5000) // 5 second grace period
             return
           }
           

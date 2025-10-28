@@ -18,7 +18,7 @@ import { confirmAction, showSuccess } from "@/lib/alerts"
 
 export default function RemindersPage() {
   const { session } = useSessionStore()
-  const { getActiveReminders, getUpcomingReminders, getOverdueReminders, clearUserReminders, reminders } = useRemindersStore()
+  const { getActiveReminders, getUpcomingReminders, getOverdueReminders, clearUserReminders, reminders, fetchReminders } = useRemindersStore()
   const { getKrsByUser, krsItems } = useKrsStore()
   const { subjects } = useSubjectsStore()
   const { markAsRead } = useNotificationStore()
@@ -29,10 +29,17 @@ export default function RemindersPage() {
   // Force re-render trigger for reactive updates
   const [, setForceUpdate] = useState(0)
 
+  // Load reminders from database on mount
+  useEffect(() => {
+    if (session?.id) {
+      fetchReminders(session.id)
+    }
+  }, [session?.id, fetchReminders])
+
   // Enable real-time sync for Reminders page
   useRealtimeSync({
     enabled: true,
-    pollingInterval: 2000, // 2 seconds for real-time updates
+    pollingInterval: 5000, // 5 seconds for real-time updates
   })
   
   // Force update when store data changes
