@@ -46,11 +46,6 @@ export async function GET(request: NextRequest) {
               files: true,
             },
           },
-          _count: {
-            select: {
-              submissions: true,
-            },
-          },
         },
       })
 
@@ -247,28 +242,26 @@ export async function DELETE(request: NextRequest) {
     }
 
     // Check if assignment has submissions
+    const submissionCount = await prisma.submission.count({
+      where: { assignmentId: id },
+    })
+
+    if (submissionCount > 0) {
+      return NextResponse.json(
+        { error: 'Tidak dapat menghapus tugas yang sudah ada pengumpulan' },
+        { status: 400 }
+      )
+    }
+
+    // Check if assignment exists
     const assignment = await prisma.assignment.findUnique({
       where: { id },
-      include: {
-        _count: {
-          select: {
-            submissions: true,
-          },
-        },
-      },
     })
 
     if (!assignment) {
       return NextResponse.json(
         { error: 'Assignment not found' },
         { status: 404 }
-      )
-    }
-
-    if (assignment._count.submissions > 0) {
-      return NextResponse.json(
-        { error: 'Tidak dapat menghapus tugas yang sudah ada pengumpulan' },
-        { status: 400 }
       )
     }
 
