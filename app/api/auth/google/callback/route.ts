@@ -338,7 +338,7 @@ export async function GET(request: NextRequest) {
       
       // Create profile if doesn't exist
       if (!existingProfile) {
-        updateData.profile = {
+        updateData.profil = {
           create: {
             kelas: 'A',
           }
@@ -453,9 +453,9 @@ export async function GET(request: NextRequest) {
       }
       
       // Create profile if doesn't exist
-      if (!user.profile) {
+      if (!user.profil) {
         console.log('⚠️ User has no profile, creating...')
-        updateData.profile = {
+        updateData.profil = {
           create: {
             kelas: 'A',
           }
@@ -500,7 +500,7 @@ export async function GET(request: NextRequest) {
     console.log('   - Prodi:', user.prodi || 'NULL')
     console.log('   - Fakultas:', user.fakultas || 'NULL')
     console.log('   - Avatar URL:', user.avatarUrl ? 'SET' : 'NULL')
-    console.log('   - Has Profile:', !!user.profile)
+    console.log('   - Has Profile:', !!user.profil)
     console.log('   - Google ID:', user.googleId || 'NULL')
 
     // Create session token
