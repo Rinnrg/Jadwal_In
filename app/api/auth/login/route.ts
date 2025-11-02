@@ -96,19 +96,8 @@ export async function POST(request: NextRequest) {
 
     // Create session token
     const sessionToken = randomBytes(32).toString('hex')
-    const expiresAt = new Date()
-    expiresAt.setDate(expiresAt.getDate() + 30) // 30 days
-
-    // Store session in database
-    await withRetry(async () => {
-      return await prisma.session.create({
-        data: {
-          sessionToken,
-          userId: user.id,
-          expires: expiresAt,
-        },
-      })
-    })
+    // Note: Session stored in cookie only, not in database
+    // Database session model not available in current schema
 
     // Create response
     const response = NextResponse.json({

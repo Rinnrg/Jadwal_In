@@ -22,18 +22,9 @@ const createStaffSchema = z.object({
   password: z.string().min(6).optional(),
   role: z.enum(['dosen', 'kaprodi', 'super_admin']),
   prodi: z.string().optional(),
-}).refine((data) => {
-  // Prodi wajib untuk kaprodi
-  if (data.role === 'kaprodi' && !data.prodi) {
-    return false
-  }
-  return true
-}, {
-  message: 'Prodi wajib diisi untuk role Kaprodi',
-  path: ['prodi'],
 })
 
-const createUserSchema = z.discriminatedUnion('role', [
+const createUserSchema = z.union([
   createMahasiswaSchema,
   createStaffSchema,
 ])
@@ -129,7 +120,7 @@ export async function POST(request: NextRequest) {
       const kodeProdi = '0974'
 
       // Cari nomor urut terakhir untuk angkatan yang sama
-      const lastStudent = await prisma.profile.findFirst({
+      const lastStudent = await prisma.user.findFirst({
         where: {
           angkatan: mahasiswaData.angkatan,
           nim: {
@@ -175,12 +166,12 @@ export async function POST(request: NextRequest) {
           email,
           password,
           role: 'mahasiswa',
+          nim,
+          angkatan: mahasiswaData.angkatan,
+          prodi: 'S1 Pendidikan Teknologi Informasi',
           profil: {
             create: {
-              nim,
-              angkatan: mahasiswaData.angkatan,
               kelas: 'A',
-              prodi: 'S1 Pendidikan Teknologi Informasi',
               bio: `Tempat Lahir: ${mahasiswaData.tempatLahir}\nTanggal Lahir: ${mahasiswaData.tanggalLahir}\nNomor HP: ${mahasiswaData.nomorHp}`,
             },
           },
@@ -201,6 +192,14 @@ export async function POST(request: NextRequest) {
       // Handle staff (dosen, kaprodi, super_admin) creation
       const staffData = data as z.infer<typeof createStaffSchema>
 
+      // Validate prodi for kaprodi role
+      if (staffData.role === 'kaprodi' && !staffData.prodi) {
+        return NextResponse.json(
+          { error: 'Prodi wajib diisi untuk role Kaprodi' },
+          { status: 400 }
+        )
+      }
+
       // Check if email already exists
       const existingUser = await prisma.user.findUnique({
         where: { email: staffData.email },
@@ -220,9 +219,9 @@ export async function POST(request: NextRequest) {
           password: staffData.password,
           role: staffData.role,
           prodi: staffData.prodi || null, // Save prodi to user table
+          angkatan: new Date().getFullYear(),
           profil: {
             create: {
-              angkatan: new Date().getFullYear(),
               kelas: 'Staff',
             },
           },
@@ -290,9 +289,12 @@ export async function PATCH(request: NextRequest) {
     }
 
     // Check if NIM is being changed and if it's already taken
-    if (data.nim && existingUser.profil && data.nim !== existingUser.profil.nim) {
-      const nimTaken = await prisma.profile.findFirst({
-        where: { nim: data.nim },
+    if (data.nim && data.nim !== existingUser.nim) {
+      const nimTaken = await prisma.user.findFirst({
+        where: { 
+          nim: data.nim,
+          NOT: { id: userId }  // Exclude current user
+        },
       })
 
       if (nimTaken) {

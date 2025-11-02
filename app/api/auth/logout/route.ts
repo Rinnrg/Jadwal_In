@@ -5,22 +5,9 @@ export const dynamic = 'force-dynamic'
 
 export async function POST(request: NextRequest) {
   try {
-    // Get session token from cookies
-    const sessionToken = request.cookies.get('session_token')?.value
-    
-    // Delete session from database if it exists
-    if (sessionToken) {
-      try {
-        await prisma.session.deleteMany({
-          where: {
-            sessionToken,
-          },
-        })
-      } catch (error) {
-        console.error('Error deleting session from database:', error)
-        // Continue with cookie deletion even if DB delete fails
-      }
-    }
+    // Note: Database session deletion disabled - no Session model in schema
+    // Session is cookie-based only in current implementation
+    // For production, implement proper session management or use NextAuth.js
 
     // Create response
     const response = NextResponse.json({ success: true })

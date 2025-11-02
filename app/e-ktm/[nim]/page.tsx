@@ -36,79 +36,68 @@ export default async function EKTMPublicPage({ params }: PageProps) {
 
   console.log('[E-KTM] Searching for NIM:', nim)
 
-  // Find profile by NIM (works for both regular and Google Auth users)
-  // Also try to find by userId if NIM format looks like a UUID (for Google Auth users)
+  // Find user by NIM (works for both regular and Google Auth users)
+  // Also try to find by ID if NIM format looks like a UUID (for Google Auth users)
   const isUUID = nim.length > 20 || nim.includes('-')
   
-  const profile = await prisma.profile.findFirst({
+  const user = await prisma.user.findFirst({
     where: isUUID 
-      ? { userId: nim } // If it looks like UUID, search by userId
+      ? { id: nim } // If it looks like UUID, search by ID
       : { 
           OR: [
             { nim: nim },    // First try exact NIM match
-            { userId: nim }, // Also try userId for Google Auth users (fallback)
+            { id: nim }, // Also try ID for Google Auth users (fallback)
           ]
         },
     include: {
-      user: {
-        select: {
-          name: true,
-          email: true,
-          googleId: true,
-          image: true, // Include user.image for Google Auth profile pictures
-        },
-      },
+      profil: true,  // Include profile for kelas, bio, etc.
     },
   })
 
-  console.log('[E-KTM] Profile search result:', {
-    found: !!profile,
-    searchType: isUUID ? 'userId' : 'nim',
+  console.log('[E-KTM] User search result:', {
+    found: !!user,
+    searchType: isUUID ? 'id' : 'nim',
     searchedValue: nim,
-    nim: profile?.nim,
-    userId: profile?.userId,
-    userName: profile?.user.name,
-    userEmail: profile?.user.email,
-    isGoogleAuth: !!profile?.user.googleId,
+    nim: user?.nim,
+    userId: user?.id,
+    userName: user?.name,
+    userEmail: user?.email,
+    isGoogleAuth: !!user?.googleId,
   })
 
   // If not found, show 404
-  if (!profile) {
+  if (!user) {
     console.log('[E-KTM] No user found, showing 404')
-    console.log('[E-KTM] Debug: Checking all profiles with similar NIM...')
+    console.log('[E-KTM] Debug: Checking all users with similar NIM...')
     
-    // Debug: Check if there are any profiles with NIM containing this value
-    const allProfiles = await prisma.profile.findMany({
+    // Debug: Check if there are any users with NIM containing this value
+    const allUsers = await prisma.user.findMany({
       where: {
         OR: [
           { nim: { contains: nim } },
           { nim: { startsWith: nim } },
           { nim: { endsWith: nim } },
-          { userId: nim }, // Also try userId
+          { id: nim }, // Also try ID
         ]
       },
       select: {
         nim: true,
-        userId: true,
-        user: {
-          select: {
-            email: true,
-            googleId: true,
-          }
-        }
+        id: true,
+        email: true,
+        googleId: true,
       },
       take: 5,
     })
-    console.log('[E-KTM] Similar NIMs found:', allProfiles)
+    console.log('[E-KTM] Similar NIMs found:', allUsers)
     
     notFound()
   }
 
-  // Use NIM from profile, or fallback to userId if NIM is not set (Google Auth users)
-  const displayNIM = profile.nim || profile.userId.slice(0, 12) // Use first 12 chars of userId as fallback
+  // Use NIM from user, or fallback to ID if NIM is not set (Google Auth users)
+  const displayNIM = user.nim || user.id.slice(0, 12) // Use first 12 chars of ID as fallback
 
-  // Get avatar URL: prioritize profile.avatarUrl, fallback to user.image (for Google Auth)
-  const avatarUrl = profile.avatarUrl || profile.user.image || undefined
+  // Get avatar URL: prioritize user.avatarUrl, fallback to user.image (for Google Auth)
+  const avatarUrl = user.avatarUrl || user.image || undefined
 
   console.log('[E-KTM] Avatar URL:', avatarUrl ? 'Found' : 'Not found')
 
@@ -128,12 +117,12 @@ export default async function EKTMPublicPage({ params }: PageProps) {
         {/* E-KTM Card */}
         <div className="w-full scale-90 sm:scale-100">
           <EKTMCardWithTilt
-            name={profile.user.name}
+            name={user.name}
             nim={displayNIM}
             fakultas={getFakultasFromNIM(displayNIM)}
             programStudi={getProdiFromNIM(displayNIM)}
             avatarUrl={avatarUrl}
-            userId={profile.userId} // Pass userId for QR code generation
+            userId={user.id} // Pass userId for QR code generation
           />
         </div>
 

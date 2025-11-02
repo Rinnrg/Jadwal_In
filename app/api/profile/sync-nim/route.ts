@@ -58,26 +58,26 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Find user profile
-    const profile = await prisma.profile.findUnique({
-      where: { userId }
+    // Find user (NIM and angkatan are in User model, not Profile)
+    const user = await prisma.user.findUnique({
+      where: { id: userId }
     })
 
-    if (!profile) {
+    if (!user) {
       return NextResponse.json(
-        { error: 'Profile not found' },
+        { error: 'User not found' },
         { status: 404 }
       )
     }
 
     // Check if NIM needs to be updated (null or too short)
-    const needsUpdate = !profile.nim || profile.nim.length < 8
+    const needsUpdate = !user.nim || user.nim.length < 8
 
     if (!needsUpdate) {
       return NextResponse.json({
         success: true,
         updated: false,
-        nim: profile.nim,
+        nim: user.nim,
         message: 'NIM already valid'
       })
     }
@@ -92,9 +92,9 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Update profile with extracted NIM
-    const updatedProfile = await prisma.profile.update({
-      where: { userId },
+    // Update user with extracted NIM and angkatan
+    const updatedUser = await prisma.user.update({
+      where: { id: userId },
       data: {
         nim: extractedNim,
         angkatan: extractAngkatan(extractedNim)
@@ -104,8 +104,8 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({
       success: true,
       updated: true,
-      nim: updatedProfile.nim,
-      angkatan: updatedProfile.angkatan,
+      nim: updatedUser.nim,
+      angkatan: updatedUser.angkatan,
       message: 'NIM updated successfully'
     })
 

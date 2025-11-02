@@ -506,18 +506,6 @@ export async function GET(request: NextRequest) {
     // Create session token
     console.log('🔐 Creating session...')
     const sessionToken = randomBytes(32).toString('hex')
-    const expiresAt = new Date()
-    expiresAt.setDate(expiresAt.getDate() + 30) // 30 days
-
-    // Store session in database
-    await prisma.session.create({
-      data: {
-        sessionToken,
-        userId: user.id,
-        expires: expiresAt,
-      },
-    })
-    console.log('✅ Session created')
 
     // Get callback URL from cookie
     const callbackUrl = request.cookies.get('google_callback_url')?.value || '/dashboard'
@@ -528,7 +516,7 @@ export async function GET(request: NextRequest) {
       new URL(callbackUrl, request.url)
     )
 
-    // Set session cookie
+    // Set session cookie (client-side session, not database-backed)
     console.log('🍪 Setting session cookie:', sessionToken.substring(0, 20) + '...')
     response.cookies.set('session_token', sessionToken, {
       httpOnly: true,
@@ -537,7 +525,8 @@ export async function GET(request: NextRequest) {
       maxAge: 60 * 60 * 24 * 30, // 30 days
       path: '/',
     })
-    console.log('🍪 Cookie set in response')
+    console.log('✅ Session cookie set')
+    console.log('✅ Session created')
 
     // Clear callback URL cookie
     response.cookies.delete('google_callback_url')

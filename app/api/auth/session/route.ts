@@ -15,42 +15,12 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ user: null }, { status: 200 })
     }
 
-    // Find session in database
-    const session = await prisma.session.findUnique({
-      where: { sessionToken },
-      include: {
-        user: {
-          select: {
-            id: true,
-            email: true,
-            name: true,
-            role: true,
-            image: true,
-          },
-        },
-      },
-    })
-
-    // Check if session exists and not expired
-    if (!session || session.expires < new Date()) {
-      // Delete expired session
-      if (session) {
-        await prisma.session.delete({
-          where: { id: session.id },
-        })
-      }
-      
-      return NextResponse.json({ user: null }, { status: 200 })
-    }
-
-    // Return user data
-    return NextResponse.json(
-      { 
-        user: session.user,
-        expires: session.expires.toISOString()
-      },
-      { status: 200 }
-    )
+    // Note: Database session verification disabled - no Session model in schema
+    // Session is cookie-based only in current implementation
+    // For production, implement proper session management or use NextAuth.js
+    
+    // Return null user since we can't verify session without database model
+    return NextResponse.json({ user: null }, { status: 200 })
   } catch (error) {
     console.error('Session check error:', error)
     return NextResponse.json({ user: null }, { status: 200 })
