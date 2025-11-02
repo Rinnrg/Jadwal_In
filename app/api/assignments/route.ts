@@ -25,7 +25,7 @@ export async function GET(request: NextRequest) {
       const assignment = await prisma.assignment.findUnique({
         where: { id },
         include: {
-          subject: {
+          matakuliah: {
             select: {
               id: true,
               kode: true,
@@ -33,17 +33,17 @@ export async function GET(request: NextRequest) {
               sks: true,
             },
           },
-          attachments: true,
-          submissions: {
+          lampiran: true,
+          pengumpulan: {
             include: {
-              student: {
+              mahasiswa: {
                 select: {
                   id: true,
                   name: true,
                   email: true,
                 },
               },
-              files: true,
+              lampiran: true,
             },
           },
         },
@@ -68,7 +68,7 @@ export async function GET(request: NextRequest) {
     const assignments = await prisma.assignment.findMany({
       where,
       include: {
-        subject: {
+        matakuliah: {
           select: {
             id: true,
             kode: true,
@@ -79,8 +79,8 @@ export async function GET(request: NextRequest) {
         },
         _count: {
           select: {
-            submissions: true,
-            attachments: true,
+            pengumpulan: true,
+            lampiran: true,
           },
         },
       },
@@ -134,7 +134,7 @@ export async function POST(request: NextRequest) {
         maxFiles: data.maxFiles,
       },
       include: {
-        subject: {
+        matakuliah: {
           select: {
             id: true,
             kode: true,
@@ -192,7 +192,7 @@ export async function PUT(request: NextRequest) {
         dueUTC: data.dueUTC !== undefined ? (data.dueUTC ? BigInt(data.dueUTC) : null) : undefined,
       },
       include: {
-        subject: {
+        matakuliah: {
           select: {
             id: true,
             kode: true,
