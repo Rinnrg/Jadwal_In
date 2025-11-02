@@ -29,7 +29,7 @@ export async function GET(request: NextRequest) {
               sks: true,
             },
           },
-          attachments: true,
+          lampiran: true,
         },
       })
 
@@ -63,7 +63,7 @@ export async function GET(request: NextRequest) {
         },
         _count: {
           select: {
-            attachments: true,
+            lampiran: true,
           },
         },
       },

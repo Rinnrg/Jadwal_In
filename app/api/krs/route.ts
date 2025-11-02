@@ -37,7 +37,7 @@ export async function GET(request: NextRequest) {
     const krsItems = await prisma.krsItem.findMany({
       where,
       include: {
-        subject: {
+        matakuliah: {
           select: {
             id: true,
             kode: true,
@@ -48,7 +48,7 @@ export async function GET(request: NextRequest) {
             status: true,
           },
         },
-        offering: {
+        penawaran: {
           select: {
             id: true,
             angkatan: true,
@@ -75,8 +75,8 @@ export async function GET(request: NextRequest) {
       offeringId: item.offeringId,
       term: item.term,
       createdAt: new Date(item.createdAt).getTime(),
-      subject: item.subject,
-      offering: item.offering,
+      subject: item.matakuliah,
+      offering: item.penawaran,
     }))
 
     return NextResponse.json(transformedItems)
@@ -201,7 +201,7 @@ export async function POST(request: NextRequest) {
         term: data.term,
       },
       include: {
-        subject: {
+        matakuliah: {
           select: {
             id: true,
             kode: true,
@@ -212,7 +212,7 @@ export async function POST(request: NextRequest) {
             status: true,
           },
         },
-        offering: {
+        penawaran: {
           select: {
             id: true,
             angkatan: true,
@@ -287,9 +287,9 @@ export async function DELETE(request: NextRequest) {
     const krsItem = await prisma.krsItem.findUnique({
       where: { id },
       include: {
-        user: {
+        pengguna: {
           include: {
-            grades: {
+            nilai: {
               where: {
                 subjectId: undefined, // Will be set dynamically
                 term: undefined,
