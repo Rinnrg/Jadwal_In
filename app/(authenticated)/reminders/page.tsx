@@ -13,8 +13,9 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { ReminderForm } from "@/components/reminders/ReminderForm"
 import { ReminderList } from "@/components/reminders/ReminderList"
-import { Bell, AlertTriangle, Trash2, Plus } from "lucide-react"
-import { confirmAction, showSuccess } from "@/lib/alerts"
+import { Bell, AlertTriangle, Trash2, Plus, Mail, Send } from "lucide-react"
+import { confirmAction, showSuccess, showError } from "@/lib/alerts"
+import { toast } from "sonner"
 
 export default function RemindersPage() {
   const { session } = useSessionStore()
@@ -90,6 +91,55 @@ export default function RemindersPage() {
     }
   }
 
+  const handleSendTestEmail = async () => {
+    if (!session) return
+    
+    const loadingToast = toast.loading('Mengirim test email...')
+    
+    try {
+      const response = await fetch('/api/reminders/send-email/test', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: session.email }),
+      })
+
+      const data = await response.json()
+
+      if (response.ok && data.success) {
+        toast.success('Test email berhasil dikirim! Cek inbox Anda.', { id: loadingToast })
+      } else {
+        toast.error(data.error || 'Gagal mengirim test email', { id: loadingToast })
+      }
+    } catch (error) {
+      console.error('Error sending test email:', error)
+      toast.error('Terjadi kesalahan saat mengirim test email', { id: loadingToast })
+    }
+  }
+
+  const handleCheckAndSendEmails = async () => {
+    const loadingToast = toast.loading('Memeriksa dan mengirim email reminder...')
+    
+    try {
+      const response = await fetch('/api/reminders/send-email', {
+        method: 'GET',
+      })
+
+      const data = await response.json()
+
+      if (response.ok && data.success) {
+        toast.success(
+          `Email reminder berhasil dikirim: ${data.results.sent} berhasil, ${data.results.failed} gagal`,
+          { id: loadingToast }
+        )
+      } else {
+        toast.error(data.error || 'Gagal mengirim email reminder', { id: loadingToast })
+      }
+    } catch (error) {
+      console.error('Error checking/sending emails:', error)
+      toast.error('Terjadi kesalahan', { id: loadingToast })
+    }
+  }
+
   if (!session) return null
 
   // If showing form, render form view like jadwal page
@@ -125,21 +175,50 @@ export default function RemindersPage() {
   return (
     <div className="space-y-4 md:space-y-6 px-2 md:px-4">
       {/* Header */}
-      <div className="px-1 md:px-0 flex items-center justify-between">
+      <div className="px-1 md:px-0 flex flex-col md:flex-row items-start md:items-center justify-between gap-3">
         <div>
           <h1 className="text-2xl md:text-3xl font-bold">Pengingat</h1>
           <p className="text-muted-foreground text-sm mt-1">
             Kelola pengingat tugas dan kegiatan Anda
           </p>
         </div>
-        <Button onClick={handleAddReminder}>
-          <Plus className="h-4 w-4 mr-2" />
-          Tambah
-        </Button>
+        <div className="flex gap-2 flex-wrap">
+          <Button variant="outline" size="sm" onClick={handleSendTestEmail}>
+            <Mail className="h-4 w-4 mr-2" />
+            Test Email
+          </Button>
+          <Button variant="outline" size="sm" onClick={handleCheckAndSendEmails}>
+            <Send className="h-4 w-4 mr-2" />
+            Kirim Email Now
+          </Button>
+          <Button onClick={handleAddReminder}>
+            <Plus className="h-4 w-4 mr-2" />
+            Tambah
+          </Button>
+        </div>
       </div>
 
       {/* Main Content */}
       <div className="space-y-4 md:space-y-6">
+        {/* Email Feature Info */}
+        <div className="bg-gradient-to-r from-purple-50 to-pink-50 dark:from-purple-950/30 dark:to-pink-950/30 border-l-4 border-purple-500 dark:border-purple-400 rounded-lg p-4 md:p-5 shadow-sm">
+          <div className="flex items-start gap-3 md:gap-4">
+            <div className="flex-shrink-0 w-10 h-10 md:w-12 md:h-12 rounded-full bg-purple-100 dark:bg-purple-900/50 flex items-center justify-center">
+              <Mail className="h-5 w-5 md:h-6 md:w-6 text-purple-600 dark:text-purple-400" />
+            </div>
+            <div className="flex-1">
+              <h3 className="text-sm md:text-base font-bold text-purple-900 dark:text-purple-100">
+                📧 Fitur Email Reminder
+              </h3>
+              <p className="text-xs md:text-sm text-purple-800/90 dark:text-purple-200/90 mt-1.5 leading-relaxed">
+                Aktifkan toggle <strong>"Kirim email (ICS)"</strong> saat membuat reminder untuk menerima email pengingat beserta file calendar ICS. 
+                File ICS bisa langsung ditambahkan ke Google Calendar, Outlook, atau aplikasi calendar favorit Anda! 
+                {' '}<span className="inline-block">Gunakan tombol <strong>Test Email</strong> untuk cek konfigurasi.</span>
+              </p>
+            </div>
+          </div>
+        </div>
+
         {/* KRS Info Alert - Show only if no KRS and trying to use schedule feature */}
         {!hasKrsItems && (
           <div className="bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-950/30 dark:to-indigo-950/30 border-l-4 border-blue-500 dark:border-blue-400 rounded-lg p-4 md:p-5 shadow-sm animate-slide-down">
