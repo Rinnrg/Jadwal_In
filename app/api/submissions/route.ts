@@ -27,7 +27,7 @@ export async function GET(request: NextRequest) {
       submissions = await prisma.submission.findMany({
         where: { assignmentId },
         include: {
-          student: {
+          mahasiswa: {
             select: {
               id: true,
               name: true,
@@ -41,7 +41,7 @@ export async function GET(request: NextRequest) {
       submissions = await prisma.submission.findMany({
         where: { studentId },
         include: {
-          assignment: {
+          tugas: {
             select: {
               id: true,
               title: true,
@@ -54,14 +54,14 @@ export async function GET(request: NextRequest) {
     } else {
       submissions = await prisma.submission.findMany({
         include: {
-          student: {
+          mahasiswa: {
             select: {
               id: true,
               name: true,
               email: true,
             },
           },
-          assignment: {
+          tugas: {
             select: {
               id: true,
               title: true,
@@ -97,14 +97,14 @@ export async function POST(request: NextRequest) {
     const submission = await prisma.submission.create({
       data: submissionData,
       include: {
-        student: {
+        mahasiswa: {
           select: {
             id: true,
             name: true,
             email: true,
           },
         },
-        assignment: {
+        tugas: {
           select: {
             id: true,
             title: true,

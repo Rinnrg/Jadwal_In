@@ -46,7 +46,7 @@ export async function GET(request: NextRequest) {
     const offerings = await prisma.courseOffering.findMany({
       where,
       include: {
-        subject: {
+        matakuliah: {
           select: {
             id: true,
             kode: true,
@@ -127,7 +127,7 @@ export async function POST(request: NextRequest) {
         slotEndUTC: data.slotEndUTC,
       },
       include: {
-        subject: {
+        matakuliah: {
           select: {
             id: true,
             kode: true,
@@ -177,7 +177,7 @@ export async function PUT(request: NextRequest) {
       where: { id },
       data,
       include: {
-        subject: {
+        matakuliah: {
           select: {
             id: true,
             kode: true,

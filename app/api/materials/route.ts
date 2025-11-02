@@ -21,7 +21,7 @@ export async function GET(request: NextRequest) {
       const material = await prisma.material.findUnique({
         where: { id },
         include: {
-          subject: {
+          matakuliah: {
             select: {
               id: true,
               kode: true,
@@ -52,7 +52,7 @@ export async function GET(request: NextRequest) {
     const materials = await prisma.material.findMany({
       where,
       include: {
-        subject: {
+        matakuliah: {
           select: {
             id: true,
             kode: true,
@@ -107,7 +107,7 @@ export async function POST(request: NextRequest) {
         content: data.content,
       },
       include: {
-        subject: {
+        matakuliah: {
           select: {
             id: true,
             kode: true,
@@ -158,7 +158,7 @@ export async function PUT(request: NextRequest) {
         ...data,
       },
       include: {
-        subject: {
+        matakuliah: {
           select: {
             id: true,
             kode: true,
