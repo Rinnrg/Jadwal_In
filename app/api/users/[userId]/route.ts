@@ -22,7 +22,7 @@ export async function GET(
     const user = await prisma.user.findUnique({
       where: { id: userId },
       include: {
-        profile: true,
+        profil: true,
       },
       // Don't include password in response
     })
@@ -93,7 +93,7 @@ export async function PUT(
       where: { id: userId },
       data: updateData,
       include: {
-        profile: true,
+        profil: true,
       },
     })
 

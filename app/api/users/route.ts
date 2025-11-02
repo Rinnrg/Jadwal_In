@@ -57,7 +57,7 @@ export async function GET(request: NextRequest) {
     if (userId) {
       const user = await prisma.user.findUnique({
         where: { id: userId },
-        include: { profile: true },
+        include: { profil: true },
       })
 
       if (!user) {
@@ -73,7 +73,7 @@ export async function GET(request: NextRequest) {
     const where = role ? { role: role as any } : {}
     const users = await prisma.user.findMany({
       where,
-      include: { profile: true },
+      include: { profil: true },
       orderBy: { createdAt: 'desc' },
     })
 
@@ -175,7 +175,7 @@ export async function POST(request: NextRequest) {
           email,
           password,
           role: 'mahasiswa',
-          profile: {
+          profil: {
             create: {
               nim,
               angkatan: mahasiswaData.angkatan,
@@ -185,7 +185,7 @@ export async function POST(request: NextRequest) {
             },
           },
         },
-        include: { profile: true },
+        include: { profil: true },
       })
 
       return NextResponse.json({ 
@@ -220,14 +220,14 @@ export async function POST(request: NextRequest) {
           password: staffData.password,
           role: staffData.role,
           prodi: staffData.prodi || null, // Save prodi to user table
-          profile: {
+          profil: {
             create: {
               angkatan: new Date().getFullYear(),
               kelas: 'Staff',
             },
           },
         },
-        include: { profile: true },
+        include: { profil: true },
       })
 
       return NextResponse.json({ user }, { status: 201 })
@@ -265,7 +265,7 @@ export async function PATCH(request: NextRequest) {
     // Check if user exists
     const existingUser = await prisma.user.findUnique({
       where: { id: userId },
-      include: { profile: true },
+      include: { profil: true },
     })
 
     if (!existingUser) {
@@ -290,7 +290,7 @@ export async function PATCH(request: NextRequest) {
     }
 
     // Check if NIM is being changed and if it's already taken
-    if (data.nim && existingUser.profile && data.nim !== existingUser.profile.nim) {
+    if (data.nim && existingUser.profil && data.nim !== existingUser.profil.nim) {
       const nimTaken = await prisma.profile.findFirst({
         where: { nim: data.nim },
       })
@@ -313,8 +313,8 @@ export async function PATCH(request: NextRequest) {
         ...(data.role && { role: data.role }),
         ...(data.prodi !== undefined && { prodi: data.prodi }), // Allow setting prodi to null
         // Update profile if nim or angkatan provided
-        ...(existingUser.profile && (data.nim || data.angkatan) && {
-          profile: {
+        ...(existingUser.profil && (data.nim || data.angkatan) && {
+          profil: {
             update: {
               ...(data.nim && { nim: data.nim }),
               ...(data.angkatan && { angkatan: data.angkatan }),
@@ -322,7 +322,7 @@ export async function PATCH(request: NextRequest) {
           },
         }),
       },
-      include: { profile: true },
+      include: { profil: true },
     })
 
     return NextResponse.json({ user })

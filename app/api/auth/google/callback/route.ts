@@ -106,7 +106,7 @@ export async function GET(request: NextRequest) {
     console.log('🔍 Finding user in database...')
     let user = await prisma.user.findUnique({
       where: { email: googleUser.email },
-      include: { profile: true },
+      include: { profil: true },
     })
 
     if (!user) {
@@ -198,14 +198,14 @@ export async function GET(request: NextRequest) {
           fakultas: extractedFakultas,
           avatarUrl: googleUser.picture,
           // Create optional profile for extra info (kelas, bio, website)
-          profile: {
+          profil: {
             create: {
               kelas: 'A', // Default class, can be updated later
             }
           }
         },
         include: {
-          profile: true,
+          profil: true,
         }
       })
       console.log('✅ User created:', user.id)
@@ -349,7 +349,7 @@ export async function GET(request: NextRequest) {
         where: { id: user.id },
         data: updateData,
         include: {
-          profile: true,
+          profil: true,
         }
       })
       console.log('✅ User updated:', user.id)
@@ -468,7 +468,7 @@ export async function GET(request: NextRequest) {
         user = await prisma.user.update({
           where: { id: user.id },
           data: updateData,
-          include: { profile: true },
+          include: { profil: true },
         })
         console.log('✅ User data updated')
         console.log('   - NIM:', user.nim || 'N/A')
@@ -555,3 +555,4 @@ export async function GET(request: NextRequest) {
     )
   }
 }
+

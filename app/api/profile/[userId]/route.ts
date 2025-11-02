@@ -29,7 +29,7 @@ export async function GET(
     const user = await prisma.user.findUnique({
       where: { id: userId },
       include: {
-        profile: true, // Optional extra info (kelas, bio, website)
+        profil: true, // Optional extra info (kelas, bio, website)
       },
     })
 
@@ -48,9 +48,9 @@ export async function GET(
       angkatan: user.angkatan,
       prodi: user.prodi,
       avatarUrl: user.avatarUrl,
-      kelas: user.profile?.kelas || null,
-      bio: user.profile?.bio || null,
-      website: user.profile?.website || null,
+      kelas: user.profil?.kelas || null,
+      bio: user.profil?.bio || null,
+      website: user.profil?.website || null,
       user: {
         id: user.id,
         name: user.name,
@@ -99,7 +99,7 @@ export async function PATCH(
       where: { id: userId },
       data: userUpdateData,
       include: {
-        profile: true,
+        profil: true,
       },
     })
 
@@ -111,7 +111,7 @@ export async function PATCH(
 
     // Update or create profile if needed
     if (Object.keys(profileUpdateData).length > 0) {
-      if (!updatedUser.profile) {
+      if (!updatedUser.profil) {
         // Create profile if it doesn't exist
         console.log('Creating new profile for user:', userId)
         await prisma.profile.create({
@@ -134,7 +134,7 @@ export async function PATCH(
     const user = await prisma.user.findUnique({
       where: { id: userId },
       include: {
-        profile: true,
+        profil: true,
       },
     })
 
@@ -146,9 +146,9 @@ export async function PATCH(
       angkatan: user!.angkatan,
       prodi: user!.prodi,
       avatarUrl: user!.avatarUrl,
-      kelas: user!.profile?.kelas || null,
-      bio: user!.profile?.bio || null,
-      website: user!.profile?.website || null,
+      kelas: user!.profil?.kelas || null,
+      bio: user!.profil?.bio || null,
+      website: user!.profil?.website || null,
       user: {
         id: user!.id,
         name: user!.name,

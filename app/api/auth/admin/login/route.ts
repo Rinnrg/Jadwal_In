@@ -44,7 +44,7 @@ export async function POST(request: NextRequest) {
       return await prisma.user.findUnique({
         where: { email },
         include: {
-          profile: true,
+          profil: true,
         },
       })
     })

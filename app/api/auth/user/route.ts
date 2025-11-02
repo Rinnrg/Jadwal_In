@@ -19,7 +19,7 @@ export async function GET(request: NextRequest) {
     const user = await prisma.user.findUnique({
       where: { id: userId },
       include: {
-        profile: true,
+        profil: true,
       },
     })
 
@@ -37,7 +37,7 @@ export async function GET(request: NextRequest) {
         name: user.name,
         role: user.role,
         image: user.image,
-        profile: user.profile,
+        profile: user.profil,
       },
     })
   } catch (error) {
