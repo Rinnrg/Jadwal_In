@@ -21,6 +21,16 @@ const createStaffSchema = z.object({
   email: z.string().email(),
   password: z.string().min(6).optional(),
   role: z.enum(['dosen', 'kaprodi', 'super_admin']),
+  prodi: z.string().optional(),
+}).refine((data) => {
+  // Prodi wajib untuk kaprodi
+  if (data.role === 'kaprodi' && !data.prodi) {
+    return false
+  }
+  return true
+}, {
+  message: 'Prodi wajib diisi untuk role Kaprodi',
+  path: ['prodi'],
 })
 
 const createUserSchema = z.discriminatedUnion('role', [
@@ -35,6 +45,7 @@ const updateUserSchema = z.object({
   role: z.enum(['mahasiswa', 'dosen', 'kaprodi', 'super_admin']).optional(),
   nim: z.string().length(11).optional(),
   angkatan: z.number().min(2000).max(2100).optional(),
+  prodi: z.string().optional().nullable(),
 })
 
 // GET - Get all users or specific user
@@ -208,11 +219,11 @@ export async function POST(request: NextRequest) {
           email: staffData.email,
           password: staffData.password,
           role: staffData.role,
+          prodi: staffData.prodi || null, // Save prodi to user table
           profile: {
             create: {
               angkatan: new Date().getFullYear(),
               kelas: 'Staff',
-              prodi: 'Staff',
             },
           },
         },
@@ -300,6 +311,7 @@ export async function PATCH(request: NextRequest) {
         ...(data.email && { email: data.email }),
         ...(data.password && { password: data.password }),
         ...(data.role && { role: data.role }),
+        ...(data.prodi !== undefined && { prodi: data.prodi }), // Allow setting prodi to null
         // Update profile if nim or angkatan provided
         ...(existingUser.profile && (data.nim || data.angkatan) && {
           profile: {

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getGoogleUserInfo } from '@/lib/google-auth'
 import { PrismaClient } from '@/generated/prisma'
 import { randomBytes } from 'crypto'
+import { cariNIPDosen } from '@/lib/unesa-scraper'
 
 const prisma = new PrismaClient()
 
@@ -111,24 +112,95 @@ export async function GET(request: NextRequest) {
     if (!user) {
       console.log('➕ Creating new user...')
       
-      // Extract full NIM from email using proper reconstruction
-      const extractedNim = extractNIMFromEmail(googleUser.email)
-      console.log('✅ NIM extracted from email:', extractedNim)
+      // Determine role based on email domain
+      const isDosen = googleUser.email.endsWith('@unesa.ac.id')
+      const userRole = isDosen ? 'dosen' : 'mahasiswa'
+      console.log(`📧 Email domain check: ${googleUser.email} → Role: ${userRole}`)
       
-      // Create new user with profile
+      let extractedNim: string | null = null
+      let extractedNip: string | null = null
+      let extractedAngkatan: number | null = null
+      let extractedProdi: string | null = null
+      let extractedFakultas: string | null = null
+      
+      if (isDosen) {
+        // For dosen, try to fetch NIP, prodi, fakultas from cv.unesa.ac.id
+        console.log('👨‍🏫 User is dosen, fetching data from cv.unesa.ac.id...')
+        try {
+          const dosenInfo = await cariNIPDosen(googleUser.name || '')
+          if (dosenInfo) {
+            extractedNip = dosenInfo.nip
+            extractedProdi = dosenInfo.prodi
+            extractedFakultas = dosenInfo.fakultas
+            console.log('✅ Dosen data found:')
+            console.log('   - NIP:', extractedNip || 'Not found')
+            console.log('   - Prodi:', extractedProdi || 'Not found')
+            console.log('   - Fakultas:', extractedFakultas || 'Not found')
+          } else {
+            console.log('⚠️ Dosen data not found')
+          }
+        } catch (error) {
+          console.error('❌ Error fetching dosen data:', error)
+        }
+      } else {
+        // For mahasiswa, fetch ALL data from pd-unesa.unesa.ac.id using name
+        console.log('👨‍🎓 Fetching mahasiswa data from pd-unesa.unesa.ac.id...')
+        try {
+          const { cariDataMahasiswa } = await import('@/lib/unesa-scraper')
+          const mahasiswaInfo = await cariDataMahasiswa(googleUser.name || '')
+          
+          if (mahasiswaInfo) {
+            // Use data from pd-unesa (including NIM!)
+            extractedNim = mahasiswaInfo.nim
+            extractedProdi = mahasiswaInfo.prodi
+            extractedFakultas = mahasiswaInfo.fakultas
+            
+            // Extract angkatan from NIM if available
+            if (mahasiswaInfo.angkatan) {
+              extractedAngkatan = parseInt(mahasiswaInfo.angkatan)
+            } else if (extractedNim) {
+              extractedAngkatan = extractAngkatan(extractedNim)
+            }
+            
+            console.log('✅ Mahasiswa data found from pd-unesa:')
+            console.log('   - NIM:', extractedNim || 'Not found')
+            console.log('   - Prodi:', extractedProdi || 'Not found')
+            console.log('   - Fakultas:', extractedFakultas || 'Not found')
+            console.log('   - Angkatan:', extractedAngkatan || 'Not found')
+          } else {
+            console.log('⚠️ Data not found on pd-unesa, trying to extract NIM from email as fallback...')
+            // Fallback: extract from email if pd-unesa scraping fails
+            extractedNim = extractNIMFromEmail(googleUser.email)
+            extractedAngkatan = extractAngkatan(extractedNim)
+            console.log('   - NIM (from email):', extractedNim || 'Not found')
+          }
+        } catch (error) {
+          console.error('❌ Error fetching mahasiswa data:', error)
+          // Fallback: extract from email if error occurs
+          extractedNim = extractNIMFromEmail(googleUser.email)
+          extractedAngkatan = extractAngkatan(extractedNim)
+          console.log('   - Using fallback NIM from email:', extractedNim)
+        }
+      }
+      
+      // Create new user (data langsung di User, tidak perlu Profile)
       user = await prisma.user.create({
         data: {
           email: googleUser.email,
           name: googleUser.name || googleUser.email.split('@')[0],
-          role: 'mahasiswa', // Default role
+          role: userRole,
           googleId: googleUser.googleId,
           image: googleUser.picture,
+          nim: extractedNim,
+          nip: extractedNip,
+          angkatan: extractedAngkatan,
+          prodi: extractedProdi,
+          fakultas: extractedFakultas,
+          avatarUrl: googleUser.picture,
+          // Create optional profile for extra info (kelas, bio, website)
           profile: {
             create: {
-              nim: extractedNim,
-              angkatan: extractAngkatan(extractedNim),
               kelas: 'A', // Default class, can be updated later
-              avatarUrl: googleUser.picture, // Sync Google photo to profile
             }
           }
         },
@@ -136,8 +208,14 @@ export async function GET(request: NextRequest) {
           profile: true,
         }
       })
-      console.log('✅ User created with profile:', user.id, 'NIM:', extractedNim)
-      console.log('✅ Avatar synced to profile:', !!googleUser.picture)
+      console.log('✅ User created:', user.id)
+      console.log('   - Role:', userRole)
+      console.log('   - NIM:', extractedNim || 'N/A')
+      console.log('   - NIP:', extractedNip || 'N/A')
+      console.log('   - Angkatan:', extractedAngkatan || 'N/A')
+      console.log('   - Prodi:', extractedProdi || 'N/A')
+      console.log('   - Fakultas:', extractedFakultas || 'N/A')
+      console.log('   - Avatar URL:', !!googleUser.picture)
     } else if (!user.googleId) {
       console.log('🔄 Updating existing user with Google ID...')
       
@@ -146,40 +224,130 @@ export async function GET(request: NextRequest) {
         where: { userId: user.id }
       })
       
-      // Extract full NIM from email if not in profile
-      let extractedNim: string | null = null
-      if (!existingProfile || !existingProfile.nim) {
-        extractedNim = extractNIMFromEmail(googleUser.email)
-        console.log('✅ NIM extracted from email:', extractedNim)
-      }
+      // Determine role based on email domain
+      const isDosen = googleUser.email.endsWith('@unesa.ac.id')
+      const userRole = isDosen ? 'dosen' : 'mahasiswa'
       
-      // Update existing user with Google ID and create/update profile
-      user = await prisma.user.update({
-        where: { id: user.id },
-        data: {
-          googleId: googleUser.googleId,
-          image: googleUser.picture || user.image,
-          profile: existingProfile ? (
-            extractedNim && !existingProfile.nim ? {
-              update: {
-                nim: extractedNim,
-                angkatan: extractAngkatan(extractedNim),
-                avatarUrl: googleUser.picture, // Sync Google photo
-              }
-            } : {
-              update: {
-                avatarUrl: googleUser.picture, // Sync Google photo even if NIM exists
-              }
-            }
-          ) : {
-            create: {
-              nim: extractedNim,
-              angkatan: extractAngkatan(extractedNim),
-              kelas: 'A',
-              avatarUrl: googleUser.picture, // Sync Google photo
+      // Extract data based on role
+      let extractedNim: string | null = null
+      let extractedNip: string | null = null
+      let extractedAngkatan: number | null = null
+      let extractedProdi: string | null = null
+      let extractedFakultas: string | null = null
+      
+      if (isDosen && (!user.nip || !user.prodi || !user.fakultas)) {
+        // For dosen without complete data, try to fetch from cv.unesa.ac.id
+        console.log('👨‍🏫 User is dosen, fetching data from cv.unesa.ac.id...')
+        try {
+          const dosenInfo = await cariNIPDosen(googleUser.name || '')
+          if (dosenInfo) {
+            if (!user.nip) extractedNip = dosenInfo.nip
+            if (!user.prodi) extractedProdi = dosenInfo.prodi
+            if (!user.fakultas) extractedFakultas = dosenInfo.fakultas
+            console.log('✅ Dosen data found:')
+            console.log('   - NIP:', extractedNip || 'Already set')
+            console.log('   - Prodi:', extractedProdi || 'Already set')
+            console.log('   - Fakultas:', extractedFakultas || 'Already set')
+          }
+        } catch (error) {
+          console.error('❌ Error fetching dosen data:', error)
+        }
+      } else if (!isDosen && (!user.nim || !user.prodi || !user.fakultas)) {
+        // For existing mahasiswa with missing data, fetch from pd-unesa
+        console.log('👨‍🎓 Fetching mahasiswa data from pd-unesa.unesa.ac.id...')
+        try {
+          const { cariDataMahasiswa } = await import('@/lib/unesa-scraper')
+          
+          // Try to search by name first (primary method)
+          let mahasiswaInfo = await cariDataMahasiswa(googleUser.name || '')
+          
+          // If not found by name and we have NIM, try by NIM
+          if (!mahasiswaInfo && user.nim) {
+            console.log('   - Name search failed, trying by NIM...')
+            mahasiswaInfo = await cariDataMahasiswa(user.nim)
+          }
+          
+          // If still not found and NIM can be extracted from email, try that
+          if (!mahasiswaInfo) {
+            const emailNim = extractNIMFromEmail(googleUser.email)
+            if (emailNim) {
+              console.log('   - Trying by email-extracted NIM as fallback...')
+              mahasiswaInfo = await cariDataMahasiswa(emailNim)
             }
           }
-        },
+          
+          if (mahasiswaInfo) {
+            if (!user.nim && mahasiswaInfo.nim) {
+              extractedNim = mahasiswaInfo.nim
+              extractedAngkatan = mahasiswaInfo.angkatan 
+                ? parseInt(mahasiswaInfo.angkatan) 
+                : extractAngkatan(mahasiswaInfo.nim)
+            }
+            if (!user.prodi && mahasiswaInfo.prodi) extractedProdi = mahasiswaInfo.prodi
+            if (!user.fakultas && mahasiswaInfo.fakultas) extractedFakultas = mahasiswaInfo.fakultas
+            
+            console.log('✅ Mahasiswa data found from pd-unesa:')
+            console.log('   - NIM:', extractedNim || 'Already set')
+            console.log('   - Prodi:', extractedProdi || 'Already set')
+            console.log('   - Fakultas:', extractedFakultas || 'Already set')
+            console.log('   - Angkatan:', extractedAngkatan || 'Already set')
+          } else {
+            console.log('⚠️ Could not find mahasiswa data on pd-unesa')
+            // Last resort fallback: extract NIM from email
+            if (!user.nim) {
+              extractedNim = extractNIMFromEmail(googleUser.email)
+              extractedAngkatan = extractAngkatan(extractedNim)
+              console.log('   - Using fallback NIM from email:', extractedNim)
+            }
+          }
+        } catch (error) {
+          console.error('❌ Error fetching mahasiswa data:', error)
+          // Fallback on error
+          if (!user.nim) {
+            extractedNim = extractNIMFromEmail(googleUser.email)
+            extractedAngkatan = extractAngkatan(extractedNim)
+            console.log('   - Using fallback NIM from email:', extractedNim)
+          }
+        }
+      }
+      
+      // Update user with Google ID and data
+      const updateData: any = {
+        googleId: googleUser.googleId,
+        role: userRole,
+        image: googleUser.picture || user.image,
+        avatarUrl: googleUser.picture,
+      }
+      
+      if (extractedNim) {
+        updateData.nim = extractedNim
+        updateData.angkatan = extractedAngkatan
+      }
+      
+      if (extractedNip) {
+        updateData.nip = extractedNip
+      }
+      
+      if (extractedProdi) {
+        updateData.prodi = extractedProdi
+      }
+      
+      if (extractedFakultas) {
+        updateData.fakultas = extractedFakultas
+      }
+      
+      // Create profile if doesn't exist
+      if (!existingProfile) {
+        updateData.profile = {
+          create: {
+            kelas: 'A',
+          }
+        }
+      }
+      
+      user = await prisma.user.update({
+        where: { id: user.id },
+        data: updateData,
         include: {
           profile: true,
         }
@@ -188,12 +356,19 @@ export async function GET(request: NextRequest) {
     } else {
       console.log('✅ User found:', user.id)
       
-      // Extract NIM from email
-      const extractedNim = extractNIMFromEmail(googleUser.email)
-      console.log('📧 NIM extracted from email:', extractedNim)
+      // Determine role based on email domain
+      const isDosen = googleUser.email.endsWith('@unesa.ac.id')
+      const userRole = isDosen ? 'dosen' : 'mahasiswa'
       
       let needsUpdate = false
       const updateData: any = {}
+      
+      // Update role if email domain indicates dosen
+      if (user.role !== userRole) {
+        console.log(`🔄 Updating role: "${user.role}" → "${userRole}"`)
+        updateData.role = userRole
+        needsUpdate = true
+      }
       
       // Update image if Google has newer one
       if (googleUser.picture && user.image !== googleUser.picture) {
@@ -202,49 +377,90 @@ export async function GET(request: NextRequest) {
         needsUpdate = true
       }
       
-      // Check if user has profile, if not create one
+      // Update avatarUrl if Google has newer one
+      if (googleUser.picture && user.avatarUrl !== googleUser.picture) {
+        console.log('🖼️ Updating avatarUrl from Google...')
+        updateData.avatarUrl = googleUser.picture
+        needsUpdate = true
+      }
+      
+      // Check if data needs to be updated
+      const currentNim = user.nim
+      const currentNip = user.nip
+      const currentProdi = user.prodi
+      const currentFakultas = user.fakultas
+      
+      const nimNeedsUpdate = !isDosen && (!currentNim || currentNim.length < 8)
+      const dataDosenNeedsUpdate = isDosen && (!currentNip || !currentProdi || !currentFakultas)
+      const dataMahasiswaNeedsUpdate = !isDosen && currentNim && (!currentProdi || !currentFakultas)
+      
+      if (nimNeedsUpdate) {
+        const extractedNim = extractNIMFromEmail(googleUser.email)
+        if (extractedNim) {
+          console.log(`🔄 Updating NIM: "${currentNim || 'NULL'}" → "${extractedNim}"`)
+          updateData.nim = extractedNim
+          updateData.angkatan = extractAngkatan(extractedNim)
+          needsUpdate = true
+        }
+      }
+      
+      if (dataDosenNeedsUpdate) {
+        console.log('👨‍🏫 Fetching dosen data from cv.unesa.ac.id...')
+        try {
+          const dosenInfo = await cariNIPDosen(googleUser.name || '')
+          if (dosenInfo) {
+            if (!currentNip && dosenInfo.nip) {
+              updateData.nip = dosenInfo.nip
+              console.log('✅ NIP found:', dosenInfo.nip)
+              needsUpdate = true
+            }
+            if (!currentProdi && dosenInfo.prodi) {
+              updateData.prodi = dosenInfo.prodi
+              console.log('✅ Prodi found:', dosenInfo.prodi)
+              needsUpdate = true
+            }
+            if (!currentFakultas && dosenInfo.fakultas) {
+              updateData.fakultas = dosenInfo.fakultas
+              console.log('✅ Fakultas found:', dosenInfo.fakultas)
+              needsUpdate = true
+            }
+          }
+        } catch (error) {
+          console.error('❌ Error fetching dosen data:', error)
+        }
+      }
+      
+      if (dataMahasiswaNeedsUpdate) {
+        console.log('👨‍🎓 Fetching mahasiswa data from pd-unesa.unesa.ac.id...')
+        try {
+          const { cariDataMahasiswa } = await import('@/lib/unesa-scraper')
+          const mahasiswaInfo = await cariDataMahasiswa(currentNim!)
+          if (mahasiswaInfo) {
+            if (!currentProdi && mahasiswaInfo.prodi) {
+              updateData.prodi = mahasiswaInfo.prodi
+              console.log('✅ Prodi found:', mahasiswaInfo.prodi)
+              needsUpdate = true
+            }
+            if (!currentFakultas && mahasiswaInfo.fakultas) {
+              updateData.fakultas = mahasiswaInfo.fakultas
+              console.log('✅ Fakultas found:', mahasiswaInfo.fakultas)
+              needsUpdate = true
+            }
+          }
+        } catch (error) {
+          console.error('❌ Error fetching mahasiswa data:', error)
+        }
+      }
+      
+      // Create profile if doesn't exist
       if (!user.profile) {
         console.log('⚠️ User has no profile, creating...')
         updateData.profile = {
           create: {
-            nim: extractedNim,
-            angkatan: extractAngkatan(extractedNim),
             kelas: 'A',
-            avatarUrl: googleUser.picture, // Sync Google photo to profile
           }
         }
         needsUpdate = true
-      } else {
-        // Check if NIM needs to be updated (null or too short)
-        const currentNim = user.profile.nim
-        const nimNeedsUpdate = !currentNim || currentNim.length < 8
-        
-        // Check if avatarUrl needs to be synced from Google picture
-        const avatarNeedsUpdate = googleUser.picture && 
-          (!user.profile.avatarUrl || user.profile.avatarUrl !== googleUser.picture)
-        
-        if (nimNeedsUpdate || avatarNeedsUpdate) {
-          const profileUpdateData: any = {}
-          
-          if (nimNeedsUpdate && extractedNim) {
-            console.log(`🔄 Updating NIM: "${currentNim || 'NULL'}" → "${extractedNim}"`)
-            profileUpdateData.nim = extractedNim
-            profileUpdateData.angkatan = extractAngkatan(extractedNim)
-          }
-          
-          if (avatarNeedsUpdate) {
-            console.log(`🖼️ Syncing Google photo to profile.avatarUrl`)
-            profileUpdateData.avatarUrl = googleUser.picture
-          }
-          
-          updateData.profile = {
-            update: profileUpdateData
-          }
-          needsUpdate = true
-        } else {
-          console.log(`✅ NIM already valid: ${currentNim}`)
-          console.log(`✅ Avatar already synced`)
-        }
       }
       
       // Apply updates if needed
@@ -254,7 +470,14 @@ export async function GET(request: NextRequest) {
           data: updateData,
           include: { profile: true },
         })
-        console.log('✅ User profile updated with NIM:', user.profile?.nim)
+        console.log('✅ User data updated')
+        console.log('   - NIM:', user.nim || 'N/A')
+        console.log('   - NIP:', user.nip || 'N/A')
+        console.log('   - Angkatan:', user.angkatan || 'N/A')
+      } else {
+        console.log(`✅ All data already up to date`)
+        console.log(`   - NIM: ${currentNim || 'N/A'}`)
+        console.log(`   - NIP: ${currentNip || 'N/A'}`)
       }
     }
 
@@ -267,12 +490,17 @@ export async function GET(request: NextRequest) {
     }
 
     // Final verification: Log user profile details
-    console.log('📊 Final User Profile Status:')
+    console.log('📊 Final User Status:')
     console.log('   - User ID:', user.id)
     console.log('   - Email:', user.email)
+    console.log('   - Role:', user.role)
+    console.log('   - NIM:', user.nim || 'NULL')
+    console.log('   - NIP:', user.nip || 'NULL')
+    console.log('   - Angkatan:', user.angkatan || 'NULL')
+    console.log('   - Prodi:', user.prodi || 'NULL')
+    console.log('   - Fakultas:', user.fakultas || 'NULL')
+    console.log('   - Avatar URL:', user.avatarUrl ? 'SET' : 'NULL')
     console.log('   - Has Profile:', !!user.profile)
-    console.log('   - NIM:', user.profile?.nim || 'NULL')
-    console.log('   - Angkatan:', user.profile?.angkatan || 'NULL')
     console.log('   - Google ID:', user.googleId || 'NULL')
 
     // Create session token

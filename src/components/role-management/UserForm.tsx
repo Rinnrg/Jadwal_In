@@ -20,6 +20,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog"
+import { PRODI_OPTIONS } from "@/lib/prodi-config"
 
 // Schema untuk mahasiswa (create)
 const mahasiswaFormSchema = z.object({
@@ -45,6 +46,16 @@ const staffFormSchema = z.object({
   email: z.string().email("Format email tidak valid"),
   password: z.string().min(6, "Password minimal 6 karakter").optional().or(z.literal("")),
   role: z.enum(["dosen", "kaprodi", "super_admin"]),
+  prodi: z.string().min(3, "Prodi minimal 3 karakter").optional(),
+}).refine((data) => {
+  // Prodi wajib diisi jika role kaprodi
+  if (data.role === "kaprodi" && !data.prodi) {
+    return false
+  }
+  return true
+}, {
+  message: "Prodi wajib diisi untuk role Kaprodi",
+  path: ["prodi"],
 })
 
 // Schema untuk edit staff
@@ -53,6 +64,16 @@ const editStaffFormSchema = z.object({
   email: z.string().email("Format email tidak valid"),
   password: z.string().min(6, "Password minimal 6 karakter").optional().or(z.literal("")),
   role: z.enum(["mahasiswa", "dosen", "kaprodi", "super_admin"]),
+  prodi: z.string().min(3, "Prodi minimal 3 karakter").optional(),
+}).refine((data) => {
+  // Prodi wajib diisi jika role kaprodi
+  if (data.role === "kaprodi" && !data.prodi) {
+    return false
+  }
+  return true
+}, {
+  message: "Prodi wajib diisi untuk role Kaprodi",
+  path: ["prodi"],
 })
 
 // Union schema
@@ -100,6 +121,7 @@ export function UserForm({ user, onSuccess, onCancel }: UserFormProps) {
               email: user?.email || "",
               password: "",
               role: user?.role || "dosen",
+              prodi: user?.prodi || "",
             })
       : (selectedRole === "mahasiswa" 
           ? {
@@ -115,6 +137,7 @@ export function UserForm({ user, onSuccess, onCancel }: UserFormProps) {
               email: "",
               password: "",
               role: selectedRole,
+              prodi: "",
             }),
   })
 
@@ -134,6 +157,7 @@ export function UserForm({ user, onSuccess, onCancel }: UserFormProps) {
           email: user.email,
           password: "",
           role: user.role,
+          prodi: user.prodi || "",
         })
         setSelectedRole(user.role)
       }
@@ -158,6 +182,7 @@ export function UserForm({ user, onSuccess, onCancel }: UserFormProps) {
           email: "",
           password: "",
           role: selectedRole,
+          prodi: "",
         })
       }
     }
@@ -191,6 +216,11 @@ export function UserForm({ user, onSuccess, onCancel }: UserFormProps) {
           updates.angkatan = data.angkatan
         }
         
+        // Update prodi untuk kaprodi/dosen
+        if (data.role === "kaprodi" || data.role === "dosen") {
+          updates.prodi = data.prodi || null
+        }
+        
         await updateUser(user.id, updates)
         showSuccess("User berhasil diperbarui")
         form.reset()
@@ -219,6 +249,7 @@ export function UserForm({ user, onSuccess, onCancel }: UserFormProps) {
             email: data.email,
             role: data.role,
             password: data.password || undefined,
+            prodi: data.prodi || undefined,
           })
           showSuccess("User berhasil ditambahkan")
           form.reset()
@@ -498,6 +529,48 @@ export function UserForm({ user, onSuccess, onCancel }: UserFormProps) {
                   </p>
                 )}
               </div>
+
+              {/* Prodi field - Required for Kaprodi, Optional for Dosen */}
+              {(selectedRole === "kaprodi" || selectedRole === "dosen") && (
+                <div className="space-y-2">
+                  <Label htmlFor="prodi" className="flex items-center gap-2">
+                    <Shield className="h-4 w-4" />
+                    Program Studi {selectedRole === "kaprodi" && <span className="text-destructive">*</span>}
+                  </Label>
+                  <Select
+                    value={form.watch("prodi") || ""}
+                    onValueChange={(value) => form.setValue("prodi", value)}
+                  >
+                    <SelectTrigger className="cursor-pointer">
+                      <SelectValue placeholder="Pilih Program Studi" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {PRODI_OPTIONS.map((prodi) => (
+                        <SelectItem key={prodi.value} value={prodi.value} className="cursor-pointer">
+                          {prodi.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  {form.formState.errors.prodi && (
+                    <p className="text-sm text-destructive">
+                      {String(form.formState.errors.prodi.message || "")}
+                    </p>
+                  )}
+                  {selectedRole === "kaprodi" && (
+                    <p className="text-xs text-muted-foreground">
+                      <strong>⚠️ Penting:</strong> Kaprodi hanya dapat mengelola mata kuliah sesuai dengan prodi yang dipilih
+                      <br />
+                      <strong>Jurusan Teknik Informatika:</strong> PTI, TI, SI
+                    </p>
+                  )}
+                  {selectedRole === "dosen" && (
+                    <p className="text-xs text-muted-foreground">
+                      Prodi dosen (opsional) untuk keperluan filter dan pelaporan
+                    </p>
+                  )}
+                </div>
+              )}
             </>
           )}
 

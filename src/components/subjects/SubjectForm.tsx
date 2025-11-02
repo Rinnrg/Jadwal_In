@@ -18,6 +18,8 @@ import { useOfferingsStore } from "@/stores/offerings.store"
 import { showSuccess, showError } from "@/lib/alerts"
 import { parseTimeToMinutes, minutesToTimeString } from "@/lib/time"
 import { useState, useEffect } from "react"
+import { useSessionStore } from "@/stores/session.store"
+import { PRODI_OPTIONS, PRODI_PTI } from "@/lib/prodi-config"
 
 interface KelasSchedule {
   kelas: string
@@ -162,6 +164,7 @@ const calculateEndTime = (startTime: string, sks: number): string => {
 export function SubjectForm({ subject, onSuccess, onCancel }: SubjectFormProps) {
   const { subjects, addSubject, updateSubject } = useSubjectsStore()
   const { addOffering } = useOfferingsStore()
+  const session = useSessionStore((state) => state.session)
   const [selectedKelas, setSelectedKelas] = useState<string[]>(subject?.kelas ? [subject.kelas] : [])
   const [kelasInput, setKelasInput] = useState("")
   const [kelasSchedules, setKelasSchedules] = useState<KelasSchedule[]>([])
@@ -172,6 +175,10 @@ export function SubjectForm({ subject, onSuccess, onCancel }: SubjectFormProps) 
     angkatan: true,
     pengampuIds: true,
   })
+
+  // Check if current user is kaprodi and get their prodi
+  const isKaprodi = session?.role === 'kaprodi'
+  const kaprodiProdi = session?.prodi || null
 
   const form = useForm<SubjectFormData>({
     resolver: zodResolver(subjectFormSchema),
@@ -371,7 +378,7 @@ export function SubjectForm({ subject, onSuccess, onCancel }: SubjectFormProps) 
           const subjectData: any = {
             nama: data.nama,
             sks: data.sks,
-            prodi: "S1 Pendidikan Teknologi Informasi",
+            prodi: isKaprodi ? kaprodiProdi : PRODI_PTI, // Use kaprodi's prodi or default PTI
             angkatan: data.angkatan,
             kelas,
             color: data.color,
@@ -506,7 +513,7 @@ export function SubjectForm({ subject, onSuccess, onCancel }: SubjectFormProps) 
           kode,
           nama: data.nama,
           sks: data.sks,
-          prodi: "S1 Pendidikan Teknologi Informasi", // Default program studi
+          prodi: isKaprodi ? kaprodiProdi : PRODI_PTI, // Use kaprodi's prodi or default PTI
           angkatan: data.angkatan,
           kelas,
           color: data.color,

@@ -1,6 +1,36 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { z } from 'zod'
+import { cookies } from 'next/headers'
+
+// Helper to get current user from session
+async function getCurrentUser() {
+  try {
+    const cookieStore = await cookies()
+    const sessionCookie = cookieStore.get('session')
+    
+    if (!sessionCookie) {
+      return null
+    }
+
+    const sessionData = JSON.parse(sessionCookie.value)
+    const user = await prisma.user.findUnique({
+      where: { id: sessionData.userId },
+      select: {
+        id: true,
+        role: true,
+        prodi: true,
+        name: true,
+        email: true,
+      },
+    })
+
+    return user
+  } catch (error) {
+    console.error('Error getting current user:', error)
+    return null
+  }
+}
 
 // Validation schema
 const subjectSchema = z.object({
@@ -94,6 +124,26 @@ export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
     const data = subjectSchema.parse(body)
+
+    // Get current user for authorization check
+    const currentUser = await getCurrentUser()
+    
+    // If user is kaprodi, validate prodi matches
+    if (currentUser?.role === 'kaprodi') {
+      if (!currentUser.prodi) {
+        return NextResponse.json(
+          { error: 'Kaprodi harus memiliki prodi yang valid' },
+          { status: 403 }
+        )
+      }
+      
+      if (data.prodi !== currentUser.prodi) {
+        return NextResponse.json(
+          { error: `Kaprodi hanya dapat mengelola mata kuliah untuk prodi: ${currentUser.prodi}` },
+          { status: 403 }
+        )
+      }
+    }
 
     // Check if kode already exists
     const existingSubjectByKode = await prisma.subject.findUnique({
@@ -218,16 +268,58 @@ export async function PUT(request: NextRequest) {
 
     const data = subjectSchema.partial().parse(updateData)
 
+    // Get current user for authorization check
+    const currentUser = await getCurrentUser()
+    
+    // Get existing subject to check prodi
+    const existingSubject = await prisma.subject.findUnique({
+      where: { id },
+      select: { prodi: true },
+    })
+
+    if (!existingSubject) {
+      return NextResponse.json(
+        { error: 'Subject not found' },
+        { status: 404 }
+      )
+    }
+
+    // If user is kaprodi, validate prodi matches
+    if (currentUser?.role === 'kaprodi') {
+      if (!currentUser.prodi) {
+        return NextResponse.json(
+          { error: 'Kaprodi harus memiliki prodi yang valid' },
+          { status: 403 }
+        )
+      }
+      
+      // Check if trying to change prodi
+      if (data.prodi && data.prodi !== currentUser.prodi) {
+        return NextResponse.json(
+          { error: `Kaprodi hanya dapat mengelola mata kuliah untuk prodi: ${currentUser.prodi}` },
+          { status: 403 }
+        )
+      }
+      
+      // Check if existing subject prodi matches
+      if (existingSubject.prodi && existingSubject.prodi !== currentUser.prodi) {
+        return NextResponse.json(
+          { error: `Kaprodi hanya dapat mengelola mata kuliah untuk prodi: ${currentUser.prodi}` },
+          { status: 403 }
+        )
+      }
+    }
+
     // If kode is being updated, check for duplicates
     if (data.kode) {
-      const existingSubject = await prisma.subject.findFirst({
+      const existingSubjectByKode = await prisma.subject.findFirst({
         where: {
           kode: data.kode,
           NOT: { id },
         },
       })
 
-      if (existingSubject) {
+      if (existingSubjectByKode) {
         return NextResponse.json(
           { error: 'Kode mata kuliah sudah digunakan' },
           { status: 400 }

@@ -67,12 +67,20 @@ export function KrsPicker({ userId, term }: KrsPickerProps) {
     // Get ALL offerings for angkatan (tidak filter by kelas, mahasiswa bebas pilih kelas mana saja)
     const offerings = getOfferingsForStudent(userAngkatan)
 
+    // Get user's prodi from session
+    const userProdi = session?.prodi
+
     return offerings
       .map((offering) => {
         const subject = getSubjectById(offering.subjectId)
 
         // Only show if subject exists and is active
         if (!subject || subject.status !== "aktif") {
+          return null
+        }
+
+        // CRITICAL: Filter by prodi - mahasiswa hanya lihat mata kuliah dari prodinya
+        if (userProdi && subject.prodi && subject.prodi !== userProdi) {
           return null
         }
 
