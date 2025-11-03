@@ -76,7 +76,7 @@ export async function sendReminderEmail({
 }): Promise<{ success: boolean; error?: string }> {
   try {
     // Create transporter
-    const transporter = nodemailer.createTransporter(EMAIL_CONFIG)
+    const transporter = nodemailer.createTransport(EMAIL_CONFIG)
 
     // Generate ICS content
     const icsContent = generateICS({
@@ -185,7 +185,7 @@ export async function sendReminderEmail({
  */
 export async function sendTestEmail(to: string): Promise<{ success: boolean; error?: string }> {
   try {
-    const transporter = nodemailer.createTransporter(EMAIL_CONFIG)
+    const transporter = nodemailer.createTransport(EMAIL_CONFIG)
 
     const htmlBody = `
 <!DOCTYPE html>
