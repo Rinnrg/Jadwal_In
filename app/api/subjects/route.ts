@@ -75,14 +75,14 @@ export async function GET(request: NextRequest) {
     const subjects = await prisma.subject.findMany({
       where,
       include: {
-        pengampus: {
+        pengampu: {
           select: {
             id: true,
             name: true,
             email: true,
           },
         },
-        offerings: {
+        penawaran: {
           select: {
             id: true,
             angkatan: true,
@@ -92,8 +92,8 @@ export async function GET(request: NextRequest) {
         },
         _count: {
           select: {
-            krsItems: true,
-            scheduleEvents: true,
+            krs: true,
+            jadwal: true,
           },
         },
       },
@@ -106,7 +106,7 @@ export async function GET(request: NextRequest) {
     // Transform to include pengampuIds array
     const subjectsWithIds = subjects.map((subject) => ({
       ...subject,
-      pengampuIds: subject.pengampus.map(p => p.id),
+      pengampuIds: subject.pengampu.map(p => p.id),
     }))
 
     return NextResponse.json(subjectsWithIds)
@@ -191,12 +191,12 @@ export async function POST(request: NextRequest) {
         slotStartUTC: data.slotStartUTC,
         slotEndUTC: data.slotEndUTC,
         slotRuang: data.slotRuang,
-        pengampus: data.pengampuIds && data.pengampuIds.length > 0 ? {
+        pengampu: data.pengampuIds && data.pengampuIds.length > 0 ? {
           connect: data.pengampuIds.map(id => ({ id }))
         } : undefined,
       },
       include: {
-        pengampus: {
+        pengampu: {
           select: {
             id: true,
             name: true,
@@ -232,7 +232,7 @@ export async function POST(request: NextRequest) {
     // Transform to include pengampuIds array
     const subjectWithIds = {
       ...subject,
-      pengampuIds: subject.pengampus.map(p => p.id),
+      pengampuIds: subject.pengampu.map(p => p.id),
     }
 
     return NextResponse.json(subjectWithIds, { status: 201 })
@@ -334,12 +334,12 @@ export async function PUT(request: NextRequest) {
       where: { id },
       data: {
         ...subjectData,
-        pengampus: pengampuIds ? {
+        pengampu: pengampuIds ? {
           set: pengampuIds.map(id => ({ id }))
         } : undefined,
       },
       include: {
-        pengampus: {
+        pengampu: {
           select: {
             id: true,
             name: true,
@@ -352,7 +352,7 @@ export async function PUT(request: NextRequest) {
     // Transform to include pengampuIds array
     const subjectWithIds = {
       ...subject,
-      pengampuIds: subject.pengampus.map(p => p.id),
+      pengampuIds: subject.pengampu.map(p => p.id),
     }
 
     return NextResponse.json(subjectWithIds)
@@ -395,9 +395,9 @@ export async function DELETE(request: NextRequest) {
       include: {
         _count: {
           select: {
-            krsItems: true,
-            offerings: true,
-            scheduleEvents: true,
+            krs: true,
+            penawaran: true,
+            jadwal: true,
           },
         },
       },
@@ -411,7 +411,7 @@ export async function DELETE(request: NextRequest) {
     }
 
     // Prevent deletion if subject has dependencies
-    if (subject._count.krsItems > 0) {
+    if (subject._count.krs > 0) {
       return NextResponse.json(
         { error: 'Tidak dapat menghapus mata kuliah yang sudah diambil mahasiswa' },
         { status: 400 }

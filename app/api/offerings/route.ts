@@ -58,7 +58,7 @@ export async function GET(request: NextRequest) {
         },
         _count: {
           select: {
-            krsItems: true,
+            krs: true,
           },
         },
       },
@@ -227,7 +227,7 @@ export async function DELETE(request: NextRequest) {
       include: {
         _count: {
           select: {
-            krsItems: true,
+            krs: true,
           },
         },
       },
@@ -240,7 +240,7 @@ export async function DELETE(request: NextRequest) {
       )
     }
 
-    if (offering._count.krsItems > 0) {
+    if (offering._count.krs > 0) {
       return NextResponse.json(
         { error: 'Tidak dapat menghapus penawaran yang sudah diambil mahasiswa' },
         { status: 400 }
