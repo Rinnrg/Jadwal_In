@@ -18,9 +18,6 @@ export async function GET(request: NextRequest) {
 
     const user = await prisma.user.findUnique({
       where: { id: userId },
-      include: {
-        profil: true,
-      },
     })
 
     if (!user) {
@@ -38,7 +35,15 @@ export async function GET(request: NextRequest) {
         role: user.role,
         image: user.image,
         prodi: user.prodi,
-        profile: user.profil,
+        nim: user.nim,
+        nip: user.nip,
+        angkatan: user.angkatan,
+        fakultas: user.fakultas,
+        avatarUrl: user.avatarUrl,
+        bio: user.bio,
+        website: user.website,
+        jenisKelamin: user.jenisKelamin,
+        semesterAwal: user.semesterAwal,
       },
     })
   } catch (error) {

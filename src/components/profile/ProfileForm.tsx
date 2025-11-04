@@ -231,22 +231,7 @@ export function ProfileForm({ profile, onSuccess, onChangePassword, onSetPasswor
 
       const { profile: updatedProfile } = await response.json()
 
-      // Note: avatarUrl is now in User model, not Profile
-      // Profile store only handles kelas, bio, website
-      // Update profile only for fields that exist in Profile model
-      if (profile) {
-        // Only update kelas if it exists in updatedProfile
-        if (updatedProfile.kelas) {
-          updateProfile(session.id, { kelas: updatedProfile.kelas })
-        }
-      } else if (updatedProfile.kelas) {
-        // Create new profile in local store with only Profile fields
-        createProfile({
-          userId: session.id,
-          kelas: updatedProfile.kelas || (session.role === "mahasiswa" ? "A" : "DOSEN"),
-        })
-      }
-      
+      // Note: All fields now in User model, no separate Profile table
       // Update session image for immediate UI update
       updateSessionImage(avatarUrl)
       
@@ -393,16 +378,19 @@ export function ProfileForm({ profile, onSuccess, onChangePassword, onSetPasswor
 
   return (
     <>
-      <EKTMFullView
-        open={showEKTM}
-        onOpenChange={setShowEKTM}
-        name={session.name}
-        nim={currentNIM || ""}
-        fakultas={getFakultasFromNIM(currentNIM)}
-        programStudi={getProdiFromNIM(currentNIM)}
-        avatarUrl={currentAvatar}
-        userId={session.id}
-      />
+      {/* E-KTM hanya untuk mahasiswa */}
+      {session.role === "mahasiswa" && (
+        <EKTMFullView
+          open={showEKTM}
+          onOpenChange={setShowEKTM}
+          name={session.name}
+          nim={currentNIM || ""}
+          fakultas={getFakultasFromNIM(currentNIM)}
+          programStudi={getProdiFromNIM(currentNIM)}
+          avatarUrl={currentAvatar}
+          userId={session.id}
+        />
+      )}
       
       <div className="grid gap-6 lg:grid-cols-3">
       <Card>

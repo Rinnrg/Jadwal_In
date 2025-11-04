@@ -49,9 +49,6 @@ export default async function EKTMPublicPage({ params }: PageProps) {
             { id: nim }, // Also try ID for Google Auth users (fallback)
           ]
         },
-    include: {
-      profil: true,  // Include profile for kelas, bio, etc.
-    },
   })
 
   console.log('[E-KTM] User search result:', {
@@ -90,6 +87,12 @@ export default async function EKTMPublicPage({ params }: PageProps) {
     })
     console.log('[E-KTM] Similar NIMs found:', allUsers)
     
+    notFound()
+  }
+
+  // E-KTM hanya untuk mahasiswa
+  if (user.role !== 'mahasiswa') {
+    console.log('[E-KTM] User is not a mahasiswa, showing 404')
     notFound()
   }
 

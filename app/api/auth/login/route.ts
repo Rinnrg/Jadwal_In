@@ -46,9 +46,6 @@ export async function POST(request: NextRequest) {
     const user = await withRetry(async () => {
       return await prisma.user.findUnique({
         where: { email },
-        include: {
-          profil: true,
-        },
       })
     })
 

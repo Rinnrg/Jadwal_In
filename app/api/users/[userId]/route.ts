@@ -21,9 +21,6 @@ export async function GET(
 
     const user = await prisma.user.findUnique({
       where: { id: userId },
-      include: {
-        profil: true,
-      },
       // Don't include password in response
     })
 
@@ -92,9 +89,6 @@ export async function PUT(
     const updatedUser = await prisma.user.update({
       where: { id: userId },
       data: updateData,
-      include: {
-        profil: true,
-      },
     })
 
     // Remove password from response
