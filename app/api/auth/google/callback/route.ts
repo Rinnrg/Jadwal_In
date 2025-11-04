@@ -160,12 +160,11 @@ export async function GET(request: NextRequest) {
       let extractedNip: string | null = null
       let extractedAngkatan: number | null = null
       let extractedProdi: string | null = null
-      let extractedFakultas: string | null = null
       let extractedJenisKelamin: string | null = null
       let extractedSemesterAwal: string | null = null
       
       if (isDosen) {
-        // For dosen, try to fetch NIP, prodi, fakultas from cv.unesa.ac.id
+        // For dosen, try to fetch NIP and prodi from cv.unesa.ac.id
         console.log('👨‍🏫 User is dosen, fetching data from cv.unesa.ac.id...')
         try {
           const dosenInfo = await Promise.race([
@@ -175,11 +174,9 @@ export async function GET(request: NextRequest) {
           if (dosenInfo) {
             extractedNip = dosenInfo.nip
             extractedProdi = dosenInfo.prodi
-            extractedFakultas = dosenInfo.fakultas
             console.log('✅ Dosen data found:')
             console.log('   - NIP:', extractedNip || 'Not found')
             console.log('   - Prodi:', extractedProdi || 'Not found')
-            console.log('   - Fakultas:', extractedFakultas || 'Not found')
           } else {
             console.log('⚠️ Dosen data not found')
           }
@@ -201,7 +198,6 @@ export async function GET(request: NextRequest) {
             // Use data from pd-unesa (including NIM!)
             extractedNim = mahasiswaInfo.nim
             extractedProdi = mahasiswaInfo.prodi
-            extractedFakultas = mahasiswaInfo.fakultas
             extractedJenisKelamin = mahasiswaInfo.jenisKelamin
             extractedSemesterAwal = mahasiswaInfo.semesterAwal
             
@@ -215,7 +211,6 @@ export async function GET(request: NextRequest) {
             console.log('✅ Mahasiswa data found from pd-unesa:')
             console.log('   - NIM:', extractedNim || 'Not found')
             console.log('   - Prodi:', extractedProdi || 'Not found')
-            console.log('   - Fakultas:', extractedFakultas || 'Not found')
             console.log('   - Angkatan:', extractedAngkatan || 'Not found')
             console.log('   - Jenis Kelamin:', extractedJenisKelamin || 'Not found')
             console.log('   - Semester Awal:', extractedSemesterAwal || 'Not found')
@@ -249,7 +244,6 @@ export async function GET(request: NextRequest) {
               nip: extractedNip,
               angkatan: extractedAngkatan,
               prodi: extractedProdi,
-              fakultas: extractedFakultas,
               avatarUrl: googleUser.picture,
               jenisKelamin: extractedJenisKelamin,
               semesterAwal: extractedSemesterAwal,
@@ -269,7 +263,6 @@ export async function GET(request: NextRequest) {
       console.log('   - NIP:', extractedNip || 'N/A')
       console.log('   - Angkatan:', extractedAngkatan || 'N/A')
       console.log('   - Prodi:', extractedProdi || 'N/A')
-      console.log('   - Fakultas:', extractedFakultas || 'N/A')
       console.log('   - Avatar URL:', !!googleUser.picture)
     } else if (!user.googleId) {
       console.log('🔄 Updating existing user with Google ID...')
@@ -283,11 +276,10 @@ export async function GET(request: NextRequest) {
       let extractedNip: string | null = null
       let extractedAngkatan: number | null = null
       let extractedProdi: string | null = null
-      let extractedFakultas: string | null = null
       let extractedJenisKelamin: string | null = null
       let extractedSemesterAwal: string | null = null
       
-      if (isDosen && (!user.nip || !user.prodi || !user.fakultas)) {
+      if (isDosen && (!user.nip || !user.prodi)) {
         // For dosen without complete data, try to fetch from cv.unesa.ac.id
         console.log('👨‍🏫 User is dosen, fetching data from cv.unesa.ac.id...')
         try {
@@ -295,16 +287,14 @@ export async function GET(request: NextRequest) {
           if (dosenInfo) {
             if (!user.nip) extractedNip = dosenInfo.nip
             if (!user.prodi) extractedProdi = dosenInfo.prodi
-            if (!user.fakultas) extractedFakultas = dosenInfo.fakultas
             console.log('✅ Dosen data found:')
             console.log('   - NIP:', extractedNip || 'Already set')
             console.log('   - Prodi:', extractedProdi || 'Already set')
-            console.log('   - Fakultas:', extractedFakultas || 'Already set')
           }
         } catch (error) {
           console.error('❌ Error fetching dosen data:', error)
         }
-      } else if (!isDosen && (!user.nim || !user.prodi || !user.fakultas || !user.jenisKelamin || !user.semesterAwal)) {
+      } else if (!isDosen && (!user.nim || !user.prodi || !user.jenisKelamin || !user.semesterAwal)) {
         // For existing mahasiswa with missing data, fetch from pd-unesa
         console.log('👨‍🎓 Fetching mahasiswa data from pd-unesa.unesa.ac.id...')
         try {
@@ -336,14 +326,12 @@ export async function GET(request: NextRequest) {
                 : extractAngkatan(mahasiswaInfo.nim)
             }
             if (!user.prodi && mahasiswaInfo.prodi) extractedProdi = mahasiswaInfo.prodi
-            if (!user.fakultas && mahasiswaInfo.fakultas) extractedFakultas = mahasiswaInfo.fakultas
             if (mahasiswaInfo.jenisKelamin) extractedJenisKelamin = mahasiswaInfo.jenisKelamin
             if (mahasiswaInfo.semesterAwal) extractedSemesterAwal = mahasiswaInfo.semesterAwal
             
             console.log('✅ Mahasiswa data found from pd-unesa:')
             console.log('   - NIM:', extractedNim || 'Already set')
             console.log('   - Prodi:', extractedProdi || 'Already set')
-            console.log('   - Fakultas:', extractedFakultas || 'Already set')
             console.log('   - Angkatan:', extractedAngkatan || 'Already set')
             console.log('   - Jenis Kelamin:', extractedJenisKelamin || 'Already set')
             console.log('   - Semester Awal:', extractedSemesterAwal || 'Already set')
@@ -386,10 +374,6 @@ export async function GET(request: NextRequest) {
       
       if (extractedProdi) {
         updateData.prodi = extractedProdi
-      }
-      
-      if (extractedFakultas) {
-        updateData.fakultas = extractedFakultas
       }
       
       if (extractedJenisKelamin) {
@@ -450,11 +434,10 @@ export async function GET(request: NextRequest) {
       const currentNim = user.nim
       const currentNip = user.nip
       const currentProdi = user.prodi
-      const currentFakultas = user.fakultas
       
       const nimNeedsUpdate = !isDosen && (!currentNim || currentNim.length < 8)
-      const dataDosenNeedsUpdate = isDosen && (!currentNip || !currentProdi || !currentFakultas)
-      const dataMahasiswaNeedsUpdate = !isDosen && currentNim && (!currentProdi || !currentFakultas)
+      const dataDosenNeedsUpdate = isDosen && (!currentNip || !currentProdi)
+      const dataMahasiswaNeedsUpdate = !isDosen && currentNim && !currentProdi
       
       if (nimNeedsUpdate) {
         const extractedNim = extractNIMFromEmail(googleUser.email)
@@ -484,11 +467,6 @@ export async function GET(request: NextRequest) {
               console.log('✅ Prodi found:', dosenInfo.prodi)
               needsUpdate = true
             }
-            if (!currentFakultas && dosenInfo.fakultas) {
-              updateData.fakultas = dosenInfo.fakultas
-              console.log('✅ Fakultas found:', dosenInfo.fakultas)
-              needsUpdate = true
-            }
           }
         } catch (error) {
           console.error('❌ Error fetching dosen data (continuing without it):', error)
@@ -508,11 +486,6 @@ export async function GET(request: NextRequest) {
             if (!currentProdi && mahasiswaInfo.prodi) {
               updateData.prodi = mahasiswaInfo.prodi
               console.log('✅ Prodi found:', mahasiswaInfo.prodi)
-              needsUpdate = true
-            }
-            if (!currentFakultas && mahasiswaInfo.fakultas) {
-              updateData.fakultas = mahasiswaInfo.fakultas
-              console.log('✅ Fakultas found:', mahasiswaInfo.fakultas)
               needsUpdate = true
             }
             if (mahasiswaInfo.jenisKelamin) {
@@ -576,7 +549,6 @@ export async function GET(request: NextRequest) {
     console.log('   - NIP:', user.nip || 'NULL')
     console.log('   - Angkatan:', user.angkatan || 'NULL')
     console.log('   - Prodi:', user.prodi || 'NULL')
-    console.log('   - Fakultas:', user.fakultas || 'NULL')
     console.log('   - Avatar URL:', user.avatarUrl ? 'SET' : 'NULL')
     console.log('   - Google ID:', user.googleId || 'NULL')
 
