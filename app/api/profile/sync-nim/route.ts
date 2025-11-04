@@ -108,7 +108,6 @@ export async function POST(request: NextRequest) {
         nim: extractedNim,
         angkatan: extractAngkatan(extractedNim),
         ...(mahasiswaInfo?.prodi && { prodi: mahasiswaInfo.prodi }),
-        ...(mahasiswaInfo?.fakultas && { fakultas: mahasiswaInfo.fakultas }),
         ...(mahasiswaInfo?.jenisKelamin && { jenisKelamin: mahasiswaInfo.jenisKelamin }),
         ...(mahasiswaInfo?.semesterAwal && { semesterAwal: mahasiswaInfo.semesterAwal }),
       }
@@ -122,7 +121,6 @@ export async function POST(request: NextRequest) {
       jenisKelamin: updatedUser.jenisKelamin,
       semesterAwal: updatedUser.semesterAwal,
       prodi: updatedUser.prodi,
-      fakultas: updatedUser.fakultas,
       message: mahasiswaInfo 
         ? 'NIM updated successfully with data from pd-unesa' 
         : 'NIM updated successfully'

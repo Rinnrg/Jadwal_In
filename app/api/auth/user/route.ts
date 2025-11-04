@@ -38,7 +38,6 @@ export async function GET(request: NextRequest) {
         nim: user.nim,
         nip: user.nip,
         angkatan: user.angkatan,
-        fakultas: user.fakultas,
         avatarUrl: user.avatarUrl,
         jenisKelamin: user.jenisKelamin,
         semesterAwal: user.semesterAwal,

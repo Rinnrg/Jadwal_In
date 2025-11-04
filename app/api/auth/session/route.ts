@@ -27,7 +27,6 @@ export async function GET(request: NextRequest) {
         nim: true,
         nip: true,
         angkatan: true,
-        fakultas: true,
         avatarUrl: true,
       }
     })
