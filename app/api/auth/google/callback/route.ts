@@ -8,6 +8,37 @@ import { cariNIPDosen } from '@/lib/unesa-scraper'
 export const dynamic = 'force-dynamic'
 export const runtime = 'nodejs'
 
+// Helper function to retry database operations
+async function withDatabaseRetry<T>(
+  operation: () => Promise<T>,
+  operationName: string,
+  maxRetries: number = 3
+): Promise<T> {
+  let lastError: any
+  
+  for (let attempt = 1; attempt <= maxRetries; attempt++) {
+    try {
+      console.log(`🔄 Attempting ${operationName} (attempt ${attempt}/${maxRetries})`)
+      const result = await operation()
+      console.log(`✅ ${operationName} successful`)
+      return result
+    } catch (error: any) {
+      lastError = error
+      console.error(`❌ ${operationName} failed (attempt ${attempt}/${maxRetries}):`, error.message)
+      
+      if (attempt < maxRetries) {
+        // Wait before retry with exponential backoff
+        const waitTime = Math.min(1000 * Math.pow(2, attempt - 1), 5000)
+        console.log(`⏳ Waiting ${waitTime}ms before retry...`)
+        await new Promise(resolve => setTimeout(resolve, waitTime))
+      }
+    }
+  }
+  
+  console.error(`❌ ${operationName} failed after ${maxRetries} attempts`)
+  throw lastError
+}
+
 // Helper function to extract and reconstruct full NIM from email
 function extractNIMFromEmail(email: string): string | null {
   // Format email: namapertamanamakedua.22002@mhs.unesa.ac.id
@@ -102,15 +133,18 @@ export async function GET(request: NextRequest) {
 
     // Find or create user in database
     console.log('🔍 Finding user in database...')
-    let user
+    let user: any = null
     try {
-      user = await prisma.user.findUnique({
-        where: { email: googleUser.email },
-      })
-    } catch (dbError) {
+      user = await withDatabaseRetry(
+        () => prisma.user.findUnique({
+          where: { email: googleUser.email! },
+        }),
+        'Find user by email'
+      )
+    } catch (dbError: any) {
       console.error('❌ Database error when finding user:', dbError)
       return NextResponse.redirect(
-        new URL('/login?error=database_error', request.url)
+        new URL(`/login?error=database_error&details=${encodeURIComponent(dbError.message)}`, request.url)
       )
     }
 
@@ -203,28 +237,31 @@ export async function GET(request: NextRequest) {
       
       // Create new user (all data in User table)
       try {
-        user = await prisma.user.create({
-          data: {
-            email: googleUser.email,
-            name: googleUser.name || googleUser.email.split('@')[0],
-            role: userRole,
-            googleId: googleUser.googleId,
-            image: googleUser.picture,
-            nim: extractedNim,
-            nip: extractedNip,
-            angkatan: extractedAngkatan,
-            prodi: extractedProdi,
-            fakultas: extractedFakultas,
-            avatarUrl: googleUser.picture,
-            jenisKelamin: extractedJenisKelamin,
-            semesterAwal: extractedSemesterAwal,
-          },
-        })
+        user = await withDatabaseRetry(
+          () => prisma.user.create({
+            data: {
+              email: googleUser.email!,
+              name: googleUser.name || googleUser.email!.split('@')[0],
+              role: userRole,
+              googleId: googleUser.googleId,
+              image: googleUser.picture,
+              nim: extractedNim,
+              nip: extractedNip,
+              angkatan: extractedAngkatan,
+              prodi: extractedProdi,
+              fakultas: extractedFakultas,
+              avatarUrl: googleUser.picture,
+              jenisKelamin: extractedJenisKelamin,
+              semesterAwal: extractedSemesterAwal,
+            },
+          }),
+          'Create new user'
+        )
         console.log('✅ User created:', user.id)
-      } catch (createError) {
+      } catch (createError: any) {
         console.error('❌ Error creating user:', createError)
         return NextResponse.redirect(
-          new URL('/login?error=user_creation_failed', request.url)
+          new URL(`/login?error=user_creation_failed&details=${encodeURIComponent(createError.message)}`, request.url)
         )
       }
       console.log('   - Role:', userRole)
@@ -364,15 +401,18 @@ export async function GET(request: NextRequest) {
       }
       
       try {
-        user = await prisma.user.update({
-          where: { id: user.id },
-          data: updateData,
-        })
+        user = await withDatabaseRetry(
+          () => prisma.user.update({
+            where: { id: user.id },
+            data: updateData,
+          }),
+          'Update user with Google ID'
+        )
         console.log('✅ User updated:', user.id)
-      } catch (updateError) {
+      } catch (updateError: any) {
         console.error('❌ Error updating user:', updateError)
         return NextResponse.redirect(
-          new URL('/login?error=user_update_failed', request.url)
+          new URL(`/login?error=user_update_failed&details=${encodeURIComponent(updateError.message)}`, request.url)
         )
       }
     } else {
@@ -495,10 +535,14 @@ export async function GET(request: NextRequest) {
       // Apply updates if needed
       if (needsUpdate) {
         try {
-          user = await prisma.user.update({
-            where: { id: user.id },
-            data: updateData,
-          })
+          user = await withDatabaseRetry(
+            () => prisma.user.update({
+              where: { id: user.id },
+              data: updateData,
+            }),
+            'Update existing user data',
+            2 // Only 2 retries for this non-critical update
+          )
           console.log('✅ User data updated')
           console.log('   - NIM:', user.nim || 'N/A')
           console.log('   - NIP:', user.nip || 'N/A')

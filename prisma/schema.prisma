@@ -4,12 +4,344 @@ generator client {
 }
 
 datasource db {
-  provider = "postgresql"
-  url      = env("DATABASE_URL")
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
   directUrl = env("DIRECT_URL")
 }
 
-// Enums
+model User {
+  id            String             @id(map: "users_pkey") @default(cuid())
+  email         String             @unique(map: "users_email_key")
+  name          String
+  password      String?
+  role          UserRole
+  image         String?
+  createdAt     DateTime           @default(now())
+  updatedAt     DateTime           @updatedAt
+  emailVerified DateTime?
+  googleId      String?            @unique(map: "users_googleId_key")
+  nim           String?
+  nip           String?
+  angkatan      Int?
+  prodi         String?
+  avatarUrl     String?
+  jenisKelamin  String?
+  semesterAwal  String?
+  absen         AttendanceRecord[]
+  jadwal        ScheduleEvent[]
+  krs           KrsItem[]
+  logAktivitas  ActivityLog[]
+  nilai         Grade[]
+  pengingat     Reminder[]
+  nilaiDiberi   Submission[]       @relation("GradedBy")
+  pengumpulan   Submission[]
+  telepon       Phone[]
+  mengajar      Subject[]          @relation("DosenSubjects")
+
+  @@index([email], map: "users_email_idx")
+  @@index([nim], map: "users_nim_idx")
+  @@index([nip], map: "users_nip_idx")
+  @@index([role], map: "users_role_idx")
+  @@map("pengguna")
+}
+
+model Phone {
+  id          String   @id(map: "phones_pkey") @default(cuid())
+  userId      String
+  phoneNumber String
+  isPrimary   Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade, map: "phones_userId_fkey")
+
+  @@index([userId], map: "phones_userId_idx")
+  @@map("telepon")
+}
+
+model Subject {
+  id           String              @id @default(cuid())
+  kode         String              @unique(map: "subjects_kode_key")
+  nama         String
+  sks          Int
+  semester     Int
+  prodi        String?
+  status       SubjectStatus       @default(aktif)
+  angkatan     Int
+  kelas        String
+  color        String              @default("#3B82F6")
+  slotDay      Int?
+  slotStartUTC Int?
+  slotEndUTC   Int?
+  slotRuang    String?
+  createdAt    DateTime            @default(now())
+  updatedAt    DateTime            @updatedAt
+  jadwal       ScheduleEvent[]
+  krs          KrsItem[]
+  materi       Material[]
+  nilai        Grade[]
+  penawaran    CourseOffering[]
+  pengingat    Reminder[]
+  sesiAbsen    AttendanceSession[]
+  tugas        Assignment[]
+  pengampu     User[]              @relation("DosenSubjects")
+
+  @@index([angkatan], map: "subjects_angkatan_idx")
+  @@index([kode], map: "subjects_kode_idx")
+  @@index([status], map: "subjects_status_idx")
+  @@map("matakuliah")
+}
+
+model CourseOffering {
+  id           String         @id @default(cuid())
+  subjectId    String
+  angkatan     Int
+  kelas        String
+  semester     Int
+  term         String?
+  capacity     Int?
+  status       OfferingStatus @default(buka)
+  slotDay      Int?
+  slotStartUTC Int?
+  slotEndUTC   Int?
+  createdAt    DateTime       @default(now())
+  updatedAt    DateTime       @updatedAt
+  krs          KrsItem[]
+  nilai        Grade[]
+  matakuliah   Subject        @relation(fields: [subjectId], references: [id], onDelete: Cascade, map: "course_offerings_subjectId_fkey")
+
+  @@index([angkatan], map: "course_offerings_angkatan_idx")
+  @@index([status], map: "course_offerings_status_idx")
+  @@index([subjectId], map: "course_offerings_subjectId_idx")
+  @@map("penawaran")
+}
+
+model Assignment {
+  id               String           @id(map: "assignments_pkey") @default(cuid())
+  subjectId        String
+  title            String
+  description      String?
+  dueUTC           BigInt?
+  allowedFileTypes String[]         @default([".pdf", ".doc", ".docx"])
+  maxFileSize      Int              @default(10485760)
+  maxFiles         Int              @default(3)
+  createdAt        DateTime         @default(now())
+  updatedAt        DateTime         @updatedAt
+  lampiran         FileAttachment[]
+  pengumpulan      Submission[]
+  matakuliah       Subject          @relation(fields: [subjectId], references: [id], onDelete: Cascade, map: "assignments_subjectId_fkey")
+
+  @@index([dueUTC], map: "assignments_dueUTC_idx")
+  @@index([subjectId], map: "assignments_subjectId_idx")
+  @@map("tugas")
+}
+
+model Submission {
+  id           String           @id(map: "submissions_pkey") @default(cuid())
+  assignmentId String
+  studentId    String
+  note         String?
+  submittedAt  BigInt
+  status       SubmissionStatus @default(draft)
+  grade        Float?
+  feedback     String?
+  gradedAt     BigInt?
+  gradedBy     String?
+  createdAt    DateTime         @default(now())
+  updatedAt    DateTime         @updatedAt
+  lampiran     FileAttachment[]
+  tugas        Assignment       @relation(fields: [assignmentId], references: [id], onDelete: Cascade, map: "submissions_assignmentId_fkey")
+  penilai      User?            @relation("GradedBy", fields: [gradedBy], references: [id], map: "submissions_gradedBy_fkey")
+  mahasiswa    User             @relation(fields: [studentId], references: [id], onDelete: Cascade, map: "submissions_studentId_fkey")
+
+  @@unique([assignmentId, studentId], map: "submissions_assignmentId_studentId_key")
+  @@index([assignmentId], map: "submissions_assignmentId_idx")
+  @@index([status], map: "submissions_status_idx")
+  @@index([studentId], map: "submissions_studentId_idx")
+  @@map("pengumpulan")
+}
+
+model FileAttachment {
+  id           String      @id @default(cuid())
+  name         String
+  url          String
+  size         Int
+  type         String
+  uploadType   UploadType  @default(file)
+  uploadedAt   BigInt
+  assignmentId String?
+  submissionId String?
+  materialId   String?
+  tugas        Assignment? @relation(fields: [assignmentId], references: [id], onDelete: Cascade, map: "file_attachments_assignmentId_fkey")
+  materi       Material?   @relation(fields: [materialId], references: [id], onDelete: Cascade, map: "file_attachments_materialId_fkey")
+  pengumpulan  Submission? @relation(fields: [submissionId], references: [id], onDelete: Cascade, map: "file_attachments_submissionId_fkey")
+
+  @@index([assignmentId], map: "file_attachments_assignmentId_idx")
+  @@index([materialId], map: "file_attachments_materialId_idx")
+  @@index([submissionId], map: "file_attachments_submissionId_idx")
+  @@map("lampiran")
+}
+
+model Material {
+  id         String           @id @default(cuid())
+  subjectId  String
+  title      String
+  content    String?
+  createdAt  DateTime         @default(now())
+  updatedAt  DateTime         @updatedAt
+  lampiran   FileAttachment[]
+  matakuliah Subject          @relation(fields: [subjectId], references: [id], onDelete: Cascade, map: "materials_subjectId_fkey")
+
+  @@index([subjectId], map: "materials_subjectId_idx")
+  @@map("materi")
+}
+
+model AttendanceSession {
+  id            String             @id(map: "attendance_sessions_pkey") @default(cuid())
+  subjectId     String
+  dateUTC       BigInt
+  meetingNumber Int
+  createdAt     DateTime           @default(now())
+  updatedAt     DateTime           @updatedAt
+  absen         AttendanceRecord[]
+  matakuliah    Subject            @relation(fields: [subjectId], references: [id], onDelete: Cascade, map: "attendance_sessions_subjectId_fkey")
+
+  @@index([dateUTC], map: "attendance_sessions_dateUTC_idx")
+  @@index([subjectId], map: "attendance_sessions_subjectId_idx")
+  @@map("sesi_absen")
+}
+
+model AttendanceRecord {
+  id        String            @id @default(cuid())
+  sessionId String
+  studentId String
+  status    AttendanceStatus  @default(alfa)
+  createdAt DateTime          @default(now())
+  updatedAt DateTime          @updatedAt
+  sesi      AttendanceSession @relation(fields: [sessionId], references: [id], onDelete: Cascade, map: "attendance_records_sessionId_fkey")
+  mahasiswa User              @relation(fields: [studentId], references: [id], onDelete: Cascade, map: "attendance_records_studentId_fkey")
+
+  @@unique([sessionId, studentId], map: "attendance_records_sessionId_studentId_key")
+  @@index([sessionId], map: "attendance_records_sessionId_idx")
+  @@index([studentId], map: "attendance_records_studentId_idx")
+  @@map("absen")
+}
+
+model KrsItem {
+  id         String          @id @default(cuid())
+  userId     String
+  subjectId  String
+  offeringId String?
+  term       String
+  createdAt  DateTime        @default(now())
+  updatedAt  DateTime        @updatedAt
+  penawaran  CourseOffering? @relation(fields: [offeringId], references: [id], map: "krs_items_offeringId_fkey")
+  matakuliah Subject         @relation(fields: [subjectId], references: [id], onDelete: Cascade, map: "krs_items_subjectId_fkey")
+  pengguna   User            @relation(fields: [userId], references: [id], onDelete: Cascade, map: "krs_items_userId_fkey")
+
+  @@unique([userId, subjectId, term], map: "krs_items_userId_subjectId_term_key")
+  @@index([subjectId], map: "krs_items_subjectId_idx")
+  @@index([term], map: "krs_items_term_idx")
+  @@index([userId], map: "krs_items_userId_idx")
+  @@map("krs")
+}
+
+model Grade {
+  id         String          @id @default(cuid())
+  userId     String
+  subjectId  String
+  offeringId String?
+  term       String
+  nilaiAngka Float?
+  nilaiHuruf GradeValue?
+  createdAt  DateTime        @default(now())
+  updatedAt  DateTime        @updatedAt
+  penawaran  CourseOffering? @relation(fields: [offeringId], references: [id], map: "grades_offeringId_fkey")
+  matakuliah Subject         @relation(fields: [subjectId], references: [id], onDelete: Cascade, map: "grades_subjectId_fkey")
+  pengguna   User            @relation(fields: [userId], references: [id], onDelete: Cascade, map: "grades_userId_fkey")
+
+  @@unique([userId, subjectId, term], map: "grades_userId_subjectId_term_key")
+  @@index([subjectId], map: "grades_subjectId_idx")
+  @@index([term], map: "grades_term_idx")
+  @@index([userId], map: "grades_userId_idx")
+  @@map("nilai")
+}
+
+model ScheduleEvent {
+  id         String   @id @default(cuid())
+  userId     String
+  subjectId  String?
+  dayOfWeek  Int
+  startUTC   Int
+  endUTC     Int
+  location   String?
+  joinUrl    String?
+  notes      String?
+  color      String?
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+  matakuliah Subject? @relation(fields: [subjectId], references: [id], map: "schedule_events_subjectId_fkey")
+  pengguna   User     @relation(fields: [userId], references: [id], onDelete: Cascade, map: "schedule_events_userId_fkey")
+
+  @@index([dayOfWeek], map: "schedule_events_dayOfWeek_idx")
+  @@index([subjectId], map: "schedule_events_subjectId_idx")
+  @@index([userId], map: "schedule_events_userId_idx")
+  @@map("jadwal")
+}
+
+model Reminder {
+  id               String   @id(map: "reminders_pkey") @default(cuid())
+  userId           String
+  title            String
+  dueUTC           BigInt
+  relatedSubjectId String?
+  isActive         Boolean  @default(true)
+  sendEmail        Boolean  @default(false)
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+  matakuliah       Subject? @relation(fields: [relatedSubjectId], references: [id], map: "reminders_relatedSubjectId_fkey")
+  pengguna         User     @relation(fields: [userId], references: [id], onDelete: Cascade, map: "reminders_userId_fkey")
+
+  @@index([dueUTC], map: "reminders_dueUTC_idx")
+  @@index([isActive], map: "reminders_isActive_idx")
+  @@index([userId], map: "reminders_userId_idx")
+  @@map("pengingat")
+}
+
+model ActivityLog {
+  id          String   @id @default(cuid())
+  userId      String
+  title       String
+  description String?
+  category    String
+  action      String
+  icon        String   @default("Star")
+  color       String   @default("text-gray-500")
+  metadata    Json?
+  createdAt   DateTime @default(now())
+  pengguna    User     @relation(fields: [userId], references: [id], onDelete: Cascade, map: "activity_logs_userId_fkey")
+
+  @@index([category], map: "activity_logs_category_idx")
+  @@index([createdAt], map: "activity_logs_createdAt_idx")
+  @@index([userId], map: "activity_logs_userId_idx")
+  @@map("log_aktivitas")
+}
+
+model Announcement {
+  id          String   @id(map: "announcements_pkey") @default(cuid())
+  title       String
+  description String
+  imageUrl    String?
+  fileUrl     String?
+  targetRoles String[]
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  createdById String
+
+  @@index([isActive, createdAt], map: "announcements_isActive_createdAt_idx")
+  @@map("pengumuman")
+}
+
 enum UserRole {
   mahasiswa
   dosen
@@ -52,395 +384,4 @@ enum OfferingStatus {
 enum UploadType {
   file
   link
-}
-
-// Model Pengguna - untuk autentikasi dan manajemen pengguna
-model User {
-  id            String    @id @default(cuid())
-  email         String    @unique
-  name          String
-  password      String?
-  role          UserRole
-  image         String?   @db.Text
-  emailVerified DateTime?
-  googleId      String?   @unique
-  
-  // Data mahasiswa/dosen
-  nim           String?
-  nip           String?
-  angkatan      Int?
-  prodi         String?
-  fakultas      String?
-  avatarUrl     String?   @db.Text
-  
-  // Data profil (previously in Profile table)
-  jenisKelamin  String?
-  semesterAwal  String?
-  
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  
-  // Relasi
-  telepon           Phone[]
-  jadwal            ScheduleEvent[]
-  pengingat         Reminder[]
-  krs               KrsItem[]
-  nilai             Grade[]
-  pengumpulan       Submission[]
-  absen             AttendanceRecord[]
-  mengajar          Subject[]          @relation("DosenSubjects")
-  nilaiDiberi       Submission[]       @relation("GradedBy")
-  logAktivitas      ActivityLog[]
-  
-  @@index([email])
-  @@index([role])
-  @@index([nim])
-  @@index([nip])
-  @@map("pengguna")
-}
-
-// Model Telepon - nomor telepon user
-model Phone {
-  id          String   @id @default(cuid())
-  userId      String
-  phoneNumber String
-  isPrimary   Boolean  @default(false)
-  
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
-  
-  @@index([userId])
-  @@map("telepon")
-}
-
-// Model Mata Kuliah
-model Subject {
-  id          String        @id @default(cuid())
-  kode        String        @unique
-  nama        String
-  sks         Int
-  semester    Int
-  prodi       String?
-  status      SubjectStatus @default(aktif)
-  angkatan    Int
-  kelas       String
-  color       String        @default("#3B82F6")
-  
-  // Jadwal default
-  slotDay      Int?
-  slotStartUTC Int?
-  slotEndUTC   Int?
-  slotRuang    String?
-  
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  
-  // Relasi
-  pengampu          User[]               @relation("DosenSubjects")
-  penawaran         CourseOffering[]
-  tugas             Assignment[]
-  materi            Material[]
-  sesiAbsen         AttendanceSession[]
-  jadwal            ScheduleEvent[]
-  krs               KrsItem[]
-  nilai             Grade[]
-  pengingat         Reminder[]
-  
-  @@index([kode])
-  @@index([status])
-  @@index([angkatan])
-  @@map("matakuliah")
-}
-
-// Model Penawaran - penawaran mata kuliah per kelas
-model CourseOffering {
-  id        String         @id @default(cuid())
-  subjectId String
-  angkatan  Int
-  kelas     String
-  semester  Int
-  term      String?
-  capacity  Int?
-  status    OfferingStatus @default(buka)
-  
-  // Jadwal default
-  slotDay      Int?
-  slotStartUTC Int?
-  slotEndUTC   Int?
-  
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  
-  matakuliah Subject    @relation(fields: [subjectId], references: [id], onDelete: Cascade)
-  krs        KrsItem[]
-  nilai      Grade[]
-  
-  @@index([subjectId])
-  @@index([angkatan])
-  @@index([status])
-  @@map("penawaran")
-}
-
-// Model Tugas - tugas asynchronous
-model Assignment {
-  id                String   @id @default(cuid())
-  subjectId         String
-  title             String
-  description       String?  @db.Text
-  dueUTC            BigInt?
-  allowedFileTypes  String[] @default([".pdf", ".doc", ".docx"])
-  maxFileSize       Int      @default(10485760)
-  maxFiles          Int      @default(3)
-  
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  
-  matakuliah  Subject          @relation(fields: [subjectId], references: [id], onDelete: Cascade)
-  lampiran    FileAttachment[]
-  pengumpulan Submission[]
-  
-  @@index([subjectId])
-  @@index([dueUTC])
-  @@map("tugas")
-}
-
-// Model Pengumpulan - pengumpulan tugas mahasiswa
-model Submission {
-  id           String           @id @default(cuid())
-  assignmentId String
-  studentId    String
-  note         String?          @db.Text
-  submittedAt  BigInt
-  status       SubmissionStatus @default(draft)
-  grade        Float?
-  feedback     String?          @db.Text
-  gradedAt     BigInt?
-  gradedBy     String?
-  
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  
-  tugas     Assignment       @relation(fields: [assignmentId], references: [id], onDelete: Cascade)
-  mahasiswa User             @relation(fields: [studentId], references: [id], onDelete: Cascade)
-  penilai   User?            @relation("GradedBy", fields: [gradedBy], references: [id])
-  lampiran  FileAttachment[]
-  
-  @@unique([assignmentId, studentId])
-  @@index([assignmentId])
-  @@index([studentId])
-  @@index([status])
-  @@map("pengumpulan")
-}
-
-// Model Lampiran - file attachment untuk tugas dan materi
-model FileAttachment {
-  id           String     @id @default(cuid())
-  name         String
-  url          String
-  size         Int
-  type         String
-  uploadType   UploadType @default(file)
-  uploadedAt   BigInt
-  
-  // Relasi polymorphic
-  assignmentId String?
-  submissionId String?
-  materialId   String?
-  
-  tugas       Assignment? @relation(fields: [assignmentId], references: [id], onDelete: Cascade)
-  pengumpulan Submission? @relation(fields: [submissionId], references: [id], onDelete: Cascade)
-  materi      Material?   @relation(fields: [materialId], references: [id], onDelete: Cascade)
-  
-  @@index([assignmentId])
-  @@index([submissionId])
-  @@index([materialId])
-  @@map("lampiran")
-}
-
-// Model Materi - materi kuliah
-model Material {
-  id        String   @id @default(cuid())
-  subjectId String
-  title     String
-  content   String?  @db.Text
-  
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  
-  matakuliah Subject          @relation(fields: [subjectId], references: [id], onDelete: Cascade)
-  lampiran   FileAttachment[]
-  
-  @@index([subjectId])
-  @@map("materi")
-}
-
-// Model Sesi Absen - sesi kehadiran
-model AttendanceSession {
-  id            String   @id @default(cuid())
-  subjectId     String
-  dateUTC       BigInt
-  meetingNumber Int
-  
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  
-  matakuliah Subject            @relation(fields: [subjectId], references: [id], onDelete: Cascade)
-  absen      AttendanceRecord[]
-  
-  @@index([subjectId])
-  @@index([dateUTC])
-  @@map("sesi_absen")
-}
-
-// Model Absen - record kehadiran per mahasiswa
-model AttendanceRecord {
-  id        String           @id @default(cuid())
-  sessionId String
-  studentId String
-  status    AttendanceStatus @default(alfa)
-  
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  
-  sesi      AttendanceSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
-  mahasiswa User              @relation(fields: [studentId], references: [id], onDelete: Cascade)
-  
-  @@unique([sessionId, studentId])
-  @@index([sessionId])
-  @@index([studentId])
-  @@map("absen")
-}
-
-// Model KRS - Kartu Rencana Studi
-model KrsItem {
-  id         String  @id @default(cuid())
-  userId     String
-  subjectId  String
-  offeringId String?
-  term       String
-  
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  
-  pengguna   User            @relation(fields: [userId], references: [id], onDelete: Cascade)
-  matakuliah Subject         @relation(fields: [subjectId], references: [id], onDelete: Cascade)
-  penawaran  CourseOffering? @relation(fields: [offeringId], references: [id], onDelete: SetNull)
-  
-  @@unique([userId, subjectId, term])
-  @@index([userId])
-  @@index([subjectId])
-  @@index([term])
-  @@map("krs")
-}
-
-// Model Nilai - nilai mahasiswa
-model Grade {
-  id          String      @id @default(cuid())
-  userId      String
-  subjectId   String
-  offeringId  String?
-  term        String
-  nilaiAngka  Float?
-  nilaiHuruf  GradeValue?
-  
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  
-  pengguna   User            @relation(fields: [userId], references: [id], onDelete: Cascade)
-  matakuliah Subject         @relation(fields: [subjectId], references: [id], onDelete: Cascade)
-  penawaran  CourseOffering? @relation(fields: [offeringId], references: [id], onDelete: SetNull)
-  
-  @@unique([userId, subjectId, term])
-  @@index([userId])
-  @@index([subjectId])
-  @@index([term])
-  @@map("nilai")
-}
-
-// Model Jadwal - event jadwal
-model ScheduleEvent {
-  id          String  @id @default(cuid())
-  userId      String
-  subjectId   String?
-  dayOfWeek   Int
-  startUTC    Int
-  endUTC      Int
-  location    String?
-  joinUrl     String?
-  notes       String? @db.Text
-  color       String?
-  
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  
-  pengguna   User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  matakuliah Subject? @relation(fields: [subjectId], references: [id], onDelete: SetNull)
-  
-  @@index([userId])
-  @@index([subjectId])
-  @@index([dayOfWeek])
-  @@map("jadwal")
-}
-
-// Model Pengingat - reminder
-model Reminder {
-  id               String   @id @default(cuid())
-  userId           String
-  title            String
-  dueUTC           BigInt
-  relatedSubjectId String?
-  isActive         Boolean  @default(true)
-  sendEmail        Boolean  @default(false)
-  
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  
-  pengguna   User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  matakuliah Subject? @relation(fields: [relatedSubjectId], references: [id], onDelete: SetNull)
-  
-  @@index([userId])
-  @@index([dueUTC])
-  @@index([isActive])
-  @@map("pengingat")
-}
-
-// Model Log Aktivitas - log aktivitas user
-model ActivityLog {
-  id          String   @id @default(cuid())
-  userId      String
-  title       String
-  description String?  @db.Text
-  category    String
-  action      String
-  icon        String   @default("Star")
-  color       String   @default("text-gray-500")
-  metadata    Json?
-  
-  createdAt DateTime @default(now())
-  
-  pengguna User @relation(fields: [userId], references: [id], onDelete: Cascade)
-  
-  @@index([userId])
-  @@index([category])
-  @@index([createdAt])
-  @@map("log_aktivitas")
-}
-
-// Model Pengumuman - announcement untuk broadcast informasi
-model Announcement {
-  id          String   @id @default(cuid())
-  title       String
-  description String   @db.Text
-  imageUrl    String?
-  fileUrl     String?
-  targetRoles String[]
-  isActive    Boolean  @default(true)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-  createdById String
-
-  @@index([isActive, createdAt])
-  @@map("pengumuman")
 }

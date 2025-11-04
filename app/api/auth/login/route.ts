@@ -13,27 +13,34 @@ const loginSchema = z.object({
   password: z.string().min(1),
 })
 
-// Helper function to retry database queries
+// Helper function to retry database queries with exponential backoff
 async function withRetry<T>(
   operation: () => Promise<T>,
-  maxRetries = 3,
-  delay = 1000
+  operationName: string = 'Database operation',
+  maxRetries = 3
 ): Promise<T> {
   let lastError: any
   
-  for (let i = 0; i < maxRetries; i++) {
+  for (let attempt = 1; attempt <= maxRetries; attempt++) {
     try {
-      return await operation()
+      console.log(`🔄 ${operationName} (attempt ${attempt}/${maxRetries})`)
+      const result = await operation()
+      console.log(`✅ ${operationName} successful`)
+      return result
     } catch (error) {
       lastError = error
-      if (i < maxRetries - 1) {
-        // Wait before retry
-        await new Promise(resolve => setTimeout(resolve, delay))
-        console.log(`Retry attempt ${i + 1}/${maxRetries}`)
+      console.error(`❌ ${operationName} failed (attempt ${attempt}/${maxRetries}):`, error)
+      
+      if (attempt < maxRetries) {
+        // Exponential backoff: 1s, 2s, 4s
+        const waitTime = Math.min(1000 * Math.pow(2, attempt - 1), 5000)
+        console.log(`⏳ Waiting ${waitTime}ms before retry...`)
+        await new Promise(resolve => setTimeout(resolve, waitTime))
       }
     }
   }
   
+  console.error(`❌ ${operationName} failed after ${maxRetries} attempts`)
   throw lastError
 }
 
@@ -43,11 +50,12 @@ export async function POST(request: NextRequest) {
     const { email, password } = loginSchema.parse(body)
 
     // Find user by email with retry logic
-    const user = await withRetry(async () => {
-      return await prisma.user.findUnique({
+    const user = await withRetry(
+      () => prisma.user.findUnique({
         where: { email },
-      })
-    })
+      }),
+      'Find user by email'
+    )
 
     // User not found in database
     if (!user) {
