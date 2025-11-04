@@ -7,7 +7,7 @@ import { useKrsStore } from "@/stores/krs.store"
 import { useProfileStore } from "@/stores/profile.store"
 import { useSessionStore } from "@/stores/session.store"
 import { getStudentInfoFromData } from "@/lib/student-utils"
-import type { CourseOffering } from "@/data/schema"
+import type { CourseOffering, ExtendedProfile } from "@/data/schema"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
@@ -46,7 +46,8 @@ export function KrsPicker({ userId, term }: KrsPickerProps) {
   // Force re-render trigger
   const [forceUpdateCounter, setForceUpdate] = useState(0)
 
-  const profile = getProfile(userId)
+  // API returns extended profile with nim, angkatan from User model
+  const profile = getProfile(userId) as ExtendedProfile | undefined
   
   // Auto-extract angkatan dari email/NIM jika profil tidak ada
   const studentInfo = getStudentInfoFromData(session?.email || '', profile?.nim || '')
