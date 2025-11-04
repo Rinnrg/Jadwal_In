@@ -174,22 +174,32 @@ export function ProfileForm({ profile, onSuccess, onChangePassword, onSetPasswor
     return prodiMap[kodeProdi] || "-"
   }
 
-  // Extract angkatan from email
-  const getAngkatanFromEmail = (email: string): number => {
-    // Extract NIM from email (assuming format: nama.NIM@domain)
-    const emailParts = email.split('@')[0]
-    const parts = emailParts.split('.')
+  // Get angkatan from semesterAwal (e.g., "2022/2023 Ganjil" -> 2022)
+  const getAngkatanFromSemesterAwal = (): number => {
+    if (profile?.semesterAwal) {
+      // Extract first year from format "2022/2023 Ganjil"
+      const match = profile.semesterAwal.match(/(\d{4})/)
+      if (match) {
+        return parseInt(match[1])
+      }
+    }
     
-    if (parts.length >= 2) {
-      const nim = parts[1]
-      // Extract first 2 digits from NIM
-      if (nim && nim.length >= 2) {
-        const yearPrefix = nim.substring(0, 2)
-        const year = parseInt(yearPrefix)
-        
-        // Convert to full year (22 -> 2022, 20 -> 2020)
-        if (!isNaN(year)) {
-          return 2000 + year
+    // Fallback: Extract from email
+    if (session?.email) {
+      const emailParts = session.email.split('@')[0]
+      const parts = emailParts.split('.')
+      
+      if (parts.length >= 2) {
+        const nim = parts[1]
+        // Extract first 2 digits from NIM
+        if (nim && nim.length >= 2) {
+          const yearPrefix = nim.substring(0, 2)
+          const year = parseInt(yearPrefix)
+          
+          // Convert to full year (22 -> 2022, 20 -> 2020)
+          if (!isNaN(year)) {
+            return 2000 + year
+          }
         }
       }
     }
@@ -198,7 +208,7 @@ export function ProfileForm({ profile, onSuccess, onChangePassword, onSetPasswor
     return new Date().getFullYear()
   }
 
-  const angkatan = session ? getAngkatanFromEmail(session.email) : new Date().getFullYear()
+  const angkatan = getAngkatanFromSemesterAwal()
 
   // Get current avatar from session or profile (session.image is synced from profile)
   const currentAvatar = session?.image || profile?.avatarUrl
@@ -547,6 +557,30 @@ export function ProfileForm({ profile, onSuccess, onChangePassword, onSetPasswor
                 />
                 <p className="text-xs text-muted-foreground">Program Studi tidak dapat diubah</p>
               </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="jenisKelamin">Jenis Kelamin</Label>
+                <Input
+                  id="jenisKelamin"
+                  value={profile?.jenisKelamin || "-"}
+                  disabled
+                  className="bg-muted"
+                />
+                <p className="text-xs text-muted-foreground">Jenis Kelamin tidak dapat diubah</p>
+              </div>
+
+              {profile?.semesterAwal && (
+                <div className="space-y-2">
+                  <Label htmlFor="semesterAwal">Semester Awal</Label>
+                  <Input
+                    id="semesterAwal"
+                    value={profile.semesterAwal}
+                    disabled
+                    className="bg-muted"
+                  />
+                  <p className="text-xs text-muted-foreground">Semester Awal tidak dapat diubah</p>
+                </div>
+              )}
             </div>
 
             {/* Phone Numbers Section - Integrated */}
