@@ -166,7 +166,7 @@ export default function KhsPage() {
 
   const handleExportTranscript = () => {
     try {
-      const profile = getProfile(session.id)
+      const profile = getProfile(session.id) as any // API returns extended profile with nim, angkatan, prodi
       
       // Allow export even without complete profile data
       // Use fallback values for missing data

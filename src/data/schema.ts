@@ -47,6 +47,22 @@ export const ProfileSchema = z.object({
 
 export type Profile = z.infer<typeof ProfileSchema>
 
+// Extended Profile - what API returns (combines User + Profile for backward compatibility)
+export type ExtendedProfile = Profile & {
+  nim?: string | null
+  nip?: string | null
+  angkatan?: number | null
+  prodi?: string | null
+  avatarUrl?: string | null
+  user?: {
+    id: string
+    name: string
+    email: string
+    role: "mahasiswa" | "dosen" | "kaprodi" | "super_admin"
+    image?: string | null
+  }
+}
+
 // Subject Schema
 export const SubjectSchema = z.object({
   id: z.string(),
