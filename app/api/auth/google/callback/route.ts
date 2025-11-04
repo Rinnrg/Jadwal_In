@@ -102,9 +102,17 @@ export async function GET(request: NextRequest) {
 
     // Find or create user in database
     console.log('🔍 Finding user in database...')
-    let user = await prisma.user.findUnique({
-      where: { email: googleUser.email },
-    })
+    let user
+    try {
+      user = await prisma.user.findUnique({
+        where: { email: googleUser.email },
+      })
+    } catch (dbError) {
+      console.error('❌ Database error when finding user:', dbError)
+      return NextResponse.redirect(
+        new URL('/login?error=database_error', request.url)
+      )
+    }
 
     if (!user) {
       console.log('➕ Creating new user...')
@@ -126,7 +134,10 @@ export async function GET(request: NextRequest) {
         // For dosen, try to fetch NIP, prodi, fakultas from cv.unesa.ac.id
         console.log('👨‍🏫 User is dosen, fetching data from cv.unesa.ac.id...')
         try {
-          const dosenInfo = await cariNIPDosen(googleUser.name || '')
+          const dosenInfo = await Promise.race([
+            cariNIPDosen(googleUser.name || ''),
+            new Promise<null>((_, reject) => setTimeout(() => reject(new Error('Timeout')), 10000))
+          ])
           if (dosenInfo) {
             extractedNip = dosenInfo.nip
             extractedProdi = dosenInfo.prodi
@@ -139,14 +150,18 @@ export async function GET(request: NextRequest) {
             console.log('⚠️ Dosen data not found')
           }
         } catch (error) {
-          console.error('❌ Error fetching dosen data:', error)
+          console.error('❌ Error fetching dosen data (continuing without it):', error)
+          // Continue without dosen data - login should not fail
         }
       } else {
         // For mahasiswa, fetch ALL data from pd-unesa.unesa.ac.id using name
         console.log('👨‍🎓 Fetching mahasiswa data from pd-unesa.unesa.ac.id...')
         try {
           const { cariDataMahasiswa } = await import('@/lib/unesa-scraper')
-          const mahasiswaInfo = await cariDataMahasiswa(googleUser.name || '')
+          const mahasiswaInfo = await Promise.race([
+            cariDataMahasiswa(googleUser.name || ''),
+            new Promise<null>((_, reject) => setTimeout(() => reject(new Error('Timeout')), 10000))
+          ])
           
           if (mahasiswaInfo) {
             // Use data from pd-unesa (including NIM!)
@@ -178,7 +193,7 @@ export async function GET(request: NextRequest) {
             console.log('   - NIM (from email):', extractedNim || 'Not found')
           }
         } catch (error) {
-          console.error('❌ Error fetching mahasiswa data:', error)
+          console.error('❌ Error fetching mahasiswa data (continuing with fallback):', error)
           // Fallback: extract from email if error occurs
           extractedNim = extractNIMFromEmail(googleUser.email)
           extractedAngkatan = extractAngkatan(extractedNim)
@@ -187,24 +202,31 @@ export async function GET(request: NextRequest) {
       }
       
       // Create new user (all data in User table)
-      user = await prisma.user.create({
-        data: {
-          email: googleUser.email,
-          name: googleUser.name || googleUser.email.split('@')[0],
-          role: userRole,
-          googleId: googleUser.googleId,
-          image: googleUser.picture,
-          nim: extractedNim,
-          nip: extractedNip,
-          angkatan: extractedAngkatan,
-          prodi: extractedProdi,
-          fakultas: extractedFakultas,
-          avatarUrl: googleUser.picture,
-          jenisKelamin: extractedJenisKelamin,
-          semesterAwal: extractedSemesterAwal,
-        },
-      })
-      console.log('✅ User created:', user.id)
+      try {
+        user = await prisma.user.create({
+          data: {
+            email: googleUser.email,
+            name: googleUser.name || googleUser.email.split('@')[0],
+            role: userRole,
+            googleId: googleUser.googleId,
+            image: googleUser.picture,
+            nim: extractedNim,
+            nip: extractedNip,
+            angkatan: extractedAngkatan,
+            prodi: extractedProdi,
+            fakultas: extractedFakultas,
+            avatarUrl: googleUser.picture,
+            jenisKelamin: extractedJenisKelamin,
+            semesterAwal: extractedSemesterAwal,
+          },
+        })
+        console.log('✅ User created:', user.id)
+      } catch (createError) {
+        console.error('❌ Error creating user:', createError)
+        return NextResponse.redirect(
+          new URL('/login?error=user_creation_failed', request.url)
+        )
+      }
       console.log('   - Role:', userRole)
       console.log('   - NIM:', extractedNim || 'N/A')
       console.log('   - NIP:', extractedNip || 'N/A')
@@ -341,11 +363,18 @@ export async function GET(request: NextRequest) {
         updateData.semesterAwal = extractedSemesterAwal
       }
       
-      user = await prisma.user.update({
-        where: { id: user.id },
-        data: updateData,
-      })
-      console.log('✅ User updated:', user.id)
+      try {
+        user = await prisma.user.update({
+          where: { id: user.id },
+          data: updateData,
+        })
+        console.log('✅ User updated:', user.id)
+      } catch (updateError) {
+        console.error('❌ Error updating user:', updateError)
+        return NextResponse.redirect(
+          new URL('/login?error=user_update_failed', request.url)
+        )
+      }
     } else {
       console.log('✅ User found:', user.id)
       
@@ -400,7 +429,10 @@ export async function GET(request: NextRequest) {
       if (dataDosenNeedsUpdate) {
         console.log('👨‍🏫 Fetching dosen data from cv.unesa.ac.id...')
         try {
-          const dosenInfo = await cariNIPDosen(googleUser.name || '')
+          const dosenInfo = await Promise.race([
+            cariNIPDosen(googleUser.name || ''),
+            new Promise<null>((_, reject) => setTimeout(() => reject(new Error('Timeout')), 10000))
+          ])
           if (dosenInfo) {
             if (!currentNip && dosenInfo.nip) {
               updateData.nip = dosenInfo.nip
@@ -419,7 +451,8 @@ export async function GET(request: NextRequest) {
             }
           }
         } catch (error) {
-          console.error('❌ Error fetching dosen data:', error)
+          console.error('❌ Error fetching dosen data (continuing without it):', error)
+          // Continue without dosen data - login should not fail
         }
       }
       
@@ -427,7 +460,10 @@ export async function GET(request: NextRequest) {
         console.log('👨‍🎓 Fetching mahasiswa data from pd-unesa.unesa.ac.id...')
         try {
           const { cariDataMahasiswa } = await import('@/lib/unesa-scraper')
-          const mahasiswaInfo = await cariDataMahasiswa(currentNim!)
+          const mahasiswaInfo = await Promise.race([
+            cariDataMahasiswa(currentNim!),
+            new Promise<null>((_, reject) => setTimeout(() => reject(new Error('Timeout')), 10000))
+          ])
           if (mahasiswaInfo) {
             if (!currentProdi && mahasiswaInfo.prodi) {
               updateData.prodi = mahasiswaInfo.prodi
@@ -451,20 +487,27 @@ export async function GET(request: NextRequest) {
             }
           }
         } catch (error) {
-          console.error('❌ Error fetching mahasiswa data:', error)
+          console.error('❌ Error fetching mahasiswa data (continuing without it):', error)
+          // Continue without mahasiswa data - login should not fail
         }
       }
       
       // Apply updates if needed
       if (needsUpdate) {
-        user = await prisma.user.update({
-          where: { id: user.id },
-          data: updateData,
-        })
-        console.log('✅ User data updated')
-        console.log('   - NIM:', user.nim || 'N/A')
-        console.log('   - NIP:', user.nip || 'N/A')
-        console.log('   - Angkatan:', user.angkatan || 'N/A')
+        try {
+          user = await prisma.user.update({
+            where: { id: user.id },
+            data: updateData,
+          })
+          console.log('✅ User data updated')
+          console.log('   - NIM:', user.nim || 'N/A')
+          console.log('   - NIP:', user.nip || 'N/A')
+          console.log('   - Angkatan:', user.angkatan || 'N/A')
+        } catch (updateError) {
+          console.error('❌ Error updating existing user data:', updateError)
+          // Don't fail login, just log the error and continue
+          console.log('⚠️ Continuing login without data update')
+        }
       } else {
         console.log(`✅ All data already up to date`)
         console.log(`   - NIM: ${currentNim || 'N/A'}`)
