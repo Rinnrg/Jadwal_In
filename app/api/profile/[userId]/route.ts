@@ -11,8 +11,6 @@ const updateProfileSchema = z.object({
   nim: z.string().optional(),
   angkatan: z.number().optional(),
   prodi: z.string().optional(),
-  bio: z.string().optional(),
-  website: z.string().optional(),
   avatarUrl: z.string().optional(),
   jenisKelamin: z.string().optional(),
   semesterAwal: z.string().optional(),
@@ -48,8 +46,6 @@ export async function GET(
       avatarUrl: user.avatarUrl,
       jenisKelamin: user.jenisKelamin,
       semesterAwal: user.semesterAwal,
-      bio: user.bio,
-      website: user.website,
       user: {
         id: user.id,
         name: user.name,
@@ -87,8 +83,6 @@ export async function PATCH(
     if (data.nim !== undefined) userUpdateData.nim = data.nim
     if (data.angkatan !== undefined) userUpdateData.angkatan = data.angkatan
     if (data.prodi !== undefined) userUpdateData.prodi = data.prodi
-    if (data.bio !== undefined) userUpdateData.bio = data.bio
-    if (data.website !== undefined) userUpdateData.website = data.website
     if (data.jenisKelamin !== undefined) userUpdateData.jenisKelamin = data.jenisKelamin
     if (data.semesterAwal !== undefined) userUpdateData.semesterAwal = data.semesterAwal
     if (data.avatarUrl !== undefined) {
@@ -113,8 +107,6 @@ export async function PATCH(
       avatarUrl: user.avatarUrl,
       jenisKelamin: user.jenisKelamin,
       semesterAwal: user.semesterAwal,
-      bio: user.bio,
-      website: user.website,
       user: {
         id: user.id,
         name: user.name,

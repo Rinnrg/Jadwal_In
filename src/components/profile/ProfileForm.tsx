@@ -105,8 +105,7 @@ export function ProfileForm({ profile, onSuccess, onChangePassword, onSetPasswor
             const data = await response.json()
             if (data.updated) {
               console.log('[ProfileForm] NIM synced successfully:', data.nim)
-              // Note: nim and angkatan are now in User model, not Profile
-              // Profile store only handles kelas, bio, website
+              // Note: All fields are now in User model
               // Store will be updated when page reloads or from API response
             }
           }

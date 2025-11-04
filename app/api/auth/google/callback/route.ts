@@ -493,7 +493,6 @@ export async function GET(request: NextRequest) {
     console.log('   - Prodi:', user.prodi || 'NULL')
     console.log('   - Fakultas:', user.fakultas || 'NULL')
     console.log('   - Avatar URL:', user.avatarUrl ? 'SET' : 'NULL')
-    console.log('   - Bio:', user.bio ? 'Yes' : 'No')
     console.log('   - Google ID:', user.googleId || 'NULL')
 
     // Create session token

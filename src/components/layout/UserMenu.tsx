@@ -4,7 +4,7 @@ import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { useSessionStore } from "@/stores/session.store"
 import { useProfileStore } from "@/stores/profile.store"
-import type { ExtendedProfile } from "@/data/schema"
+import type { Profile } from "@/data/schema"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
 import { LogOut, User, ChevronDown } from "lucide-react"
@@ -25,8 +25,8 @@ export function UserMenu() {
 
   if (!session) return null
 
-  // API returns extended profile with avatarUrl from User model
-  const profile = getProfile(session.id) as ExtendedProfile | undefined
+  // API returns profile with avatarUrl from User model
+  const profile = getProfile(session.id) as Profile | undefined
   // Use session.image as primary source (synced from profile), fallback to profile
   const avatarUrl = session.image || profile?.avatarUrl || undefined
   

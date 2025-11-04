@@ -40,8 +40,6 @@ export async function GET(request: NextRequest) {
         angkatan: user.angkatan,
         fakultas: user.fakultas,
         avatarUrl: user.avatarUrl,
-        bio: user.bio,
-        website: user.website,
         jenisKelamin: user.jenisKelamin,
         semesterAwal: user.semesterAwal,
       },

@@ -28,14 +28,15 @@ export const useProfileStore = create<ProfileState>()(
       },
     }),
     {
-      name: "jadwalin:profile:v2", // Bumped version for kelas field migration
+      name: "jadwalin:profile:v3", // Bumped version for removing kelas field
       storage: createJSONStorage(() => localStorage),
       migrate: (persistedState: any, version) => {
-        if (version === 0 || version === 1) {
-          const profiles = (persistedState?.profiles || []).map((profile: any) => ({
-            ...profile,
-            kelas: profile.kelas || "A", // Default kelas if missing
-          }))
+        if (version === 0 || version === 1 || version === 2) {
+          const profiles = (persistedState?.profiles || []).map((profile: any) => {
+            // Remove kelas field as it's no longer in Profile model
+            const { kelas, bio, website, ...rest } = profile
+            return rest
+          })
           return { profiles }
         }
         return persistedState

@@ -18,17 +18,12 @@ export async function fetchUserProfile() {
       const sessionStore = useSessionStore.getState()
       
       // Update local store with database profile
-      // Note: nim, angkatan, prodi, avatarUrl are now in User model, not Profile
-      // Profile store only handles kelas, bio, website
+      // Note: All fields are now in User model, Profile is just a view
       if (profile) {
         const existingProfile = profileStore.getProfile(session.id)
         
-        // Prepare profile data with only Profile model fields
-        const profileData: any = {
-          kelas: profile.kelas,
-        }
-        if (profile.bio !== undefined) profileData.bio = profile.bio
-        if (profile.website !== undefined) profileData.website = profile.website
+        // Prepare profile data
+        const profileData: any = {}
         
         if (existingProfile) {
           profileStore.updateProfile(session.id, profileData)

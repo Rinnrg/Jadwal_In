@@ -74,8 +74,6 @@ model User {
   avatarUrl     String?   @db.Text
   
   // Data profil (previously in Profile table)
-  bio           String?   @db.Text
-  website       String?
   jenisKelamin  String?
   semesterAwal  String?
   

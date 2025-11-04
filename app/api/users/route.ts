@@ -169,7 +169,6 @@ export async function POST(request: NextRequest) {
           nim,
           angkatan: mahasiswaData.angkatan,
           prodi: 'S1 Pendidikan Teknologi Informasi',
-          bio: `Tempat Lahir: ${mahasiswaData.tempatLahir}\nTanggal Lahir: ${mahasiswaData.tanggalLahir}\nNomor HP: ${mahasiswaData.nomorHp}`,
         },
       })
 

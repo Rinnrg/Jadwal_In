@@ -27,8 +27,6 @@ export const UserSchema = z.object({
   fakultas: z.string().optional().nullable(),
   avatarUrl: z.string().optional().nullable(),
   // Profile fields (now in User table)
-  bio: z.string().optional().nullable(),
-  website: z.string().optional().nullable(),
   jenisKelamin: z.string().optional().nullable(),
   semesterAwal: z.string().optional().nullable(),
 })
@@ -38,8 +36,6 @@ export type User = z.infer<typeof UserSchema>
 // For backward compatibility - Profile is now part of User
 export type Profile = {
   userId: string
-  bio?: string | null
-  website?: string | null
   jenisKelamin?: string | null
   semesterAwal?: string | null
   nim?: string | null
