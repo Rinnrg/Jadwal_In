@@ -222,7 +222,8 @@ export default function DashboardPage() {
   }
 
   const profile = getProfile(session.id)
-  const avatarUrl = profile?.avatarUrl || session.image || ""
+  // avatarUrl is now directly in User model, accessible via session
+  const avatarUrl = session.image || ""
   const timeColors = getTimeBasedColors()
   const celestialPos = getCelestialPosition()
   const isSunTime = currentTime.getHours() >= 5 && currentTime.getHours() < 18
