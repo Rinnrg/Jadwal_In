@@ -73,11 +73,16 @@ model User {
   fakultas      String?
   avatarUrl     String?   @db.Text
   
+  // Data profil (previously in Profile table)
+  bio           String?   @db.Text
+  website       String?
+  jenisKelamin  String?
+  semesterAwal  String?
+  
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
   
   // Relasi
-  profil            Profile?
   telepon           Phone[]
   jadwal            ScheduleEvent[]
   pengingat         Reminder[]
@@ -94,23 +99,6 @@ model User {
   @@index([nim])
   @@index([nip])
   @@map("pengguna")
-}
-
-// Model Profil - informasi detail user (opsional)
-model Profile {
-  id        String   @id @default(cuid())
-  userId    String   @unique
-  kelas     String?
-  bio       String?  @db.Text
-  website   String?
-  
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
-  
-  @@index([userId])
-  @@map("profil")
 }
 
 // Model Telepon - nomor telepon user

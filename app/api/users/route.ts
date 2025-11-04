@@ -48,7 +48,7 @@ export async function GET(request: NextRequest) {
     if (userId) {
       const user = await prisma.user.findUnique({
         where: { id: userId },
-        include: { profil: true },
+        
       })
 
       if (!user) {
@@ -64,7 +64,7 @@ export async function GET(request: NextRequest) {
     const where = role ? { role: role as any } : {}
     const users = await prisma.user.findMany({
       where,
-      include: { profil: true },
+      
       orderBy: { createdAt: 'desc' },
     })
 
@@ -169,14 +169,8 @@ export async function POST(request: NextRequest) {
           nim,
           angkatan: mahasiswaData.angkatan,
           prodi: 'S1 Pendidikan Teknologi Informasi',
-          profil: {
-            create: {
-              kelas: 'A',
-              bio: `Tempat Lahir: ${mahasiswaData.tempatLahir}\nTanggal Lahir: ${mahasiswaData.tanggalLahir}\nNomor HP: ${mahasiswaData.nomorHp}`,
-            },
-          },
+          bio: `Tempat Lahir: ${mahasiswaData.tempatLahir}\nTanggal Lahir: ${mahasiswaData.tanggalLahir}\nNomor HP: ${mahasiswaData.nomorHp}`,
         },
-        include: { profil: true },
       })
 
       return NextResponse.json({ 
@@ -220,13 +214,7 @@ export async function POST(request: NextRequest) {
           role: staffData.role,
           prodi: staffData.prodi || null, // Save prodi to user table
           angkatan: new Date().getFullYear(),
-          profil: {
-            create: {
-              kelas: 'Staff',
-            },
-          },
         },
-        include: { profil: true },
       })
 
       return NextResponse.json({ user }, { status: 201 })
@@ -264,7 +252,7 @@ export async function PATCH(request: NextRequest) {
     // Check if user exists
     const existingUser = await prisma.user.findUnique({
       where: { id: userId },
-      include: { profil: true },
+      
     })
 
     if (!existingUser) {
@@ -314,17 +302,10 @@ export async function PATCH(request: NextRequest) {
         ...(data.password && { password: data.password }),
         ...(data.role && { role: data.role }),
         ...(data.prodi !== undefined && { prodi: data.prodi }), // Allow setting prodi to null
-        // Update profile if nim or angkatan provided
-        ...(existingUser.profil && (data.nim || data.angkatan) && {
-          profil: {
-            update: {
-              ...(data.nim && { nim: data.nim }),
-              ...(data.angkatan && { angkatan: data.angkatan }),
-            },
-          },
-        }),
+        ...(data.nim && { nim: data.nim }),
+        ...(data.angkatan && { angkatan: data.angkatan }),
       },
-      include: { profil: true },
+      
     })
 
     return NextResponse.json({ user })

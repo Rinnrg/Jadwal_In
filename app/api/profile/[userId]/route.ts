@@ -5,16 +5,17 @@ import { z } from 'zod'
 // Mark as dynamic route
 export const dynamic = 'force-dynamic'
 
-// Schema untuk update profile
+// Schema untuk update user/profile (all in User table now)
 const updateProfileSchema = z.object({
   name: z.string().optional(),
   nim: z.string().optional(),
   angkatan: z.number().optional(),
-  kelas: z.string().optional(),
   prodi: z.string().optional(),
   bio: z.string().optional(),
   website: z.string().optional(),
   avatarUrl: z.string().optional(),
+  jenisKelamin: z.string().optional(),
+  semesterAwal: z.string().optional(),
 })
 
 // GET - Get profile by userId
@@ -25,12 +26,9 @@ export async function GET(
   try {
     const { userId } = params
 
-    // Get user data (now includes nim, nip, angkatan, prodi, avatarUrl)
+    // Get user data (all fields now in User table)
     const user = await prisma.user.findUnique({
       where: { id: userId },
-      include: {
-        profil: true, // Optional extra info (kelas, bio, website)
-      },
     })
 
     if (!user) {
@@ -40,7 +38,7 @@ export async function GET(
       )
     }
 
-    // Return combined profile data for backward compatibility
+    // Return profile data (all from User table now)
     const profile = {
       userId: user.id,
       nim: user.nim,
@@ -48,9 +46,10 @@ export async function GET(
       angkatan: user.angkatan,
       prodi: user.prodi,
       avatarUrl: user.avatarUrl,
-      kelas: user.profil?.kelas || null,
-      bio: user.profil?.bio || null,
-      website: user.profil?.website || null,
+      jenisKelamin: user.jenisKelamin,
+      semesterAwal: user.semesterAwal,
+      bio: user.bio,
+      website: user.website,
       user: {
         id: user.id,
         name: user.name,
@@ -82,80 +81,47 @@ export async function PATCH(
     
     const data = updateProfileSchema.parse(body)
 
-    // Prepare update data for users table (nim, nip, angkatan, prodi, avatarUrl)
+    // Prepare update data for users table (all fields now in User)
     const userUpdateData: any = {}
     if (data.name !== undefined) userUpdateData.name = data.name
     if (data.nim !== undefined) userUpdateData.nim = data.nim
     if (data.angkatan !== undefined) userUpdateData.angkatan = data.angkatan
     if (data.prodi !== undefined) userUpdateData.prodi = data.prodi
+    if (data.bio !== undefined) userUpdateData.bio = data.bio
+    if (data.website !== undefined) userUpdateData.website = data.website
+    if (data.jenisKelamin !== undefined) userUpdateData.jenisKelamin = data.jenisKelamin
+    if (data.semesterAwal !== undefined) userUpdateData.semesterAwal = data.semesterAwal
     if (data.avatarUrl !== undefined) {
       userUpdateData.avatarUrl = data.avatarUrl
       userUpdateData.image = data.avatarUrl // Sync to image field
     }
     
-    // Update user data
+    // Update user data (all in one table now)
     console.log('Updating user with:', userUpdateData)
-    const updatedUser = await prisma.user.update({
+    const user = await prisma.user.update({
       where: { id: userId },
       data: userUpdateData,
-      include: {
-        profil: true,
-      },
     })
 
-    // Prepare update data for profiles table (kelas, bio, website only)
-    const profileUpdateData: any = {}
-    if (data.kelas !== undefined) profileUpdateData.kelas = data.kelas
-    if (data.bio !== undefined) profileUpdateData.bio = data.bio
-    if (data.website !== undefined) profileUpdateData.website = data.website
-
-    // Update or create profile if needed
-    if (Object.keys(profileUpdateData).length > 0) {
-      if (!updatedUser.profil) {
-        // Create profile if it doesn't exist
-        console.log('Creating new profile for user:', userId)
-        await prisma.profile.create({
-          data: {
-            userId,
-            ...profileUpdateData,
-          },
-        })
-      } else {
-        // Update existing profile
-        console.log('Updating existing profile for user:', userId)
-        await prisma.profile.update({
-          where: { userId },
-          data: profileUpdateData,
-        })
-      }
-    }
-
-    // Fetch updated data
-    const user = await prisma.user.findUnique({
-      where: { id: userId },
-      include: {
-        profil: true,
-      },
-    })
-
-    // Return combined profile for backward compatibility
+    // Return profile data (all from User table)
     const profile = {
-      userId: user!.id,
-      nim: user!.nim,
-      nip: user!.nip,
-      angkatan: user!.angkatan,
-      prodi: user!.prodi,
-      avatarUrl: user!.avatarUrl,
-      kelas: user!.profil?.kelas || null,
-      bio: user!.profil?.bio || null,
-      website: user!.profil?.website || null,
+      userId: user.id,
+      nim: user.nim,
+      nip: user.nip,
+      angkatan: user.angkatan,
+      prodi: user.prodi,
+      avatarUrl: user.avatarUrl,
+      jenisKelamin: user.jenisKelamin,
+      semesterAwal: user.semesterAwal,
+      bio: user.bio,
+      website: user.website,
       user: {
-        id: user!.id,
-        name: user!.name,
-        email: user!.email,
-        role: user!.role,
-        image: user!.image,
-        googleId: user!.googleId,
+        id: user.id,
+        name: user.name,
+        email: user.email,
+        role: user.role,
+        image: user.image,
+        googleId: user.googleId,
       },
     }
 

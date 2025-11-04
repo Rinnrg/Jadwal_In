@@ -106,7 +106,6 @@ export async function GET(request: NextRequest) {
     console.log('🔍 Finding user in database...')
     let user = await prisma.user.findUnique({
       where: { email: googleUser.email },
-      include: { profil: true },
     })
 
     if (!user) {
@@ -122,6 +121,8 @@ export async function GET(request: NextRequest) {
       let extractedAngkatan: number | null = null
       let extractedProdi: string | null = null
       let extractedFakultas: string | null = null
+      let extractedJenisKelamin: string | null = null
+      let extractedSemesterAwal: string | null = null
       
       if (isDosen) {
         // For dosen, try to fetch NIP, prodi, fakultas from cv.unesa.ac.id
@@ -154,6 +155,8 @@ export async function GET(request: NextRequest) {
             extractedNim = mahasiswaInfo.nim
             extractedProdi = mahasiswaInfo.prodi
             extractedFakultas = mahasiswaInfo.fakultas
+            extractedJenisKelamin = mahasiswaInfo.jenisKelamin
+            extractedSemesterAwal = mahasiswaInfo.semesterAwal
             
             // Extract angkatan from NIM if available
             if (mahasiswaInfo.angkatan) {
@@ -167,6 +170,8 @@ export async function GET(request: NextRequest) {
             console.log('   - Prodi:', extractedProdi || 'Not found')
             console.log('   - Fakultas:', extractedFakultas || 'Not found')
             console.log('   - Angkatan:', extractedAngkatan || 'Not found')
+            console.log('   - Jenis Kelamin:', extractedJenisKelamin || 'Not found')
+            console.log('   - Semester Awal:', extractedSemesterAwal || 'Not found')
           } else {
             console.log('⚠️ Data not found on pd-unesa, trying to extract NIM from email as fallback...')
             // Fallback: extract from email if pd-unesa scraping fails
@@ -183,7 +188,7 @@ export async function GET(request: NextRequest) {
         }
       }
       
-      // Create new user (data langsung di User, tidak perlu Profile)
+      // Create new user (all data in User table)
       user = await prisma.user.create({
         data: {
           email: googleUser.email,
@@ -197,16 +202,9 @@ export async function GET(request: NextRequest) {
           prodi: extractedProdi,
           fakultas: extractedFakultas,
           avatarUrl: googleUser.picture,
-          // Create optional profile for extra info (kelas, bio, website)
-          profil: {
-            create: {
-              kelas: 'A', // Default class, can be updated later
-            }
-          }
+          jenisKelamin: extractedJenisKelamin,
+          semesterAwal: extractedSemesterAwal,
         },
-        include: {
-          profil: true,
-        }
       })
       console.log('✅ User created:', user.id)
       console.log('   - Role:', userRole)
@@ -219,11 +217,6 @@ export async function GET(request: NextRequest) {
     } else if (!user.googleId) {
       console.log('🔄 Updating existing user with Google ID...')
       
-      // Check if user has profile
-      const existingProfile = await prisma.profile.findUnique({
-        where: { userId: user.id }
-      })
-      
       // Determine role based on email domain
       const isDosen = googleUser.email.endsWith('@unesa.ac.id')
       const userRole = isDosen ? 'dosen' : 'mahasiswa'
@@ -234,6 +227,8 @@ export async function GET(request: NextRequest) {
       let extractedAngkatan: number | null = null
       let extractedProdi: string | null = null
       let extractedFakultas: string | null = null
+      let extractedJenisKelamin: string | null = null
+      let extractedSemesterAwal: string | null = null
       
       if (isDosen && (!user.nip || !user.prodi || !user.fakultas)) {
         // For dosen without complete data, try to fetch from cv.unesa.ac.id
@@ -252,7 +247,7 @@ export async function GET(request: NextRequest) {
         } catch (error) {
           console.error('❌ Error fetching dosen data:', error)
         }
-      } else if (!isDosen && (!user.nim || !user.prodi || !user.fakultas)) {
+      } else if (!isDosen && (!user.nim || !user.prodi || !user.fakultas || !user.jenisKelamin || !user.semesterAwal)) {
         // For existing mahasiswa with missing data, fetch from pd-unesa
         console.log('👨‍🎓 Fetching mahasiswa data from pd-unesa.unesa.ac.id...')
         try {
@@ -285,12 +280,16 @@ export async function GET(request: NextRequest) {
             }
             if (!user.prodi && mahasiswaInfo.prodi) extractedProdi = mahasiswaInfo.prodi
             if (!user.fakultas && mahasiswaInfo.fakultas) extractedFakultas = mahasiswaInfo.fakultas
+            if (mahasiswaInfo.jenisKelamin) extractedJenisKelamin = mahasiswaInfo.jenisKelamin
+            if (mahasiswaInfo.semesterAwal) extractedSemesterAwal = mahasiswaInfo.semesterAwal
             
             console.log('✅ Mahasiswa data found from pd-unesa:')
             console.log('   - NIM:', extractedNim || 'Already set')
             console.log('   - Prodi:', extractedProdi || 'Already set')
             console.log('   - Fakultas:', extractedFakultas || 'Already set')
             console.log('   - Angkatan:', extractedAngkatan || 'Already set')
+            console.log('   - Jenis Kelamin:', extractedJenisKelamin || 'Already set')
+            console.log('   - Semester Awal:', extractedSemesterAwal || 'Already set')
           } else {
             console.log('⚠️ Could not find mahasiswa data on pd-unesa')
             // Last resort fallback: extract NIM from email
@@ -336,21 +335,17 @@ export async function GET(request: NextRequest) {
         updateData.fakultas = extractedFakultas
       }
       
-      // Create profile if doesn't exist
-      if (!existingProfile) {
-        updateData.profil = {
-          create: {
-            kelas: 'A',
-          }
-        }
+      if (extractedJenisKelamin) {
+        updateData.jenisKelamin = extractedJenisKelamin
+      }
+      
+      if (extractedSemesterAwal) {
+        updateData.semesterAwal = extractedSemesterAwal
       }
       
       user = await prisma.user.update({
         where: { id: user.id },
         data: updateData,
-        include: {
-          profil: true,
-        }
       })
       console.log('✅ User updated:', user.id)
     } else {
@@ -446,21 +441,20 @@ export async function GET(request: NextRequest) {
               console.log('✅ Fakultas found:', mahasiswaInfo.fakultas)
               needsUpdate = true
             }
+            if (mahasiswaInfo.jenisKelamin) {
+              updateData.jenisKelamin = mahasiswaInfo.jenisKelamin
+              console.log('✅ Jenis Kelamin found:', mahasiswaInfo.jenisKelamin)
+              needsUpdate = true
+            }
+            if (mahasiswaInfo.semesterAwal) {
+              updateData.semesterAwal = mahasiswaInfo.semesterAwal
+              console.log('✅ Semester Awal found:', mahasiswaInfo.semesterAwal)
+              needsUpdate = true
+            }
           }
         } catch (error) {
           console.error('❌ Error fetching mahasiswa data:', error)
         }
-      }
-      
-      // Create profile if doesn't exist
-      if (!user.profil) {
-        console.log('⚠️ User has no profile, creating...')
-        updateData.profil = {
-          create: {
-            kelas: 'A',
-          }
-        }
-        needsUpdate = true
       }
       
       // Apply updates if needed
@@ -468,7 +462,6 @@ export async function GET(request: NextRequest) {
         user = await prisma.user.update({
           where: { id: user.id },
           data: updateData,
-          include: { profil: true },
         })
         console.log('✅ User data updated')
         console.log('   - NIM:', user.nim || 'N/A')
@@ -500,7 +493,7 @@ export async function GET(request: NextRequest) {
     console.log('   - Prodi:', user.prodi || 'NULL')
     console.log('   - Fakultas:', user.fakultas || 'NULL')
     console.log('   - Avatar URL:', user.avatarUrl ? 'SET' : 'NULL')
-    console.log('   - Has Profile:', !!user.profil)
+    console.log('   - Bio:', user.bio ? 'Yes' : 'No')
     console.log('   - Google ID:', user.googleId || 'NULL')
 
     // Create session token

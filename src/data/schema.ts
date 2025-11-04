@@ -19,36 +19,29 @@ export const UserSchema = z.object({
   email: z.string().email(),
   role: z.enum(["mahasiswa", "dosen", "kaprodi", "super_admin"]),
   password: z.string().optional(), // For super admin to manage user passwords
-  // Fields from User model directly (not nested in profile)
+  // Academic fields
   nim: z.string().optional().nullable(),
   nip: z.string().optional().nullable(),
   angkatan: z.number().optional().nullable(),
   prodi: z.string().optional().nullable(),
   fakultas: z.string().optional().nullable(),
   avatarUrl: z.string().optional().nullable(),
-  profile: z.object({
-    userId: z.string(),
-    kelas: z.string(),
-    bio: z.string().optional(),
-    website: z.string().optional(),
-  }).optional(),
+  // Profile fields (now in User table)
+  bio: z.string().optional().nullable(),
+  website: z.string().optional().nullable(),
+  jenisKelamin: z.string().optional().nullable(),
+  semesterAwal: z.string().optional().nullable(),
 })
 
 export type User = z.infer<typeof UserSchema>
 
-// Profile Schema - only contains fields specific to Profile model
-// Note: nim, angkatan, prodi, avatarUrl are now in User model directly
-export const ProfileSchema = z.object({
-  userId: z.string(),
-  kelas: z.string(), // Required field
-  bio: z.string().optional(),
-  website: z.string().url().optional(),
-})
-
-export type Profile = z.infer<typeof ProfileSchema>
-
-// Extended Profile - what API returns (combines User + Profile for backward compatibility)
-export type ExtendedProfile = Profile & {
+// For backward compatibility - Profile is now part of User
+export type Profile = {
+  userId: string
+  bio?: string | null
+  website?: string | null
+  jenisKelamin?: string | null
+  semesterAwal?: string | null
   nim?: string | null
   nip?: string | null
   angkatan?: number | null

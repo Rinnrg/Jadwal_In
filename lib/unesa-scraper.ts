@@ -18,6 +18,8 @@ interface MahasiswaInfo {
   fakultas: string | null;
   angkatan: string | null;
   status: string | null;
+  jenisKelamin: string | null;
+  semesterAwal: string | null;
 }
 
 /**
@@ -394,6 +396,42 @@ function parseMahasiswaHTML(html: string): MahasiswaInfo | null {
       if (statusMatch) break;
     }
     
+    // Pattern untuk jenis kelamin
+    const jenisKelaminPatterns = [
+      /(?:Jenis Kelamin|Gender)[:\s]*([^<\n]+)/i,
+      /<td[^>]*>Jenis Kelamin<\/td>\s*<td[^>]*>([^<]+)<\/td>/i,
+      /<td[^>]*>Gender<\/td>\s*<td[^>]*>([^<]+)<\/td>/i,
+      /(?:L|P)(?:aki-laki|erempuan)/i, // Match "Laki-laki" or "Perempuan"
+    ];
+    let jenisKelaminMatch = null;
+    for (const pattern of jenisKelaminPatterns) {
+      jenisKelaminMatch = html.match(pattern);
+      if (jenisKelaminMatch) {
+        // Normalize the value
+        const value = jenisKelaminMatch[1] || jenisKelaminMatch[0];
+        if (value && (value.toLowerCase().includes('laki') || value.toLowerCase() === 'l')) {
+          jenisKelaminMatch[1] = 'Laki - Laki';
+          break;
+        } else if (value && (value.toLowerCase().includes('perempuan') || value.toLowerCase() === 'p')) {
+          jenisKelaminMatch[1] = 'Perempuan';
+          break;
+        }
+      }
+      jenisKelaminMatch = null;
+    }
+    
+    // Pattern untuk semester awal
+    const semesterAwalPatterns = [
+      /(?:Semester Awal)[:\s]*([^<\n]+)/i,
+      /<td[^>]*>Semester Awal<\/td>\s*<td[^>]*>([^<]+)<\/td>/i,
+      /(?:Periode Masuk|Semester Masuk)[:\s]*([^<\n]+)/i,
+    ];
+    let semesterAwalMatch = null;
+    for (const pattern of semesterAwalPatterns) {
+      semesterAwalMatch = html.match(pattern);
+      if (semesterAwalMatch) break;
+    }
+    
     // Jika tidak ada NIM yang ditemukan, return null
     if (!nimMatch || !nimMatch[1]) {
       console.log(`⚠️ NIM tidak ditemukan di halaman`);
@@ -409,6 +447,8 @@ function parseMahasiswaHTML(html: string): MahasiswaInfo | null {
       fakultas: fakultasMatch ? fakultasMatch[1].trim() : null,
       angkatan: angkatanMatch ? angkatanMatch[1] : null,
       status: statusMatch ? statusMatch[1].trim() : 'Aktif',
+      jenisKelamin: jenisKelaminMatch ? jenisKelaminMatch[1].trim() : null,
+      semesterAwal: semesterAwalMatch ? semesterAwalMatch[1].trim() : null,
     };
     
   } catch (error) {

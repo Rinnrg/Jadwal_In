@@ -92,12 +92,27 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Update user with extracted NIM and angkatan
+    // Try to fetch additional data from pd-unesa.unesa.ac.id
+    let mahasiswaInfo = null
+    try {
+      const { cariDataMahasiswa } = await import('@/lib/unesa-scraper')
+      mahasiswaInfo = await cariDataMahasiswa(extractedNim)
+      console.log('Fetched mahasiswa info from pd-unesa:', mahasiswaInfo)
+    } catch (scrapeError) {
+      console.warn('Failed to fetch data from pd-unesa:', scrapeError)
+      // Continue without scraping data
+    }
+
+    // Update user with extracted NIM, angkatan, and additional data if available (all in User table now)
     const updatedUser = await prisma.user.update({
       where: { id: userId },
       data: {
         nim: extractedNim,
-        angkatan: extractAngkatan(extractedNim)
+        angkatan: extractAngkatan(extractedNim),
+        ...(mahasiswaInfo?.prodi && { prodi: mahasiswaInfo.prodi }),
+        ...(mahasiswaInfo?.fakultas && { fakultas: mahasiswaInfo.fakultas }),
+        ...(mahasiswaInfo?.jenisKelamin && { jenisKelamin: mahasiswaInfo.jenisKelamin }),
+        ...(mahasiswaInfo?.semesterAwal && { semesterAwal: mahasiswaInfo.semesterAwal }),
       }
     })
 
@@ -106,7 +121,13 @@ export async function POST(request: NextRequest) {
       updated: true,
       nim: updatedUser.nim,
       angkatan: updatedUser.angkatan,
-      message: 'NIM updated successfully'
+      jenisKelamin: updatedUser.jenisKelamin,
+      semesterAwal: updatedUser.semesterAwal,
+      prodi: updatedUser.prodi,
+      fakultas: updatedUser.fakultas,
+      message: mahasiswaInfo 
+        ? 'NIM updated successfully with data from pd-unesa' 
+        : 'NIM updated successfully'
     })
 
   } catch (error) {
