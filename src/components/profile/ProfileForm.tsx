@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef } from "react"
 import { useSessionStore } from "@/stores/session.store"
 import { useProfileStore } from "@/stores/profile.store"
-import type { Profile, ExtendedProfile } from "@/data/schema"
+import type { Profile } from "@/data/schema"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -15,7 +15,7 @@ import { ActivityLogger } from "@/lib/activity-logger"
 import { Lock, IdCard, Edit2, Check, X, KeyRound, Upload, Phone, Plus, Trash2 } from "lucide-react"
 
 interface ProfileFormProps {
-  profile?: ExtendedProfile // API returns extended profile with User fields
+  profile?: any // API returns extended profile with User fields (nim, angkatan, avatarUrl)
   onSuccess?: () => void
   onChangePassword?: () => void
   onSetPassword?: () => void
@@ -105,22 +105,9 @@ export function ProfileForm({ profile, onSuccess, onChangePassword, onSetPasswor
             const data = await response.json()
             if (data.updated) {
               console.log('[ProfileForm] NIM synced successfully:', data.nim)
-              // Update profile in store
-              if (profile) {
-                updateProfile(session.id, {
-                  nim: data.nim,
-                  angkatan: data.angkatan
-                })
-              } else {
-                createProfile({
-                  userId: session.id,
-                  nim: data.nim,
-                  angkatan: data.angkatan,
-                  kelas: 'A',
-                  prodi: undefined,
-                  bio: undefined
-                })
-              }
+              // Note: nim and angkatan are now in User model, not Profile
+              // Profile store only handles kelas, bio, website
+              // Store will be updated when page reloads or from API response
             }
           }
         } catch (error) {
@@ -244,18 +231,20 @@ export function ProfileForm({ profile, onSuccess, onChangePassword, onSetPasswor
 
       const { profile: updatedProfile } = await response.json()
 
-      // Update local store with the server response
+      // Note: avatarUrl is now in User model, not Profile
+      // Profile store only handles kelas, bio, website
+      // Update profile only for fields that exist in Profile model
       if (profile) {
-        updateProfile(session.id, { avatarUrl })
-      } else {
-        // Create new profile in local store
-        const newProfile = {
-          userId: session.id,
-          angkatan: updatedProfile.angkatan || angkatan,
-          kelas: updatedProfile.kelas || (session.role === "mahasiswa" ? "A" : "DOSEN"),
-          avatarUrl
+        // Only update kelas if it exists in updatedProfile
+        if (updatedProfile.kelas) {
+          updateProfile(session.id, { kelas: updatedProfile.kelas })
         }
-        createProfile(newProfile)
+      } else if (updatedProfile.kelas) {
+        // Create new profile in local store with only Profile fields
+        createProfile({
+          userId: session.id,
+          kelas: updatedProfile.kelas || (session.role === "mahasiswa" ? "A" : "DOSEN"),
+        })
       }
       
       // Update session image for immediate UI update
