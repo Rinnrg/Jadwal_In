@@ -47,15 +47,6 @@ const staffFormSchema = z.object({
   password: z.string().min(6, "Password minimal 6 karakter").optional().or(z.literal("")),
   role: z.enum(["dosen", "kaprodi", "super_admin"]),
   prodi: z.string().min(3, "Prodi minimal 3 karakter").optional(),
-}).refine((data) => {
-  // Prodi wajib diisi jika role kaprodi
-  if (data.role === "kaprodi" && !data.prodi) {
-    return false
-  }
-  return true
-}, {
-  message: "Prodi wajib diisi untuk role Kaprodi",
-  path: ["prodi"],
 })
 
 // Schema untuk edit staff
@@ -65,19 +56,10 @@ const editStaffFormSchema = z.object({
   password: z.string().min(6, "Password minimal 6 karakter").optional().or(z.literal("")),
   role: z.enum(["mahasiswa", "dosen", "kaprodi", "super_admin"]),
   prodi: z.string().min(3, "Prodi minimal 3 karakter").optional(),
-}).refine((data) => {
-  // Prodi wajib diisi jika role kaprodi
-  if (data.role === "kaprodi" && !data.prodi) {
-    return false
-  }
-  return true
-}, {
-  message: "Prodi wajib diisi untuk role Kaprodi",
-  path: ["prodi"],
 })
 
-// Union schema
-const userFormSchema = z.discriminatedUnion("role", [
+// Union schema (changed from discriminatedUnion to union to avoid ZodEffects incompatibility)
+const userFormSchema = z.union([
   mahasiswaFormSchema,
   staffFormSchema,
 ])
@@ -112,8 +94,8 @@ export function UserForm({ user, onSuccess, onCancel }: UserFormProps) {
       ? (user?.role === "mahasiswa"
           ? {
               name: user?.name || "",
-              nim: user?.profile?.nim || "",
-              angkatan: user?.profile?.angkatan || new Date().getFullYear(),
+              nim: user?.nim || "", // nim is now directly in User model
+              angkatan: user?.angkatan || new Date().getFullYear(), // angkatan is now directly in User model
               role: user?.role || "mahasiswa",
             }
           : {
@@ -121,7 +103,7 @@ export function UserForm({ user, onSuccess, onCancel }: UserFormProps) {
               email: user?.email || "",
               password: "",
               role: user?.role || "dosen",
-              prodi: user?.prodi || "",
+              prodi: user?.prodi || "", // prodi is now directly in User model
             })
       : (selectedRole === "mahasiswa" 
           ? {
@@ -146,8 +128,8 @@ export function UserForm({ user, onSuccess, onCancel }: UserFormProps) {
       if (user.role === "mahasiswa") {
         form.reset({
           name: user.name,
-          nim: user.profile?.nim || "",
-          angkatan: user.profile?.angkatan || new Date().getFullYear(),
+          nim: user.nim || "", // nim is now directly in User model
+          angkatan: user.angkatan || new Date().getFullYear(), // angkatan is now directly in User model
           role: user.role,
         })
         setSelectedRole(user.role)
@@ -157,7 +139,7 @@ export function UserForm({ user, onSuccess, onCancel }: UserFormProps) {
           email: user.email,
           password: "",
           role: user.role,
-          prodi: user.prodi || "",
+          prodi: user.prodi || "", // prodi is already directly in User model
         })
         setSelectedRole(user.role)
       }
@@ -190,6 +172,12 @@ export function UserForm({ user, onSuccess, onCancel }: UserFormProps) {
 
   const onSubmit = async (data: any) => {
     if (isSubmitting) return
+    
+    // Manual validation for prodi (since we removed .refine() from schema)
+    if (data.role === "kaprodi" && !data.prodi) {
+      showError("Prodi wajib diisi untuk role Kaprodi")
+      return
+    }
     
     setIsSubmitting(true)
     try {

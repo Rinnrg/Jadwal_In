@@ -19,30 +19,30 @@ export const UserSchema = z.object({
   email: z.string().email(),
   role: z.enum(["mahasiswa", "dosen", "kaprodi", "super_admin"]),
   password: z.string().optional(), // For super admin to manage user passwords
+  // Fields from User model directly (not nested in profile)
+  nim: z.string().optional().nullable(),
+  nip: z.string().optional().nullable(),
+  angkatan: z.number().optional().nullable(),
+  prodi: z.string().optional().nullable(),
+  fakultas: z.string().optional().nullable(),
+  avatarUrl: z.string().optional().nullable(),
   profile: z.object({
     userId: z.string(),
-    nim: z.string().optional(),
-    angkatan: z.number(),
     kelas: z.string(),
-    prodi: z.string().optional(),
     bio: z.string().optional(),
     website: z.string().optional(),
-    avatarUrl: z.string().optional(),
   }).optional(),
 })
 
 export type User = z.infer<typeof UserSchema>
 
-// Profile Schema
+// Profile Schema - only contains fields specific to Profile model
+// Note: nim, angkatan, prodi, avatarUrl are now in User model directly
 export const ProfileSchema = z.object({
   userId: z.string(),
-  nim: z.string().optional(),
-  angkatan: z.number(),
-  kelas: z.string(), // Added required kelas field
-  prodi: z.string().optional(),
+  kelas: z.string(), // Required field
   bio: z.string().optional(),
   website: z.string().url().optional(),
-  avatarUrl: z.string().optional(),
 })
 
 export type Profile = z.infer<typeof ProfileSchema>

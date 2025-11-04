@@ -170,11 +170,11 @@ export function RoleManagementTable({ onEdit }: RoleManagementTableProps) {
                       <TableCell className="font-medium">{user.name}</TableCell>
                       <TableCell>{user.email}</TableCell>
                       <TableCell>
-                        {user.role === "mahasiswa" && user.profile?.nim ? (
+                        {user.role === "mahasiswa" && user.nim ? (
                           <div className="flex flex-col gap-0.5">
-                            <span className="font-mono text-sm font-medium">{user.profile.nim}</span>
+                            <span className="font-mono text-sm font-medium">{user.nim}</span>
                             <span className="text-xs text-muted-foreground">
-                              Angkatan {user.profile.angkatan}
+                              Angkatan {user.angkatan}
                             </span>
                           </div>
                         ) : (
