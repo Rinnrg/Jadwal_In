@@ -108,6 +108,7 @@ export async function POST(request: NextRequest) {
         name: user.name,
         role: user.role,
         image: user.image,
+        prodi: user.prodi,
       },
     })
 

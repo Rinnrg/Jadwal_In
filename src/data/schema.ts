@@ -7,6 +7,7 @@ export const UserSessionSchema = z.object({
   name: z.string(),
   image: z.string().optional(),
   role: z.enum(["mahasiswa", "dosen", "kaprodi", "super_admin"]),
+  prodi: z.string().optional(),
 })
 
 export type UserSession = z.infer<typeof UserSessionSchema>

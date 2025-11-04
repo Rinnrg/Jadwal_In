@@ -37,6 +37,7 @@ export async function GET(request: NextRequest) {
         name: user.name,
         role: user.role,
         image: user.image,
+        prodi: user.prodi,
         profile: user.profil,
       },
     })
