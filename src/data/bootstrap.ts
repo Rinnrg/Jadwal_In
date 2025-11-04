@@ -18,32 +18,29 @@ export async function fetchUserProfile() {
       const sessionStore = useSessionStore.getState()
       
       // Update local store with database profile
+      // Note: nim, angkatan, prodi, avatarUrl are now in User model, not Profile
+      // Profile store only handles kelas, bio, website
       if (profile) {
         const existingProfile = profileStore.getProfile(session.id)
+        
+        // Prepare profile data with only Profile model fields
+        const profileData: any = {
+          kelas: profile.kelas,
+        }
+        if (profile.bio !== undefined) profileData.bio = profile.bio
+        if (profile.website !== undefined) profileData.website = profile.website
+        
         if (existingProfile) {
-          profileStore.updateProfile(session.id, {
-            nim: profile.nim,
-            angkatan: profile.angkatan,
-            kelas: profile.kelas,
-            prodi: profile.prodi,
-            bio: profile.bio,
-            website: profile.website,
-            avatarUrl: profile.avatarUrl,
-          })
+          profileStore.updateProfile(session.id, profileData)
         } else {
           profileStore.createProfile({
             userId: profile.userId,
-            nim: profile.nim,
-            angkatan: profile.angkatan,
-            kelas: profile.kelas,
-            prodi: profile.prodi,
-            bio: profile.bio,
-            website: profile.website,
-            avatarUrl: profile.avatarUrl,
+            ...profileData,
           })
         }
         
         // Sync avatarUrl to session.image for consistent display
+        // avatarUrl is now in User model (profile.avatarUrl from API response)
         if (profile.avatarUrl && profile.avatarUrl !== session.image) {
           sessionStore.updateSessionImage(profile.avatarUrl)
         }
