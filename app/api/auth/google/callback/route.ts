@@ -1,10 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getGoogleUserInfo } from '@/lib/google-auth'
-import { PrismaClient } from '@/generated/prisma'
+import { prisma } from '@/lib/prisma'
 import { randomBytes } from 'crypto'
 import { cariNIPDosen } from '@/lib/unesa-scraper'
-
-const prisma = new PrismaClient()
 
 // Force dynamic rendering
 export const dynamic = 'force-dynamic'
@@ -518,6 +516,16 @@ export async function GET(request: NextRequest) {
       path: '/',
     })
     console.log('✅ Session cookie set')
+
+    // Set user ID cookie for session validation (non-httpOnly so client can read)
+    response.cookies.set('user_id', user.id, {
+      httpOnly: false,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax',
+      maxAge: 60 * 60 * 24 * 30, // 30 days
+      path: '/',
+    })
+    console.log('✅ User ID cookie set')
     console.log('✅ Session created')
 
     // Clear callback URL cookie

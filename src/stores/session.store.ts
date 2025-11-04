@@ -88,6 +88,10 @@ export const useSessionStore = create<SessionState>()(
             document.cookie = "session_token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT; SameSite=Lax"
             document.cookie = "session_token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT; SameSite=Lax; Secure"
             
+            // Clear user_id cookie (both secure and non-secure)
+            document.cookie = "user_id=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT; SameSite=Lax"
+            document.cookie = "user_id=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT; SameSite=Lax; Secure"
+            
             // Clear jadwalin-auth cookie (both secure and non-secure)
             document.cookie = "jadwalin-auth=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT; SameSite=Lax"
             document.cookie = "jadwalin-auth=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT; SameSite=Lax; Secure"

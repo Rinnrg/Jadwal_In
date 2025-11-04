@@ -1,7 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { PrismaClient } from '@/generated/prisma'
-
-const prisma = new PrismaClient()
+import { prisma } from '@/lib/prisma'
 
 // Helper function to extract and reconstruct full NIM from email
 function extractNIMFromEmail(email: string): string | null {

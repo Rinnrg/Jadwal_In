@@ -21,12 +21,13 @@ const protectedRoutes = [
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl
   
-  // Check for session_token (used by both manual login and Google OAuth)
+  // Check for session_token and user_id (used by both manual login and Google OAuth)
   const sessionToken = request.cookies.get("session_token")
-  const isAuthenticated = !!sessionToken?.value
+  const userId = request.cookies.get("user_id")
+  const isAuthenticated = !!sessionToken?.value && !!userId?.value
   
   // Debug log
-  console.log(`[Middleware] ${pathname} - Auth: ${isAuthenticated}, Token: ${sessionToken?.value ? 'exists' : 'none'}`)
+  console.log(`[Middleware] ${pathname} - Auth: ${isAuthenticated}, Token: ${sessionToken?.value ? 'exists' : 'none'}, UserId: ${userId?.value ? 'exists' : 'none'}`)
   
   // If user is on auth path, handle authentication logic
   if (pathname === "/auth") {

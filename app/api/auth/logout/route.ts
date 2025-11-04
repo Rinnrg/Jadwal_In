@@ -22,6 +22,9 @@ export async function POST(request: NextRequest) {
     // Clear session_token (Google OAuth and manual login)
     response.cookies.set('session_token', '', cookieOptions)
     
+    // Clear user_id cookie
+    response.cookies.set('user_id', '', cookieOptions)
+    
     // Clear jadwalin-auth (manual login legacy)
     response.cookies.set('jadwalin-auth', '', cookieOptions)
 
@@ -42,6 +45,7 @@ export async function POST(request: NextRequest) {
     }
     
     response.cookies.set('session_token', '', cookieOptions)
+    response.cookies.set('user_id', '', cookieOptions)
     response.cookies.set('jadwalin-auth', '', cookieOptions)
     
     return response

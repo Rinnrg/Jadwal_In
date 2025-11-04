@@ -1,9 +1,7 @@
 // app/api/profile/fetch-nip/route.ts
 import { NextRequest, NextResponse } from 'next/server'
-import { PrismaClient } from '@/generated/prisma'
+import { prisma } from '@/lib/prisma'
 import { cariNIPDosen } from '@/lib/unesa-scraper'
-
-const prisma = new PrismaClient()
 
 export const dynamic = 'force-dynamic'
 

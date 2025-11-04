@@ -118,6 +118,15 @@ export async function POST(request: NextRequest) {
       path: '/',
     })
 
+    // Set user ID cookie for session validation (non-httpOnly so client can read)
+    response.cookies.set('user_id', user.id, {
+      httpOnly: false,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax',
+      maxAge: 60 * 60 * 24 * 30, // 30 days
+      path: '/',
+    })
+
     return response
   } catch (error) {
     console.error('Login error:', error)
