@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef } from "react"
 import { useSessionStore } from "@/stores/session.store"
 import { useProfileStore } from "@/stores/profile.store"
-import type { Profile } from "@/data/schema"
+import type { Profile, ExtendedProfile } from "@/data/schema"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -15,7 +15,7 @@ import { ActivityLogger } from "@/lib/activity-logger"
 import { Lock, IdCard, Edit2, Check, X, KeyRound, Upload, Phone, Plus, Trash2 } from "lucide-react"
 
 interface ProfileFormProps {
-  profile?: Profile
+  profile?: ExtendedProfile // API returns extended profile with User fields
   onSuccess?: () => void
   onChangePassword?: () => void
   onSetPassword?: () => void
