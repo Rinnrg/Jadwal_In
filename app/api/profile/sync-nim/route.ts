@@ -93,7 +93,6 @@ export async function POST(request: NextRequest) {
       console.log('📊 Current user data:')
       console.log('  - Jenis Kelamin:', user.jenisKelamin)
       console.log('  - Prodi:', user.prodi)
-      console.log('  - Fakultas:', user.fakultas)
       console.log('  - Angkatan:', user.angkatan)
       
       mahasiswaInfo = await getMahasiswaDataMultiSource(nimToUse, user.name)
