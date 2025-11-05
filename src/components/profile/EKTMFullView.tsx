@@ -289,7 +289,7 @@ export function EKTMFullView({
 
   return (
     <div 
-      className="fixed inset-0 z-[100] m-0 p-0 backdrop-blur-md bg-black/20"
+      className="fixed top-0 left-0 right-0 bottom-0 z-[100] backdrop-blur-md bg-black/20"
       onClick={(e) => {
         // Klik di luar E-KTM akan menutup
         if (e.target === e.currentTarget) {
@@ -299,13 +299,13 @@ export function EKTMFullView({
     >
       {/* Content - Scrollable */}
       <div 
-        className="flex flex-col items-center justify-start min-h-screen w-full overflow-y-auto p-4 sm:p-8 pt-8"
+        className="flex flex-col items-center justify-start min-h-screen w-full overflow-y-auto p-2 sm:p-8 pt-4 sm:pt-8"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Title - Hilangkan atau buat lebih subtle */}
         
-        {/* E-KTM Card - Floating bebas */}
-        <div className="w-full max-w-lg mb-8 mt-12">
+        {/* E-KTM Card - Floating bebas with mobile responsive sizing */}
+        <div className="w-[95vw] sm:w-full max-w-[400px] sm:max-w-lg mb-4 sm:mb-8 mt-8 sm:mt-12">
           <EKTMCardWithTilt
             name={name}
             nim={nim}
@@ -321,10 +321,10 @@ export function EKTMFullView({
           onClick={handleDownload}
           variant="default"
           size="lg"
-          className="gap-2 text-sm sm:text-base font-semibold shadow-2xl bg-white text-blue-600 hover:bg-blue-50 border-2 border-white/20 hover:scale-105 transition-transform"
+          className="gap-2 text-xs sm:text-base font-semibold shadow-2xl bg-white text-blue-600 hover:bg-blue-50 border-2 border-white/20 hover:scale-105 transition-transform w-[90vw] max-w-xs sm:max-w-none sm:w-auto"
           disabled={isDownloading}
         >
-          <Download className="h-5 w-5" />
+          <Download className="h-4 w-4 sm:h-5 sm:w-5" />
           {isDownloading ? 'Mengunduh E-KTM...' : 'Unduh E-KTM'}
         </Button>
 
@@ -333,9 +333,9 @@ export function EKTMFullView({
           onClick={() => onOpenChange(false)}
           variant="default"
           size="lg"
-          className="gap-2 text-sm sm:text-base font-semibold shadow-2xl bg-white text-blue-600 hover:bg-blue-50 border-2 border-white/20 mt-3 mb-8 hover:scale-105 transition-transform"
+          className="gap-2 text-xs sm:text-base font-semibold shadow-2xl bg-white text-blue-600 hover:bg-blue-50 border-2 border-white/20 mt-2 sm:mt-3 mb-4 sm:mb-8 hover:scale-105 transition-transform w-[90vw] max-w-xs sm:max-w-none sm:w-auto"
         >
-          <X className="h-5 w-5" />
+          <X className="h-4 w-4 sm:h-5 sm:w-5" />
           Tutup
         </Button>
       </div>

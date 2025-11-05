@@ -86,35 +86,35 @@ export function SetPasswordCard({ onSuccess }: SetPasswordCardProps) {
 
   return (
     <>
-      <DialogHeader>
-        <DialogTitle className="flex items-center gap-2">
-          <KeyRound className="h-5 w-5" />
+      <DialogHeader className="space-y-1">
+        <DialogTitle className="flex items-center gap-2 text-lg">
+          <KeyRound className="h-4 w-4" />
           Atur Password
         </DialogTitle>
-        <DialogDescription>
+        <DialogDescription className="text-xs sm:text-sm">
           Atur password untuk akun yang login via Google Sign-In
         </DialogDescription>
       </DialogHeader>
       
-      <form onSubmit={handleSubmit} className="space-y-4 mt-4">
+      <form onSubmit={handleSubmit} className="space-y-3">
         {error && (
-          <Alert variant="destructive">
-            <AlertDescription className="text-sm">{error}</AlertDescription>
+          <Alert variant="destructive" className="py-2">
+            <AlertDescription className="text-xs">{error}</AlertDescription>
           </Alert>
         )}
 
-        <Alert className="bg-blue-50 dark:bg-blue-950/20 border-blue-200 dark:border-blue-800">
-          <AlertDescription className="text-xs sm:text-sm text-blue-800 dark:text-blue-200">
+        <Alert className="bg-blue-50 dark:bg-blue-950/20 border-blue-200 dark:border-blue-800 py-2">
+          <AlertDescription className="text-xs text-blue-800 dark:text-blue-200">
             <p className="font-semibold mb-1">💡 Informasi:</p>
             <p className="mb-1">Setelah mengatur password, Anda dapat login menggunakan:</p>
-            <ul className="list-disc list-inside space-y-0.5 text-xs sm:text-sm">
+            <ul className="list-disc list-inside space-y-0.5 text-xs">
               <li>Google Sign-In (seperti biasa)</li>
               <li>Email & Password (baru)</li>
             </ul>
           </AlertDescription>
         </Alert>
 
-        <div className="space-y-2">
+        <div className="space-y-1.5">
           <Label htmlFor="newPassword" className="text-sm">Password Baru</Label>
           <div className="relative">
             <Input
@@ -126,7 +126,7 @@ export function SetPasswordCard({ onSuccess }: SetPasswordCardProps) {
               disabled={isLoading}
               required
               minLength={6}
-              className="pr-10"
+              className="pr-10 h-9 text-sm"
             />
             <button
               type="button"
@@ -143,7 +143,7 @@ export function SetPasswordCard({ onSuccess }: SetPasswordCardProps) {
           </div>
         </div>
 
-        <div className="space-y-2">
+        <div className="space-y-1.5">
           <Label htmlFor="confirmPassword" className="text-sm">Konfirmasi Password</Label>
           <div className="relative">
             <Input
@@ -155,7 +155,7 @@ export function SetPasswordCard({ onSuccess }: SetPasswordCardProps) {
               disabled={isLoading}
               required
               minLength={6}
-              className="pr-10"
+              className="pr-10 h-9 text-sm"
             />
             <button
               type="button"
@@ -172,20 +172,20 @@ export function SetPasswordCard({ onSuccess }: SetPasswordCardProps) {
           </div>
         </div>
 
-        <div className="flex gap-2 justify-end pt-2">
+        <div className="flex gap-2 justify-end pt-1">
           <Button
             type="submit"
             disabled={isLoading || !newPassword || !confirmPassword}
-            className="bg-blue-600 hover:bg-blue-700 w-full sm:w-auto"
+            className="bg-blue-600 hover:bg-blue-700 w-full sm:w-auto h-9 text-sm"
           >
             {isLoading ? (
               <>
-                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                <Loader2 className="h-3.5 w-3.5 mr-2 animate-spin" />
                 Menyimpan...
               </>
             ) : (
               <>
-                <CheckCircle2 className="h-4 w-4 mr-2" />
+                <CheckCircle2 className="h-3.5 w-3.5 mr-2" />
                 Simpan Password
               </>
             )}

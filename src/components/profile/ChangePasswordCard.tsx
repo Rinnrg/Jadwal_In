@@ -80,19 +80,19 @@ export function ChangePasswordCard({ onSuccess }: ChangePasswordCardProps) {
 
   return (
     <>
-      <DialogHeader>
-        <DialogTitle className="flex items-center gap-2">
-          <Lock className="h-5 w-5" />
+      <DialogHeader className="space-y-1">
+        <DialogTitle className="flex items-center gap-2 text-lg">
+          <Lock className="h-4 w-4" />
           Ganti Password
         </DialogTitle>
-        <DialogDescription>
+        <DialogDescription className="text-xs sm:text-sm">
           Ubah password akun Anda untuk keamanan yang lebih baik
         </DialogDescription>
       </DialogHeader>
       
-      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 py-4">
-          <div className="space-y-2">
-            <Label htmlFor="currentPassword">
+      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-3">
+          <div className="space-y-1.5">
+            <Label htmlFor="currentPassword" className="text-sm">
               Password Saat Ini <span className="text-destructive">*</span>
             </Label>
             <div className="relative">
@@ -101,7 +101,7 @@ export function ChangePasswordCard({ onSuccess }: ChangePasswordCardProps) {
                 type={showCurrentPassword ? "text" : "password"}
                 placeholder="Masukkan password saat ini"
                 {...form.register("currentPassword")}
-                className="pr-10"
+                className="pr-10 h-9 text-sm"
               />
               <button
                 type="button"
@@ -119,8 +119,8 @@ export function ChangePasswordCard({ onSuccess }: ChangePasswordCardProps) {
             )}
           </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="newPassword">
+          <div className="space-y-1.5">
+            <Label htmlFor="newPassword" className="text-sm">
               Password Baru <span className="text-destructive">*</span>
             </Label>
             <div className="relative">
@@ -129,7 +129,7 @@ export function ChangePasswordCard({ onSuccess }: ChangePasswordCardProps) {
                 type={showNewPassword ? "text" : "password"}
                 placeholder="Masukkan password baru (minimal 6 karakter)"
                 {...form.register("newPassword")}
-                className="pr-10"
+                className="pr-10 h-9 text-sm"
               />
               <button
                 type="button"
@@ -147,8 +147,8 @@ export function ChangePasswordCard({ onSuccess }: ChangePasswordCardProps) {
             )}
           </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="confirmPassword">
+          <div className="space-y-1.5">
+            <Label htmlFor="confirmPassword" className="text-sm">
               Konfirmasi Password Baru <span className="text-destructive">*</span>
             </Label>
             <div className="relative">
@@ -157,7 +157,7 @@ export function ChangePasswordCard({ onSuccess }: ChangePasswordCardProps) {
                 type={showConfirmPassword ? "text" : "password"}
                 placeholder="Masukkan ulang password baru"
                 {...form.register("confirmPassword")}
-                className="pr-10"
+                className="pr-10 h-9 text-sm"
               />
               <button
                 type="button"
@@ -175,16 +175,16 @@ export function ChangePasswordCard({ onSuccess }: ChangePasswordCardProps) {
             )}
           </div>
 
-          <div className="flex justify-end pt-2">
-            <Button type="submit" disabled={isSubmitting} className="cursor-pointer w-full sm:w-auto">
+          <div className="flex justify-end pt-1">
+            <Button type="submit" disabled={isSubmitting} className="cursor-pointer w-full sm:w-auto h-9 text-sm">
               {isSubmitting ? (
                 <>
-                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  <Loader2 className="h-3.5 w-3.5 mr-2 animate-spin" />
                   Mengubah Password...
                 </>
               ) : (
                 <>
-                  <Lock className="h-4 w-4 mr-2" />
+                  <Lock className="h-3.5 w-3.5 mr-2" />
                   Ubah Password
                 </>
             )}

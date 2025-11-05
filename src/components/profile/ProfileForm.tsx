@@ -12,7 +12,7 @@ import { AvatarUploader } from "@/components/profile/AvatarUploader"
 import { EKTMFullView } from "@/components/profile/EKTMFullView"
 import { showSuccess, showError } from "@/lib/alerts"
 import { ActivityLogger } from "@/lib/activity-logger"
-import { Lock, IdCard, Edit2, Check, X, KeyRound, Upload, Phone, Plus } from "lucide-react"
+import { Lock, IdCard, Edit2, Check, X, KeyRound, Upload, Phone, Plus, Trash2 } from "lucide-react"
 
 // Simple gender detection fallback
 function detectGenderFromNameSimple(name: string): string | null {
@@ -64,6 +64,11 @@ export function ProfileForm({ profile, onSuccess, onChangePassword, onSetPasswor
   const [isEditingPhone, setIsEditingPhone] = useState(false)
   const [isSavingPhone, setIsSavingPhone] = useState(false)
   const [isLoadingPhone, setIsLoadingPhone] = useState(true)
+  
+  // Gender state
+  const [isEditingGender, setIsEditingGender] = useState(false)
+  const [editedGender, setEditedGender] = useState("")
+  const [isSavingGender, setIsSavingGender] = useState(false)
 
   // Check if user has password
   useEffect(() => {
@@ -405,6 +410,41 @@ export function ProfileForm({ profile, onSuccess, onChangePassword, onSetPasswor
     setIsEditing(false)
   }
 
+  const handleSaveGender = async () => {
+    if (!session || !editedGender.trim()) return
+    
+    try {
+      setIsSavingGender(true)
+      
+      const response = await fetch(`/api/profile/${session.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ jenisKelamin: editedGender.trim() })
+      })
+      
+      if (!response.ok) {
+        const errorData = await response.json()
+        throw new Error(errorData.error || 'Failed to update gender')
+      }
+      
+      setIsEditingGender(false)
+      showSuccess("Jenis kelamin berhasil diperbarui")
+      
+      // Reload to show updated data
+      setTimeout(() => window.location.reload(), 1000)
+    } catch (error) {
+      console.error('Gender update error:', error)
+      showError(error instanceof Error ? error.message : "Gagal menyimpan jenis kelamin")
+    } finally {
+      setIsSavingGender(false)
+    }
+  }
+  
+  const handleCancelGenderEdit = () => {
+    setEditedGender(profile?.jenisKelamin || "")
+    setIsEditingGender(false)
+  }
+
   const handleSavePhone = async () => {
     if (!session || !phoneInput.trim()) return
     
@@ -465,6 +505,30 @@ export function ProfileForm({ profile, onSuccess, onChangePassword, onSetPasswor
   const handleCancelPhoneEdit = () => {
     setPhoneInput(phone?.phoneNumber || "")
     setIsEditingPhone(false)
+  }
+  
+  const handleDeletePhone = async () => {
+    if (!session || !phone) return
+    
+    if (!confirm("Yakin ingin menghapus nomor telepon?")) return
+    
+    try {
+      const response = await fetch(`/api/profile/${session.id}/phone?phoneId=${phone.id}`, {
+        method: 'DELETE'
+      })
+      
+      if (!response.ok) {
+        const errorData = await response.json()
+        throw new Error(errorData.error || 'Failed to delete phone')
+      }
+      
+      setPhone(null)
+      setPhoneInput("")
+      showSuccess("Nomor telepon berhasil dihapus")
+    } catch (error) {
+      console.error('Delete phone error:', error)
+      showError(error instanceof Error ? error.message : "Gagal menghapus nomor telepon")
+    }
   }
 
   if (!session) return null
@@ -654,29 +718,83 @@ export function ProfileForm({ profile, onSuccess, onChangePassword, onSetPasswor
 
               <div className="space-y-2">
                 <Label htmlFor="jenisKelamin">Jenis Kelamin</Label>
-                <Input
-                  id="jenisKelamin"
-                  value={(() => {
-                    // Priority 1: Database value
-                    if (profile?.jenisKelamin) return profile.jenisKelamin
-                    
-                    // Priority 2: Detect from name as fallback
-                    if (session?.name) {
-                      const detected = detectGenderFromNameSimple(session.name)
-                      if (detected) return `${detected} (terdeteksi)`
-                    }
-                    
-                    return "-"
-                  })()}
-                  disabled
-                  className="bg-muted"
-                />
+                <div className="flex gap-2">
+                  {!isEditingGender ? (
+                    <>
+                      <Input
+                        id="jenisKelamin"
+                        value={(() => {
+                          // Priority 1: Database value
+                          if (profile?.jenisKelamin) return profile.jenisKelamin
+                          
+                          // Priority 2: Detect from name as fallback (without "(terdeteksi)")
+                          if (session?.name) {
+                            const detected = detectGenderFromNameSimple(session.name)
+                            if (detected) return detected
+                          }
+                          
+                          return "-"
+                        })()}
+                        disabled
+                        className="bg-muted"
+                      />
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="icon"
+                        onClick={() => {
+                          const currentGender = profile?.jenisKelamin || 
+                            (session?.name ? detectGenderFromNameSimple(session.name) : "") || ""
+                          setEditedGender(currentGender)
+                          setIsEditingGender(true)
+                        }}
+                      >
+                        <Edit2 className="h-4 w-4" />
+                      </Button>
+                    </>
+                  ) : (
+                    <>
+                      <select
+                        value={editedGender}
+                        onChange={(e) => setEditedGender(e.target.value)}
+                        disabled={isSavingGender}
+                        className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                      >
+                        <option value="">Pilih Jenis Kelamin</option>
+                        <option value="Laki - Laki">Laki - Laki</option>
+                        <option value="Perempuan">Perempuan</option>
+                      </select>
+                      <Button
+                        type="button"
+                        variant="default"
+                        size="icon"
+                        onClick={handleSaveGender}
+                        disabled={isSavingGender || !editedGender}
+                      >
+                        <Check className="h-4 w-4" />
+                      </Button>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="icon"
+                        onClick={handleCancelGenderEdit}
+                        disabled={isSavingGender}
+                      >
+                        <X className="h-4 w-4" />
+                      </Button>
+                    </>
+                  )}
+                </div>
                 <p className="text-xs text-muted-foreground">
-                  {profile?.jenisKelamin 
-                    ? "Data dari multi-source (PDDIKTI/pd-unesa)" 
-                    : session?.name && detectGenderFromNameSimple(session.name)
-                    ? "Terdeteksi otomatis dari nama"
-                    : "Menunggu sinkronisasi data..."}
+                  {!isEditingGender ? (
+                    profile?.jenisKelamin 
+                      ? "Data dari multi-source (PDDIKTI/pd-unesa)" 
+                      : session?.name && detectGenderFromNameSimple(session.name)
+                      ? "Terdeteksi otomatis dari nama"
+                      : "Klik ikon edit untuk mengatur jenis kelamin"
+                  ) : (
+                    "Pilih jenis kelamin dan klik centang untuk menyimpan"
+                  )}
                 </p>
               </div>
 
@@ -712,15 +830,27 @@ export function ProfileForm({ profile, onSuccess, onChangePassword, onSetPasswor
                         <Phone className="h-4 w-4 text-muted-foreground" />
                         <p className="font-medium">{phone.phoneNumber}</p>
                       </div>
-                      <Button
-                        type="button"
-                        variant="outline"
-                        size="sm"
-                        onClick={() => setIsEditingPhone(true)}
-                      >
-                        <Edit2 className="h-4 w-4 mr-2" />
-                        Edit
-                      </Button>
+                      <div className="flex gap-2">
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          onClick={() => setIsEditingPhone(true)}
+                        >
+                          <Edit2 className="h-4 w-4 mr-2" />
+                          Edit
+                        </Button>
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          onClick={handleDeletePhone}
+                          className="text-destructive hover:text-destructive"
+                        >
+                          <Trash2 className="h-4 w-4 mr-2" />
+                          Hapus
+                        </Button>
+                      </div>
                     </div>
                   ) : (
                     // Edit/Add mode
