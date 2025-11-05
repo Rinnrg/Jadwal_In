@@ -87,14 +87,14 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Always try to fetch additional data from pd-unesa.unesa.ac.id if data is missing
+    // Always try to fetch additional data using multi-source strategy if data is missing
     let mahasiswaInfo = null
     if (needsDataUpdate || needsNimUpdate) {
       try {
-        const { cariDataMahasiswa } = await import('@/lib/unesa-scraper')
-        console.log('🔍 Fetching data from pd-unesa for NIM:', nimToUse)
-        mahasiswaInfo = await cariDataMahasiswa(nimToUse)
-        console.log('✅ Fetched mahasiswa info from pd-unesa:', mahasiswaInfo)
+        const { getMahasiswaDataMultiSource } = await import('@/lib/unesa-scraper')
+        console.log('🔍 Fetching data using multi-source strategy for NIM:', nimToUse)
+        mahasiswaInfo = await getMahasiswaDataMultiSource(nimToUse, user.name)
+        console.log('✅ Fetched mahasiswa info from multi-source:', mahasiswaInfo)
         
         if (mahasiswaInfo) {
           console.log('📊 Mahasiswa data details:')

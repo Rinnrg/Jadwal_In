@@ -12,7 +12,7 @@ import { AvatarUploader } from "@/components/profile/AvatarUploader"
 import { EKTMFullView } from "@/components/profile/EKTMFullView"
 import { showSuccess, showError } from "@/lib/alerts"
 import { ActivityLogger } from "@/lib/activity-logger"
-import { Lock, IdCard, Edit2, Check, X, KeyRound, Upload, Phone, Plus, Trash2, RefreshCw } from "lucide-react"
+import { Lock, IdCard, Edit2, Check, X, KeyRound, Upload, Phone, Plus } from "lucide-react"
 
 interface ProfileFormProps {
   profile?: any // API returns extended profile with User fields (nim, angkatan, avatarUrl)
@@ -32,12 +32,12 @@ export function ProfileForm({ profile, onSuccess, onChangePassword, onSetPasswor
   const [isCheckingPassword, setIsCheckingPassword] = useState(true)
   const fileInputRef = useRef<HTMLInputElement>(null)
   
-  // Phone state
-  const [phones, setPhones] = useState<Array<{id: string, phoneNumber: string, isPrimary: boolean}>>([])
-  const [newPhone, setNewPhone] = useState("")
-  const [isAddingPhone, setIsAddingPhone] = useState(false)
-  const [isLoadingPhones, setIsLoadingPhones] = useState(true)
-  const [isSyncing, setIsSyncing] = useState(false)
+  // Phone state - single phone only
+  const [phone, setPhone] = useState<{id: string, phoneNumber: string} | null>(null)
+  const [phoneInput, setPhoneInput] = useState("")
+  const [isEditingPhone, setIsEditingPhone] = useState(false)
+  const [isSavingPhone, setIsSavingPhone] = useState(false)
+  const [isLoadingPhone, setIsLoadingPhone] = useState(true)
 
   // Check if user has password
   useEffect(() => {
@@ -60,26 +60,35 @@ export function ProfileForm({ profile, onSuccess, onChangePassword, onSetPasswor
     checkPassword()
   }, [session])
 
-  // Fetch phones
+  // Fetch phone (single)
   useEffect(() => {
-    const fetchPhones = async () => {
+    const fetchPhone = async () => {
       if (!session) return
       
       try {
-        setIsLoadingPhones(true)
+        setIsLoadingPhone(true)
         const response = await fetch(`/api/profile/${session.id}/phone`)
         if (response.ok) {
           const data = await response.json()
-          setPhones(data.phones || [])
+          // Get first phone (primary or first in list)
+          const phones = data.phones || []
+          if (phones.length > 0) {
+            const primaryPhone = phones.find((p: any) => p.isPrimary) || phones[0]
+            setPhone({
+              id: primaryPhone.id,
+              phoneNumber: primaryPhone.phoneNumber
+            })
+            setPhoneInput(primaryPhone.phoneNumber)
+          }
         }
       } catch (error) {
-        console.error('Error fetching phones:', error)
+        console.error('Error fetching phone:', error)
       } finally {
-        setIsLoadingPhones(false)
+        setIsLoadingPhone(false)
       }
     }
     
-    fetchPhones()
+    fetchPhone()
   }, [session])
 
   // Auto-sync data from pd-unesa when profile loads
@@ -361,126 +370,66 @@ export function ProfileForm({ profile, onSuccess, onChangePassword, onSetPasswor
     setIsEditing(false)
   }
 
-  const handleAddPhone = async () => {
-    if (!session || !newPhone.trim()) return
+  const handleSavePhone = async () => {
+    if (!session || !phoneInput.trim()) return
     
     try {
-      setIsAddingPhone(true)
-      const response = await fetch(`/api/profile/${session.id}/phone`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ 
-          phoneNumber: newPhone.trim(),
-          isPrimary: phones.length === 0 // First phone is primary
+      setIsSavingPhone(true)
+      
+      if (phone) {
+        // Update existing phone
+        const response = await fetch(`/api/profile/${session.id}/phone`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ 
+            phoneId: phone.id, 
+            phoneNumber: phoneInput.trim() 
+          })
         })
-      })
-      
-      if (!response.ok) {
-        const errorData = await response.json()
-        throw new Error(errorData.error || 'Failed to add phone')
-      }
-      
-      const data = await response.json()
-      setPhones([...phones, data.phone])
-      setNewPhone("")
-      showSuccess("Nomor telepon berhasil ditambahkan")
-    } catch (error) {
-      console.error('Add phone error:', error)
-      showError(error instanceof Error ? error.message : "Gagal menambahkan nomor telepon")
-    } finally {
-      setIsAddingPhone(false)
-    }
-  }
-
-  const handleDeletePhone = async (phoneId: string) => {
-    if (!session) return
-    
-    try {
-      const response = await fetch(`/api/profile/${session.id}/phone?phoneId=${phoneId}`, {
-        method: 'DELETE'
-      })
-      
-      if (!response.ok) {
-        const errorData = await response.json()
-        throw new Error(errorData.error || 'Failed to delete phone')
-      }
-      
-      setPhones(phones.filter(p => p.id !== phoneId))
-      showSuccess("Nomor telepon berhasil dihapus")
-    } catch (error) {
-      console.error('Delete phone error:', error)
-      showError(error instanceof Error ? error.message : "Gagal menghapus nomor telepon")
-    }
-  }
-
-  const handleSetPrimary = async (phoneId: string) => {
-    if (!session) return
-    
-    try {
-      const response = await fetch(`/api/profile/${session.id}/phone`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ phoneId, isPrimary: true })
-      })
-      
-      if (!response.ok) {
-        const errorData = await response.json()
-        throw new Error(errorData.error || 'Failed to update phone')
-      }
-      
-      // Update local state
-      setPhones(phones.map(p => ({
-        ...p,
-        isPrimary: p.id === phoneId
-      })))
-      showSuccess("Nomor telepon utama berhasil diubah")
-    } catch (error) {
-      console.error('Update phone error:', error)
-      showError(error instanceof Error ? error.message : "Gagal mengubah nomor telepon utama")
-    }
-  }
-
-  const handleManualSync = async () => {
-    if (!session || session.role !== 'mahasiswa') return
-    
-    try {
-      setIsSyncing(true)
-      console.log('[ProfileForm] Manual sync triggered')
-      
-      const response = await fetch('/api/profile/sync-nim', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          userId: session.id,
-          email: session.email
-        })
-      })
-      
-      if (response.ok) {
-        const data = await response.json()
-        console.log('[ProfileForm] Sync response:', data)
         
-        if (data.updated) {
-          showSuccess("Data berhasil disinkronkan dari pd-unesa.unesa.ac.id")
-          // Reload page to show updated data
-          setTimeout(() => {
-            window.location.reload()
-          }, 1000)
-        } else if (data.message) {
-          showSuccess(data.message)
-        } else {
-          showError("Tidak ada data baru untuk disinkronkan")
+        if (!response.ok) {
+          const errorData = await response.json()
+          throw new Error(errorData.error || 'Failed to update phone')
         }
+        
+        setPhone({ id: phone.id, phoneNumber: phoneInput.trim() })
+        showSuccess("Nomor telepon berhasil diperbarui")
       } else {
-        const errorData = await response.json()
-        throw new Error(errorData.error || 'Failed to sync data')
+        // Add new phone
+        const response = await fetch(`/api/profile/${session.id}/phone`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ 
+            phoneNumber: phoneInput.trim(),
+            isPrimary: true
+          })
+        })
+        
+        if (!response.ok) {
+          const errorData = await response.json()
+          throw new Error(errorData.error || 'Failed to add phone')
+        }
+        
+        const data = await response.json()
+        setPhone({
+          id: data.phone.id,
+          phoneNumber: data.phone.phoneNumber
+        })
+        showSuccess("Nomor telepon berhasil ditambahkan")
       }
+      
+      setIsEditingPhone(false)
     } catch (error) {
-      console.error('[ProfileForm] Manual sync error:', error)
-      showError(error instanceof Error ? error.message : "Gagal menyinkronkan data")
+      console.error('Save phone error:', error)
+      showError(error instanceof Error ? error.message : "Gagal menyimpan nomor telepon")
     } finally {
-      setIsSyncing(false)
+      setIsSavingPhone(false)
     }
+  }
+
+  const handleCancelPhoneEdit = () => {
+    setPhoneInput(phone?.phoneNumber || "")
+    setIsEditingPhone(false)
   }
 
   if (!session) return null
@@ -695,102 +644,82 @@ export function ProfileForm({ profile, onSuccess, onChangePassword, onSetPasswor
               )}
             </div>
 
-            {/* Manual Sync Button for Mahasiswa */}
-            {session.role === "mahasiswa" && (!profile?.jenisKelamin || !profile?.prodi || !profile?.semesterAwal) && (
-              <div className="flex items-start gap-2 p-3 bg-blue-50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-800 rounded-md">
-                <div className="flex-1">
-                  <p className="text-sm font-semibold text-blue-800 dark:text-blue-200 mb-1">
-                    Data Belum Lengkap
-                  </p>
-                  <p className="text-xs text-blue-700 dark:text-blue-300 mb-2">
-                    Beberapa data profil masih kosong. Klik tombol di bawah untuk menyinkronkan data dari pd-unesa.unesa.ac.id
-                  </p>
-                  <Button
-                    type="button"
-                    variant="default"
-                    size="sm"
-                    onClick={handleManualSync}
-                    disabled={isSyncing}
-                    className="bg-blue-600 hover:bg-blue-700 text-white"
-                  >
-                    {isSyncing ? "Menyinkronkan..." : "Sinkronkan Data dari UNESA"}
-                  </Button>
-                </div>
-              </div>
-            )}
-
-            {/* Phone Numbers Section - Integrated */}
+            {/* Phone Number Section - Single Phone with Edit */}
             <div className="pt-4 border-t">
               <div className="mb-3">
                 <Label className="text-base">Nomor Telepon</Label>
-                <p className="text-xs text-muted-foreground mt-1">Tambah dan kelola nomor telepon Anda</p>
+                <p className="text-xs text-muted-foreground mt-1">Nomor telepon untuk dihubungi</p>
               </div>
               
-              {/* Add Phone */}
-              <div className="flex gap-2 mb-3">
-                <Input
-                  placeholder="Contoh: 081234567890"
-                  value={newPhone}
-                  onChange={(e) => setNewPhone(e.target.value)}
-                  disabled={isAddingPhone}
-                />
-                <Button
-                  type="button"
-                  onClick={handleAddPhone}
-                  disabled={isAddingPhone || !newPhone.trim()}
-                  size="sm"
-                >
-                  <Plus className="h-4 w-4 mr-2" />
-                  Tambah
-                </Button>
-              </div>
-
-              {/* Phone List */}
-              {isLoadingPhones ? (
+              {isLoadingPhone ? (
                 <div className="text-sm text-muted-foreground">Memuat nomor telepon...</div>
-              ) : phones.length === 0 ? (
-                <div className="text-sm text-muted-foreground">Belum ada nomor telepon</div>
               ) : (
-                <div className="space-y-2">
-                  {phones.map((phone) => (
-                    <div
-                      key={phone.id}
-                      className="flex items-center justify-between p-3 border rounded-lg bg-muted/30"
-                    >
+                <div className="space-y-2 mb-4">
+                  {!isEditingPhone && phone ? (
+                    // Display mode
+                    <div className="flex items-center justify-between p-3 border rounded-lg bg-muted/30">
                       <div className="flex items-center gap-3">
                         <Phone className="h-4 w-4 text-muted-foreground" />
-                        <div>
-                          <p className="font-medium">{phone.phoneNumber}</p>
-                          {phone.isPrimary && (
-                            <p className="text-xs text-blue-600 dark:text-blue-400">
-                              Nomor Utama
-                            </p>
-                          )}
-                        </div>
+                        <p className="font-medium">{phone.phoneNumber}</p>
                       </div>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setIsEditingPhone(true)}
+                      >
+                        <Edit2 className="h-4 w-4 mr-2" />
+                        Edit
+                      </Button>
+                    </div>
+                  ) : (
+                    // Edit/Add mode
+                    <div className="space-y-2">
                       <div className="flex gap-2">
-                        {!phone.isPrimary && (
+                        <Input
+                          placeholder="Contoh: 081234567890"
+                          value={phoneInput}
+                          onChange={(e) => setPhoneInput(e.target.value)}
+                          disabled={isSavingPhone}
+                        />
+                        <Button
+                          type="button"
+                          variant="default"
+                          size="icon"
+                          onClick={handleSavePhone}
+                          disabled={isSavingPhone || !phoneInput.trim()}
+                        >
+                          <Check className="h-4 w-4" />
+                        </Button>
+                        {phone && (
                           <Button
                             type="button"
                             variant="outline"
-                            size="sm"
-                            onClick={() => handleSetPrimary(phone.id)}
+                            size="icon"
+                            onClick={handleCancelPhoneEdit}
+                            disabled={isSavingPhone}
                           >
-                            Jadikan Utama
+                            <X className="h-4 w-4" />
                           </Button>
                         )}
-                        <Button
-                          type="button"
-                          variant="outline"
-                          size="icon"
-                          onClick={() => handleDeletePhone(phone.id)}
-                          className="text-destructive hover:text-destructive h-8 w-8"
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
                       </div>
+                      <p className="text-xs text-muted-foreground">
+                        {phone ? 'Ubah nomor telepon Anda' : 'Tambahkan nomor telepon'}
+                      </p>
                     </div>
-                  ))}
+                  )}
+                  
+                  {!phone && !isEditingPhone && (
+                    <Button
+                      type="button"
+                      variant="outline"
+                      className="w-full"
+                      onClick={() => setIsEditingPhone(true)}
+                    >
+                      <Plus className="h-4 w-4 mr-2" />
+                      Tambah Nomor Telepon
+                    </Button>
+                  )}
                 </div>
               )}
             </div>

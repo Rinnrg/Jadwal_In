@@ -1,5 +1,10 @@
 // lib/unesa-scraper.ts
-// Scraper untuk mengambil data dari cv.unesa.ac.id dan pd-unesa.unesa.ac.id
+// Multi-source scraper untuk mengambil data mahasiswa dan dosen
+// Sources: 1) PDDIKTI API, 2) pd-unesa.unesa.ac.id, 3) Local Database, 4) Gender Detection
+
+import { searchMahasiswaByNIM, searchMahasiswaByName, filterUNESAStudents } from './pddikti-api'
+import { getProdiFromNIM, getFakultasFromNIM, getAngkatanFromNIM, validateNIM as validateNIMFormat } from './unesa-database'
+import { detectGenderFromName, getGenderConfidence } from './gender-detector'
 
 interface DosenInfo {
   nip: string | null;
@@ -723,4 +728,147 @@ export async function cariDataMahasiswa(identifier: string): Promise<MahasiswaIn
  */
 export function validateNIM(nim: string): boolean {
   return /^\d{8,}$/.test(nim);
+}
+
+/**
+ * Multi-source mahasiswa data fetcher
+ * Strategy: 1) PDDIKTI API, 2) pd-unesa scraper, 3) Local DB + Gender detection
+ * @param identifier - NIM or name
+ * @param name - Optional name for gender detection
+ * @returns MahasiswaInfo with combined data from multiple sources
+ */
+export async function getMahasiswaDataMultiSource(
+  identifier: string,
+  name?: string
+): Promise<MahasiswaInfo | null> {
+  console.log(`🎯 [MULTI-SOURCE] Starting data fetch for: ${identifier}`)
+  
+  let result: MahasiswaInfo | null = null
+  const isNIM = /^\d{8,}$/.test(identifier)
+  
+  // Source 1: Try PDDIKTI API first (most reliable)
+  try {
+    console.log(`🔄 [MULTI-SOURCE] Trying PDDIKTI API...`)
+    
+    if (isNIM) {
+      const pddiktiData = await searchMahasiswaByNIM(identifier)
+      if (pddiktiData) {
+        console.log(`✅ [MULTI-SOURCE] Found data from PDDIKTI`)
+        result = {
+          nim: pddiktiData.nim,
+          nama: pddiktiData.nama,
+          prodi: pddiktiData.prodi,
+          fakultas: pddiktiData.fakultas,
+          angkatan: pddiktiData.tanggal_masuk ? pddiktiData.tanggal_masuk.substring(0, 4) : null,
+          status: pddiktiData.status,
+          jenisKelamin: null, // Will be filled by gender detection
+          semesterAwal: pddiktiData.tanggal_masuk || null,
+        }
+      }
+    } else if (name) {
+      const pddiktiResults = await searchMahasiswaByName(name)
+      const unesaStudents = filterUNESAStudents(pddiktiResults)
+      
+      if (unesaStudents.length > 0) {
+        const pddiktiData = unesaStudents[0]
+        console.log(`✅ [MULTI-SOURCE] Found data from PDDIKTI by name`)
+        result = {
+          nim: pddiktiData.nim,
+          nama: pddiktiData.nama,
+          prodi: pddiktiData.prodi,
+          fakultas: pddiktiData.fakultas,
+          angkatan: pddiktiData.tanggal_masuk ? pddiktiData.tanggal_masuk.substring(0, 4) : null,
+          status: pddiktiData.status,
+          jenisKelamin: null,
+          semesterAwal: pddiktiData.tanggal_masuk || null,
+        }
+      }
+    }
+  } catch (error) {
+    console.warn(`⚠️ [MULTI-SOURCE] PDDIKTI API failed:`, error)
+  }
+  
+  // Source 2: Try pd-unesa scraper if PDDIKTI failed or data incomplete
+  if (!result || !result.jenisKelamin || !result.semesterAwal) {
+    try {
+      console.log(`🔄 [MULTI-SOURCE] Trying pd-unesa scraper...`)
+      const pdUnesaData = await cariDataMahasiswa(identifier)
+      
+      if (pdUnesaData) {
+        console.log(`✅ [MULTI-SOURCE] Found data from pd-unesa`)
+        
+        if (!result) {
+          result = pdUnesaData
+        } else {
+          // Merge data - prefer pd-unesa for specific fields
+          if (pdUnesaData.jenisKelamin) result.jenisKelamin = pdUnesaData.jenisKelamin
+          if (pdUnesaData.semesterAwal) result.semesterAwal = pdUnesaData.semesterAwal
+          if (pdUnesaData.prodi && !result.prodi) result.prodi = pdUnesaData.prodi
+          if (pdUnesaData.fakultas && !result.fakultas) result.fakultas = pdUnesaData.fakultas
+        }
+      }
+    } catch (error) {
+      console.warn(`⚠️ [MULTI-SOURCE] pd-unesa scraper failed:`, error)
+    }
+  }
+  
+  // Source 3: Use local database for prodi/fakultas if still missing
+  if (result && result.nim && (!result.prodi || !result.fakultas)) {
+    console.log(`🔄 [MULTI-SOURCE] Using local database for prodi/fakultas...`)
+    
+    const prodiInfo = getProdiFromNIM(result.nim)
+    const fakultasInfo = getFakultasFromNIM(result.nim)
+    
+    if (prodiInfo && !result.prodi) {
+      result.prodi = `${prodiInfo.jenjang} ${prodiInfo.nama}`
+      console.log(`✅ [MULTI-SOURCE] Prodi from local DB: ${result.prodi}`)
+    }
+    
+    if (fakultasInfo && !result.fakultas) {
+      result.fakultas = fakultasInfo.nama
+      console.log(`✅ [MULTI-SOURCE] Fakultas from local DB: ${result.fakultas}`)
+    }
+  }
+  
+  // Source 4: Gender detection from name if still missing
+  if (result && !result.jenisKelamin) {
+    const nameForDetection = result.nama || name
+    if (nameForDetection) {
+      console.log(`🔄 [MULTI-SOURCE] Detecting gender from name...`)
+      const detectedGender = detectGenderFromName(nameForDetection)
+      const confidence = getGenderConfidence(nameForDetection)
+      
+      if (detectedGender && confidence > 50) {
+        result.jenisKelamin = detectedGender
+        console.log(`✅ [MULTI-SOURCE] Gender detected: ${detectedGender} (confidence: ${confidence}%)`)
+      } else {
+        console.log(`⚠️ [MULTI-SOURCE] Gender detection confidence too low: ${confidence}%`)
+      }
+    }
+  }
+  
+  // Fill angkatan from NIM if missing
+  if (result && result.nim && !result.angkatan) {
+    const angkatan = getAngkatanFromNIM(result.nim)
+    if (angkatan) {
+      result.angkatan = angkatan.toString()
+      console.log(`✅ [MULTI-SOURCE] Angkatan from NIM: ${result.angkatan}`)
+    }
+  }
+  
+  if (result) {
+    console.log(`🎉 [MULTI-SOURCE] Final result:`, {
+      nim: result.nim,
+      nama: result.nama,
+      prodi: result.prodi,
+      fakultas: result.fakultas,
+      angkatan: result.angkatan,
+      jenisKelamin: result.jenisKelamin,
+      semesterAwal: result.semesterAwal,
+    })
+  } else {
+    console.log(`❌ [MULTI-SOURCE] No data found from any source`)
+  }
+  
+  return result
 }
