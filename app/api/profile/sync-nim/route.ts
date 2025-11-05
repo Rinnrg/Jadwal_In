@@ -123,24 +123,38 @@ export async function POST(request: NextRequest) {
     
     // Update other fields from scraper - ALWAYS UPDATE if scraper has data (force update for accuracy)
     if (mahasiswaInfo) {
+      console.log('🔄 Comparing data for updates...')
+      
       if (mahasiswaInfo.prodi) {
         // Always update prodi if scraper has data (for correcting old wrong data)
         if (user.prodi !== mahasiswaInfo.prodi) {
           updateData.prodi = mahasiswaInfo.prodi
-          console.log('📝 Updating Prodi:', user.prodi, '→', mahasiswaInfo.prodi)
+          console.log('📝 UPDATING Prodi:', user.prodi || '(empty)', '→', mahasiswaInfo.prodi)
+        } else {
+          console.log('✓ Prodi unchanged:', user.prodi)
         }
       }
+      
       if (mahasiswaInfo.jenisKelamin) {
         // Always update gender if scraper has data (for correcting old wrong data)
         if (user.jenisKelamin !== mahasiswaInfo.jenisKelamin) {
           updateData.jenisKelamin = mahasiswaInfo.jenisKelamin
-          console.log('📝 Updating Jenis Kelamin:', user.jenisKelamin, '→', mahasiswaInfo.jenisKelamin)
+          console.log('📝 UPDATING Jenis Kelamin:', user.jenisKelamin || '(empty)', '→', mahasiswaInfo.jenisKelamin)
+        } else {
+          console.log('✓ Jenis Kelamin unchanged:', user.jenisKelamin)
         }
       }
-      if (mahasiswaInfo.semesterAwal && !user.semesterAwal) {
-        updateData.semesterAwal = mahasiswaInfo.semesterAwal
-        console.log('📝 Updating Semester Awal:', mahasiswaInfo.semesterAwal)
+      
+      if (mahasiswaInfo.semesterAwal) {
+        // Always update if different or empty
+        if (user.semesterAwal !== mahasiswaInfo.semesterAwal) {
+          updateData.semesterAwal = mahasiswaInfo.semesterAwal
+          console.log('📝 UPDATING Semester Awal:', user.semesterAwal || '(empty)', '→', mahasiswaInfo.semesterAwal)
+        } else {
+          console.log('✓ Semester Awal unchanged:', user.semesterAwal)
+        }
       }
+      
       if (mahasiswaInfo.angkatan) {
         // Convert angkatan from string to number
         const angkatanNum = typeof mahasiswaInfo.angkatan === 'string' 
@@ -149,9 +163,15 @@ export async function POST(request: NextRequest) {
         // Always update if different (for correcting old wrong data)
         if (user.angkatan !== angkatanNum) {
           updateData.angkatan = angkatanNum
-          console.log('📝 Updating Angkatan:', user.angkatan, '→', angkatanNum)
+          console.log('📝 UPDATING Angkatan:', user.angkatan, '→', angkatanNum)
+        } else {
+          console.log('✓ Angkatan unchanged:', user.angkatan)
         }
       }
+      
+      console.log('📦 Total fields to update:', Object.keys(updateData).length)
+    } else {
+      console.log('⚠️ No mahasiswa info from scraper, skipping field updates')
     }
 
     // Only update if there's something to update

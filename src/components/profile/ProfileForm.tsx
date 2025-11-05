@@ -12,7 +12,7 @@ import { AvatarUploader } from "@/components/profile/AvatarUploader"
 import { EKTMFullView } from "@/components/profile/EKTMFullView"
 import { showSuccess, showError } from "@/lib/alerts"
 import { ActivityLogger } from "@/lib/activity-logger"
-import { Lock, IdCard, Edit2, Check, X, KeyRound, Upload, Phone, Plus, Trash2, Loader2 } from "lucide-react"
+import { Lock, IdCard, Edit2, Check, X, KeyRound, Upload, Phone, Plus, Trash2 } from "lucide-react"
 
 // Simple gender detection fallback
 function detectGenderFromNameSimple(name: string): string | null {
@@ -69,9 +69,6 @@ export function ProfileForm({ profile, onSuccess, onChangePassword, onSetPasswor
   const [isEditingGender, setIsEditingGender] = useState(false)
   const [editedGender, setEditedGender] = useState("")
   const [isSavingGender, setIsSavingGender] = useState(false)
-  
-  // Force refresh data state
-  const [isRefreshingData, setIsRefreshingData] = useState(false)
 
   // Check if user has password
   useEffect(() => {
@@ -125,58 +122,49 @@ export function ProfileForm({ profile, onSuccess, onChangePassword, onSetPasswor
     fetchPhone()
   }, [session])
 
-  // Auto-sync data from multi-source when profile loads
+  // Auto-sync data from multi-source when profile loads - ALWAYS RUN for accuracy
   useEffect(() => {
     const syncData = async () => {
       if (!session || session.role !== 'mahasiswa') return
       
-      // Always check if critical data is missing
-      const needsSync = 
-        !profile?.jenisKelamin ||
-        !profile?.prodi ||
-        !profile?.semesterAwal
-      
-      if (needsSync) {
-        try {
-          console.log('[ProfileForm] Auto-syncing data using multi-source for:', session.email)
-          const response = await fetch('/api/profile/sync-nim', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              userId: session.id,
-              email: session.email
-            })
+      // ALWAYS sync to ensure data is up-to-date (even if data exists)
+      try {
+        console.log('[ProfileForm] Auto-syncing data using multi-source for:', session.email)
+        const response = await fetch('/api/profile/sync-nim', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            userId: session.id,
+            email: session.email
           })
+        })
+        
+        if (response.ok) {
+          const data = await response.json()
+          console.log('[ProfileForm] Sync response:', data)
           
-          if (response.ok) {
-            const data = await response.json()
-            console.log('[ProfileForm] Sync response:', data)
-            
-            // Reload if we got any new data
-            if (data.updated || data.jenisKelamin || data.prodi || data.semesterAwal) {
-              console.log('[ProfileForm] New data received, reloading...')
-              setTimeout(() => {
-                window.location.reload()
-              }, 1500)
-            } else {
-              console.log('[ProfileForm] No new data from sync')
-            }
+          // Reload if we got any new data
+          if (data.updated) {
+            console.log('[ProfileForm] Data updated, reloading in 1.5s...')
+            setTimeout(() => {
+              window.location.reload()
+            }, 1500)
           } else {
-            const errorData = await response.json()
-            console.error('[ProfileForm] Sync failed:', errorData)
+            console.log('[ProfileForm] Data already up-to-date')
           }
-        } catch (error) {
-          console.error('[ProfileForm] Error syncing data:', error)
+        } else {
+          const errorData = await response.json()
+          console.error('[ProfileForm] Sync failed:', errorData)
         }
-      } else {
-        console.log('[ProfileForm] All critical data present, no sync needed')
+      } catch (error) {
+        console.error('[ProfileForm] Error syncing data:', error)
       }
     }
     
     // Run sync after component mounts
     const timer = setTimeout(syncData, 500)
     return () => clearTimeout(timer)
-  }, [session, profile?.jenisKelamin, profile?.prodi, profile?.semesterAwal])
+  }, [session])
 
   // Helper untuk extract NIM dari email
   const getNIMFromEmail = (email: string): string | undefined => {
@@ -533,47 +521,6 @@ export function ProfileForm({ profile, onSuccess, onChangePassword, onSetPasswor
       showError(error instanceof Error ? error.message : "Gagal menghapus nomor telepon")
     }
   }
-  
-  const handleForceRefreshData = async () => {
-    if (!session || session.role !== 'mahasiswa') return
-    
-    if (!confirm("Perbarui data dari pd-unesa.unesa.ac.id? Ini akan memperbarui data Prodi, Jenis Kelamin, dan Angkatan Anda.")) return
-    
-    try {
-      setIsRefreshingData(true)
-      console.log('[ProfileForm] Force refreshing data for:', session.email)
-      
-      const response = await fetch('/api/profile/sync-nim', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          userId: session.id,
-          email: session.email
-        })
-      })
-      
-      if (response.ok) {
-        const data = await response.json()
-        console.log('[ProfileForm] Force refresh response:', data)
-        
-        showSuccess("Data berhasil diperbarui dari pd-unesa.unesa.ac.id")
-        
-        // Reload page after 1.5 seconds
-        setTimeout(() => {
-          window.location.reload()
-        }, 1500)
-      } else {
-        const errorData = await response.json()
-        console.error('[ProfileForm] Force refresh failed:', errorData)
-        showError(errorData.error || "Gagal memperbarui data")
-      }
-    } catch (error) {
-      console.error('[ProfileForm] Error force refreshing data:', error)
-      showError("Terjadi kesalahan saat memperbarui data")
-    } finally {
-      setIsRefreshingData(false)
-    }
-  }
 
   if (!session) return null
 
@@ -644,34 +591,8 @@ export function ProfileForm({ profile, onSuccess, onChangePassword, onSetPasswor
 
       <Card className="lg:col-span-2">
         <CardHeader>
-          <div className="flex items-start justify-between">
-            <div>
-              <CardTitle>Informasi Profil</CardTitle>
-              <CardDescription>Kelola informasi pribadi Anda</CardDescription>
-            </div>
-            {session.role === "mahasiswa" && (
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                onClick={handleForceRefreshData}
-                disabled={isRefreshingData}
-                className="shrink-0"
-              >
-                {isRefreshingData ? (
-                  <>
-                    <Loader2 className="h-3.5 w-3.5 mr-2 animate-spin" />
-                    Memperbarui...
-                  </>
-                ) : (
-                  <>
-                    <KeyRound className="h-3.5 w-3.5 mr-2" />
-                    Perbarui Data
-                  </>
-                )}
-              </Button>
-            )}
-          </div>
+          <CardTitle>Informasi Profil</CardTitle>
+          <CardDescription>Kelola informasi pribadi Anda</CardDescription>
         </CardHeader>
         <CardContent>
           <div className="space-y-4">

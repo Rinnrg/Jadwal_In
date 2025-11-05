@@ -856,6 +856,42 @@ export async function getMahasiswaDataMultiSource(
     }
   }
   
+  // Source 5: Try alternative scraping methods if still incomplete
+  if (!result || !result.jenisKelamin || !result.prodi || !result.semesterAwal) {
+    console.log(`🔄 [MULTI-SOURCE] Trying alternative scraping methods...`)
+    
+    try {
+      const { getAllMethodsMahasiswaData } = await import('./alternative-scrapers')
+      const altData = await getAllMethodsMahasiswaData(identifier, name || '')
+      
+      if (altData) {
+        console.log(`✅ [MULTI-SOURCE] Got data from alternative methods`)
+        
+        if (!result) {
+          result = {
+            nim: altData.nim || null,
+            nama: altData.nama || null,
+            prodi: altData.prodi || null,
+            fakultas: altData.fakultas || null,
+            angkatan: altData.angkatan || null,
+            status: null,
+            jenisKelamin: altData.jenisKelamin || null,
+            semesterAwal: altData.semesterAwal || null,
+          }
+        } else {
+          // Merge with existing result
+          if (altData.jenisKelamin && !result.jenisKelamin) result.jenisKelamin = altData.jenisKelamin
+          if (altData.prodi && !result.prodi) result.prodi = altData.prodi
+          if (altData.fakultas && !result.fakultas) result.fakultas = altData.fakultas
+          if (altData.semesterAwal && !result.semesterAwal) result.semesterAwal = altData.semesterAwal
+          if (altData.angkatan && !result.angkatan) result.angkatan = altData.angkatan
+        }
+      }
+    } catch (error) {
+      console.warn(`⚠️ [MULTI-SOURCE] Alternative methods failed:`, error)
+    }
+  }
+  
   if (result) {
     console.log(`🎉 [MULTI-SOURCE] Final result:`, {
       nim: result.nim,
