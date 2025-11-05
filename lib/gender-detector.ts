@@ -1,44 +1,54 @@
 // lib/gender-detector.ts
 // Gender detection dari nama Indonesia
 
-// Nama-nama umum laki-laki Indonesia
+// Nama-nama umum laki-laki Indonesia (EXTENDED)
 const MALE_NAMES = new Set([
-  'ahmad', 'muhammad', 'agus', 'budi', 'andi', 'dedi', 'hendra', 'rudi', 'joko',
-  'sugeng', 'bambang', 'wahyu', 'imam', 'irwan', 'yudi', 'rizki', 'reza', 'fahmi',
+  // Very common male names
+  'ahmad', 'muhammad', 'mohammad', 'achmad', 'agus', 'budi', 'andi', 'andri', 'dedi', 'hendra', 'rudi', 'joko',
+  'sugeng', 'bambang', 'wahyu', 'imam', 'irwan', 'yudi', 'rizki', 'rizky', 'reza', 'fahmi',
   'dimas', 'arif', 'eko', 'aditya', 'bayu', 'doni', 'fajar', 'gilang', 'hadi',
-  'indra', 'yanto', 'rifki', 'rizal', 'rama', 'yoga', 'zaki', 'farhan', 'hanif',
+  'indra', 'yanto', 'rifki', 'rifky', 'rizal', 'rama', 'yoga', 'zaki', 'farhan', 'hanif',
   'ilham', 'kevin', 'lukman', 'nanda', 'rangga', 'ryan', 'taufik', 'wildan',
+  // Abdul names (very strong male indicator)
+  'abdul', 'abdur', 'abdus', 'abdil', 'abdullah',
+  // Additional common names
   'aan', 'abidin', 'adam', 'adrian', 'akbar', 'alam', 'alif', 'alvin', 'amin',
   'ananda', 'andika', 'angga', 'anton', 'anwar', 'ardi', 'aria', 'arman', 'asep',
-  'aziz', 'daffa', 'danang', 'danu', 'darma', 'dava', 'david', 'denny', 'dhika',
+  'aziz', 'daffa', 'danang', 'danu', 'darma', 'dava', 'david', 'denny', 'dhika', 'dicky',
   'fikri', 'firman', 'galang', 'galih', 'gibran', 'hafiz', 'hakim', 'haris',
   'hartono', 'hasan', 'hendri', 'herman', 'herwin', 'huda', 'husin', 'ibrahim',
   'ikhsan', 'irfan', 'ismail', 'jefri', 'johan', 'jordan', 'jundi', 'junaid',
-  'kamal', 'khairul', 'kurnia', 'mahendra', 'malik', 'maruf', 'maulana', 'memet',
+  'kamal', 'khairul', 'kurnia', 'kurniawan', 'mahendra', 'malik', 'maruf', 'maulana', 'memet',
   'misbach', 'nabil', 'naufal', 'nico', 'nugroho', 'pangestu', 'pratama', 'putra',
-  'radit', 'rafli', 'rahmat', 'raja', 'ramadhan', 'rasyid', 'rendra', 'ridwan',
-  'risky', 'roni', 'salim', 'satria', 'septian', 'sigit', 'sofyan', 'sultan',
+  'radit', 'rafli', 'rahman', 'rahmat', 'raja', 'ramadhan', 'rasyid', 'rendra', 'ridwan',
+  'risky', 'roni', 'salim', 'saputra', 'satria', 'septian', 'sigit', 'sofyan', 'sultan',
   'sumarno', 'surya', 'syahrul', 'syaiful', 'tegar', 'tommy', 'tri', 'umar',
   'usman', 'vino', 'wawan', 'wisnu', 'yayan', 'yusuf', 'zidan', 'alfian',
+  // Additional names from common patterns
+  'bagus', 'cahya', 'daffa', 'dwi', 'erlangga', 'fauzi', 'genta', 'habib',
 ])
 
-// Nama-nama umum perempuan Indonesia
+// Nama-nama umum perempuan Indonesia (EXTENDED)
 const FEMALE_NAMES = new Set([
+  // Very common female names
   'siti', 'nur', 'nurul', 'dewi', 'lina', 'ratna', 'wati', 'ningsih', 'yuni',
   'sri', 'rina', 'fitri', 'maya', 'diah', 'ayu', 'indah', 'putri', 'widya',
-  'anggun', 'bella', 'cantika', 'dina', 'elsa', 'fani', 'gita', 'hani', 'ika',
-  'julia', 'kartika', 'laila', 'mila', 'nadia', 'oktavia', 'pratiwi', 'qonita',
-  'rahma', 'salma', 'tania', 'utami', 'vina', 'wulan', 'yesi', 'zahra', 'zulfa',
-  'adelia', 'alya', 'amanda', 'amelia', 'anisa', 'annisa', 'azzahra', 'chairani',
-  'citra', 'della', 'devi', 'diana', 'dinda', 'dini', 'dyah', 'elin', 'erna',
+  'anggun', 'bella', 'bunga', 'cantika', 'dina', 'elsa', 'fani', 'gita', 'hani', 'ika',
+  'julia', 'kartika', 'laila', 'lestari', 'mila', 'nadia', 'oktavia', 'pratiwi', 'qonita',
+  'rahma', 'salma', 'tania', 'utami', 'vina', 'wulan', 'wulandari', 'yesi', 'zahra', 'zalfa', 'zulfa',
+  // Additional common names
+  'adelia', 'aisyah', 'alya', 'amanda', 'amelia', 'anisa', 'annisa', 'azzahra', 'chairani',
+  'citra', 'della', 'devi', 'diana', 'dinda', 'dini', 'dwi', 'dyah', 'eka', 'elin', 'erna',
   'farah', 'fatimah', 'feby', 'fera', 'fira', 'fitria', 'gusti', 'hana', 'hasna',
   'helmi', 'hesti', 'hilda', 'ilma', 'intan', 'irma', 'isna', 'jasmine', 'kania',
-  'khansa', 'kinanti', 'lestari', 'lisna', 'luna', 'maharani', 'mardiana', 'melati',
+  'khansa', 'kinanti', 'lisna', 'luna', 'maharani', 'mardiana', 'mega', 'melati', 'melinda',
   'nadya', 'naila', 'naomi', 'natasya', 'nina', 'nisa', 'novita', 'nurlita',
-  'olivia', 'permata', 'puspita', 'rachel', 'rahayu', 'rahmawati', 'rania', 'retno',
-  'ria', 'rini', 'risma', 'riska', 'safira', 'salsabila', 'sarah', 'selviana',
-  'shinta', 'silvia', 'syifa', 'tiara', 'tika', 'tri', 'ulfa', 'umi', 'vera',
+  'olivia', 'permata', 'puspa', 'puspita', 'rachel', 'rahayu', 'rahmawati', 'rani', 'rania', 'retno',
+  'ria', 'rini', 'risma', 'riska', 'safira', 'salsabila', 'sarah', 'sari', 'selviana', 'septia',
+  'shinta', 'silvia', 'sinta', 'syifa', 'tiara', 'tika', 'tri', 'ulfa', 'umi', 'vera',
   'wahyuni', 'winda', 'windy', 'yasmin', 'yenni', 'yolanda', 'yulia', 'zahwa',
+  // Additional names from common patterns
+  'ainun', 'bella', 'dian', 'febri', 'kirana', 'nabila', 'sinta', 'wulan',
 ])
 
 // Suffix yang sering menandakan gender

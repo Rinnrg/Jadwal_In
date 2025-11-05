@@ -220,33 +220,66 @@ export function inferFromNIMAndName(nim: string, name: string): MahasiswaData {
     result.semesterAwal = `${tahunAwal}/${tahunAkhir} Gasal`
   }
 
-  // Infer gender dari nama dengan confidence tinggi
+  // Infer gender dari nama dengan confidence tinggi - ENHANCED VERSION
   if (name) {
-    const lowerName = name.toLowerCase()
+    const lowerName = name.toLowerCase().trim()
     
-    // High confidence male indicators
+    // VERY High confidence male indicators (99%+)
     if (
       lowerName.startsWith('muhammad ') ||
+      lowerName.startsWith('mohammad ') ||
       lowerName.startsWith('ahmad ') ||
+      lowerName.startsWith('achmad ') ||
       lowerName.startsWith('m. ') ||
+      lowerName.startsWith('moh. ') ||
+      lowerName.startsWith('muh. ') ||
       lowerName.includes(' bin ') ||
-      lowerName.match(/\b(achmad|agus|andi|bambang|budi|dedi|eko|hendra|joko|rizki|wahyu)\b/)
+      lowerName.match(/\b(abdul|abdur|abdus|abdil)\b/)
     ) {
       result.jenisKelamin = 'Laki - Laki'
+      console.log(`✅ Gender detected (VERY HIGH confidence MALE): ${name}`)
     }
-    // High confidence female indicators
+    // High confidence male indicators (90%+)
+    else if (
+      lowerName.match(/\b(achmad|agus|andi|andri|anwar|arif|bambang|bayu|budi|dedi|dicky|eko|fajar|hendra|imam|indra|irfan|joko|kurniawan|lukman|nugroho|pratama|putra|rahman|reza|rizki|rizky|saputra|satria|wahyu|yoga|yusuf)\b/)
+    ) {
+      result.jenisKelamin = 'Laki - Laki'
+      console.log(`✅ Gender detected (HIGH confidence MALE): ${name}`)
+    }
+    // VERY High confidence female indicators (99%+)
     else if (
       lowerName.startsWith('siti ') ||
       lowerName.startsWith('dewi ') ||
       lowerName.startsWith('putri ') ||
+      lowerName.startsWith('nurul ') ||
       lowerName.includes(' binti ') ||
-      lowerName.match(/\b(ayu|ratna|sri|fitri|rika|wati|yanti|ningsih)\b/) ||
       lowerName.endsWith('wati') ||
       lowerName.endsWith('ningsih') ||
       lowerName.endsWith('yani') ||
-      lowerName.endsWith('yanti')
+      lowerName.endsWith('yanti') ||
+      lowerName.endsWith('wulan')
     ) {
       result.jenisKelamin = 'Perempuan'
+      console.log(`✅ Gender detected (VERY HIGH confidence FEMALE): ${name}`)
+    }
+    // High confidence female indicators (90%+)
+    else if (
+      lowerName.match(/\b(ainun|aisyah|anisa|annisa|ayu|bella|bunga|cantika|citra|dian|dina|dwi|eka|fatimah|fitri|intan|kartika|laila|lestari|maya|mega|melinda|nadya|nur|puspa|rani|ratna|rini|sari|septia|shinta|sinta|sri|tiara|tika|tri|widya|wulandari|zahra|zalfa)\b/)
+    ) {
+      result.jenisKelamin = 'Perempuan'
+      console.log(`✅ Gender detected (HIGH confidence FEMALE): ${name}`)
+    }
+    // Medium confidence based on ending patterns
+    else if (lowerName.match(/\b(wan|man|din|han)$/)) {
+      result.jenisKelamin = 'Laki - Laki'
+      console.log(`✅ Gender detected (MEDIUM confidence MALE by ending): ${name}`)
+    }
+    else if (lowerName.match(/\b(ni|tun|ah)$/)) {
+      result.jenisKelamin = 'Perempuan'
+      console.log(`✅ Gender detected (MEDIUM confidence FEMALE by ending): ${name}`)
+    }
+    else {
+      console.log(`⚠️ Gender cannot be detected with confidence: ${name}`)
     }
   }
 

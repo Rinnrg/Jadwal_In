@@ -830,19 +830,24 @@ export async function getMahasiswaDataMultiSource(
     }
   }
   
-  // Source 4: Gender detection from name if still missing
+  // Source 4: Gender detection from name if still missing (LOWERED THRESHOLD)
   if (result && !result.jenisKelamin) {
     const nameForDetection = result.nama || name
     if (nameForDetection) {
-      console.log(`🔄 [MULTI-SOURCE] Detecting gender from name...`)
+      console.log(`🔄 [MULTI-SOURCE] Detecting gender from name: "${nameForDetection}"`)
       const detectedGender = detectGenderFromName(nameForDetection)
       const confidence = getGenderConfidence(nameForDetection)
       
-      if (detectedGender && confidence > 50) {
+      // Lowered threshold from 50% to 30% for better coverage
+      if (detectedGender && confidence >= 30) {
         result.jenisKelamin = detectedGender
         console.log(`✅ [MULTI-SOURCE] Gender detected: ${detectedGender} (confidence: ${confidence}%)`)
+      } else if (detectedGender) {
+        // Even if confidence is low, still use it as last resort
+        result.jenisKelamin = detectedGender
+        console.log(`⚠️ [MULTI-SOURCE] Gender detected with LOW confidence: ${detectedGender} (${confidence}%)`)
       } else {
-        console.log(`⚠️ [MULTI-SOURCE] Gender detection confidence too low: ${confidence}%`)
+        console.log(`❌ [MULTI-SOURCE] Could not detect gender from name: "${nameForDetection}"`)
       }
     }
   }
@@ -856,16 +861,17 @@ export async function getMahasiswaDataMultiSource(
     }
   }
   
-  // Source 5: Try alternative scraping methods if still incomplete
+  // Source 5: Try alternative scraping methods if still incomplete (especially gender!)
   if (!result || !result.jenisKelamin || !result.prodi || !result.semesterAwal) {
-    console.log(`🔄 [MULTI-SOURCE] Trying alternative scraping methods...`)
+    console.log(`🔄 [MULTI-SOURCE] Data still incomplete, trying alternative scraping methods...`)
+    console.log(`   Missing: ${!result?.jenisKelamin ? 'jenisKelamin ' : ''}${!result?.prodi ? 'prodi ' : ''}${!result?.semesterAwal ? 'semesterAwal' : ''}`)
     
     try {
       const { getAllMethodsMahasiswaData } = await import('./alternative-scrapers')
-      const altData = await getAllMethodsMahasiswaData(identifier, name || '')
+      const altData = await getAllMethodsMahasiswaData(identifier, name || result?.nama || '')
       
       if (altData) {
-        console.log(`✅ [MULTI-SOURCE] Got data from alternative methods`)
+        console.log(`✅ [MULTI-SOURCE] Got data from alternative methods:`, altData)
         
         if (!result) {
           result = {
@@ -879,17 +885,36 @@ export async function getMahasiswaDataMultiSource(
             semesterAwal: altData.semesterAwal || null,
           }
         } else {
-          // Merge with existing result
-          if (altData.jenisKelamin && !result.jenisKelamin) result.jenisKelamin = altData.jenisKelamin
-          if (altData.prodi && !result.prodi) result.prodi = altData.prodi
-          if (altData.fakultas && !result.fakultas) result.fakultas = altData.fakultas
-          if (altData.semesterAwal && !result.semesterAwal) result.semesterAwal = altData.semesterAwal
-          if (altData.angkatan && !result.angkatan) result.angkatan = altData.angkatan
+          // Merge with existing result - prefer alternative data if current is null
+          if (altData.jenisKelamin && !result.jenisKelamin) {
+            result.jenisKelamin = altData.jenisKelamin
+            console.log(`   ✅ Added jenisKelamin from alt methods: ${altData.jenisKelamin}`)
+          }
+          if (altData.prodi && !result.prodi) {
+            result.prodi = altData.prodi
+            console.log(`   ✅ Added prodi from alt methods: ${altData.prodi}`)
+          }
+          if (altData.fakultas && !result.fakultas) {
+            result.fakultas = altData.fakultas
+            console.log(`   ✅ Added fakultas from alt methods: ${altData.fakultas}`)
+          }
+          if (altData.semesterAwal && !result.semesterAwal) {
+            result.semesterAwal = altData.semesterAwal
+            console.log(`   ✅ Added semesterAwal from alt methods: ${altData.semesterAwal}`)
+          }
+          if (altData.angkatan && !result.angkatan) {
+            result.angkatan = altData.angkatan
+            console.log(`   ✅ Added angkatan from alt methods: ${altData.angkatan}`)
+          }
         }
+      } else {
+        console.log(`⚠️ [MULTI-SOURCE] Alternative methods returned no data`)
       }
     } catch (error) {
       console.warn(`⚠️ [MULTI-SOURCE] Alternative methods failed:`, error)
     }
+  } else {
+    console.log(`✅ [MULTI-SOURCE] All data complete, skipping alternative methods`)
   }
   
   if (result) {
