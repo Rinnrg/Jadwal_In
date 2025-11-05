@@ -68,22 +68,32 @@ export async function POST(request: NextRequest) {
       )
     }
 
+    // Extract NIM from email
+    const extractedNim = extractNIMFromEmail(email)
+    
     // Check if NIM needs to be updated (null or too short)
-    const needsUpdate = !user.nim || user.nim.length < 8
-
-    if (!needsUpdate) {
+    const needsNimUpdate = !user.nim || user.nim.length < 8
+    
+    // Check if other data needs to be updated
+    const needsDataUpdate = !user.jenisKelamin || !user.prodi || !user.semesterAwal
+    
+    // If NIM is valid and all data exists, no need to update
+    if (!needsNimUpdate && !needsDataUpdate && user.nim) {
       return NextResponse.json({
         success: true,
         updated: false,
         nim: user.nim,
-        message: 'NIM already valid'
+        jenisKelamin: user.jenisKelamin,
+        prodi: user.prodi,
+        semesterAwal: user.semesterAwal,
+        message: 'Data already complete'
       })
     }
 
-    // Extract NIM from email
-    const extractedNim = extractNIMFromEmail(email)
-
-    if (!extractedNim) {
+    // Use existing NIM if available, otherwise extract from email
+    const nimToUse = user.nim && user.nim.length >= 8 ? user.nim : extractedNim
+    
+    if (!nimToUse) {
       return NextResponse.json(
         { error: 'Cannot extract NIM from email' },
         { status: 400 }
@@ -94,23 +104,47 @@ export async function POST(request: NextRequest) {
     let mahasiswaInfo = null
     try {
       const { cariDataMahasiswa } = await import('@/lib/unesa-scraper')
-      mahasiswaInfo = await cariDataMahasiswa(extractedNim)
-      console.log('Fetched mahasiswa info from pd-unesa:', mahasiswaInfo)
+      console.log('🔍 Fetching data from pd-unesa for NIM:', nimToUse)
+      mahasiswaInfo = await cariDataMahasiswa(nimToUse)
+      console.log('✅ Fetched mahasiswa info from pd-unesa:', mahasiswaInfo)
     } catch (scrapeError) {
-      console.warn('Failed to fetch data from pd-unesa:', scrapeError)
+      console.warn('⚠️ Failed to fetch data from pd-unesa:', scrapeError)
       // Continue without scraping data
     }
 
-    // Update user with extracted NIM, angkatan, and additional data if available (all in User table now)
+    // Prepare update data
+    const updateData: any = {}
+    
+    // Update NIM if needed
+    if (needsNimUpdate && nimToUse) {
+      updateData.nim = nimToUse
+      updateData.angkatan = extractAngkatan(nimToUse)
+    }
+    
+    // Update other fields from scraper if available
+    if (mahasiswaInfo) {
+      if (mahasiswaInfo.prodi) updateData.prodi = mahasiswaInfo.prodi
+      if (mahasiswaInfo.jenisKelamin) updateData.jenisKelamin = mahasiswaInfo.jenisKelamin
+      if (mahasiswaInfo.semesterAwal) updateData.semesterAwal = mahasiswaInfo.semesterAwal
+    }
+
+    // Only update if there's something to update
+    if (Object.keys(updateData).length === 0) {
+      return NextResponse.json({
+        success: true,
+        updated: false,
+        nim: user.nim,
+        jenisKelamin: user.jenisKelamin,
+        prodi: user.prodi,
+        semesterAwal: user.semesterAwal,
+        message: 'No data to update'
+      })
+    }
+
+    // Update user with new data
     const updatedUser = await prisma.user.update({
       where: { id: userId },
-      data: {
-        nim: extractedNim,
-        angkatan: extractAngkatan(extractedNim),
-        ...(mahasiswaInfo?.prodi && { prodi: mahasiswaInfo.prodi }),
-        ...(mahasiswaInfo?.jenisKelamin && { jenisKelamin: mahasiswaInfo.jenisKelamin }),
-        ...(mahasiswaInfo?.semesterAwal && { semesterAwal: mahasiswaInfo.semesterAwal }),
-      }
+      data: updateData
     })
 
     return NextResponse.json({

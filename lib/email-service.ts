@@ -1,19 +1,61 @@
 /**
  * Email Service untuk mengirim email reminder dengan ICS calendar attachment
  * 
- * NOTE: Untuk development, konfigurasi ini menggunakan nodemailer dengan Gmail.
- * Untuk production, Anda bisa menggunakan service seperti SendGrid, AWS SES, dll.
+ * Menggunakan Gmail OAuth2 untuk mengirim email atas nama user yang login.
+ * Tidak perlu konfigurasi EMAIL_USER/PASSWORD manual.
  */
 
 import nodemailer from 'nodemailer'
+import { google } from 'googleapis'
 
-// Email configuration
-const EMAIL_CONFIG = {
-  service: 'gmail',
-  auth: {
-    user: process.env.EMAIL_USER || 'your-email@gmail.com', // Set di .env.local
-    pass: process.env.EMAIL_PASSWORD || 'your-app-password', // Google App Password
-  },
+// OAuth2 configuration
+const OAuth2 = google.auth.OAuth2
+
+/**
+ * Create OAuth2 transporter untuk mengirim email menggunakan Google Account user
+ */
+async function createOAuth2Transporter(userEmail: string, accessToken?: string) {
+  try {
+    // Jika ada access token, gunakan untuk OAuth2
+    if (accessToken) {
+      const oauth2Client = new OAuth2(
+        process.env.GOOGLE_CLIENT_ID,
+        process.env.GOOGLE_CLIENT_SECRET,
+        process.env.GOOGLE_REDIRECT_URI
+      )
+
+      oauth2Client.setCredentials({
+        access_token: accessToken,
+      })
+
+      return nodemailer.createTransport({
+        service: 'gmail',
+        auth: {
+          type: 'OAuth2',
+          user: userEmail,
+          clientId: process.env.GOOGLE_CLIENT_ID,
+          clientSecret: process.env.GOOGLE_CLIENT_SECRET,
+          accessToken: accessToken,
+        },
+      })
+    }
+  } catch (error) {
+    console.warn('⚠️ Failed to create OAuth2 transporter:', error)
+  }
+
+  // Fallback: Gunakan SMTP dengan App Password jika ada
+  if (process.env.EMAIL_USER && process.env.EMAIL_PASSWORD) {
+    return nodemailer.createTransport({
+      service: 'gmail',
+      auth: {
+        user: process.env.EMAIL_USER,
+        pass: process.env.EMAIL_PASSWORD,
+      },
+    })
+  }
+
+  // Jika tidak ada konfigurasi email, return null
+  return null
 }
 
 /**
@@ -64,6 +106,8 @@ export async function sendReminderEmail({
   to,
   reminder,
   userName,
+  fromEmail,
+  accessToken,
 }: {
   to: string
   reminder: {
@@ -73,10 +117,20 @@ export async function sendReminderEmail({
     relatedSubjectName?: string
   }
   userName: string
+  fromEmail?: string
+  accessToken?: string
 }): Promise<{ success: boolean; error?: string }> {
   try {
-    // Create transporter
-    const transporter = nodemailer.createTransport(EMAIL_CONFIG)
+    // Create transporter menggunakan email user yang login
+    const senderEmail = fromEmail || to
+    const transporter = await createOAuth2Transporter(senderEmail, accessToken)
+
+    if (!transporter) {
+      return {
+        success: false,
+        error: 'Tidak dapat membuat email transporter. Pastikan Anda login dengan Google dan memiliki akses email.',
+      }
+    }
 
     // Generate ICS content
     const icsContent = generateICS({
@@ -156,7 +210,7 @@ export async function sendReminderEmail({
 
     // Send email
     const info = await transporter.sendMail({
-      from: `"Jadwal.In" <${EMAIL_CONFIG.auth.user}>`,
+      from: `"Jadwal.In - ${userName}" <${senderEmail}>`,
       to,
       subject: `⏰ Pengingat: ${reminder.title}`,
       html: htmlBody,
@@ -173,9 +227,24 @@ export async function sendReminderEmail({
     return { success: true }
   } catch (error) {
     console.error('❌ Error sending email:', error)
+    const errorMsg = error instanceof Error ? error.message : 'Unknown error'
+    
+    // Provide more helpful error messages
+    if (errorMsg.includes('Invalid login')) {
+      return {
+        success: false,
+        error: 'Gagal login ke Gmail. Pastikan Anda sudah login dengan akun Google yang valid.',
+      }
+    } else if (errorMsg.includes('No recipients')) {
+      return {
+        success: false,
+        error: 'Email tujuan tidak valid.',
+      }
+    }
+    
     return { 
       success: false, 
-      error: error instanceof Error ? error.message : 'Unknown error' 
+      error: errorMsg
     }
   }
 }
@@ -183,9 +252,21 @@ export async function sendReminderEmail({
 /**
  * Send test email to verify configuration
  */
-export async function sendTestEmail(to: string): Promise<{ success: boolean; error?: string }> {
+export async function sendTestEmail(
+  to: string,
+  fromEmail?: string,
+  accessToken?: string
+): Promise<{ success: boolean; error?: string }> {
   try {
-    const transporter = nodemailer.createTransport(EMAIL_CONFIG)
+    const senderEmail = fromEmail || to
+    const transporter = await createOAuth2Transporter(senderEmail, accessToken)
+
+    if (!transporter) {
+      return {
+        success: false,
+        error: 'Tidak dapat membuat email transporter. Login dengan Google diperlukan untuk mengirim email.',
+      }
+    }
 
     const htmlBody = `
 <!DOCTYPE html>
@@ -214,7 +295,7 @@ export async function sendTestEmail(to: string): Promise<{ success: boolean; err
     `
 
     await transporter.sendMail({
-      from: `"Jadwal.In" <${EMAIL_CONFIG.auth.user}>`,
+      from: `"Jadwal.In" <${senderEmail}>`,
       to,
       subject: '✅ Test Email - Jadwal.In',
       html: htmlBody,
@@ -223,9 +304,18 @@ export async function sendTestEmail(to: string): Promise<{ success: boolean; err
     return { success: true }
   } catch (error) {
     console.error('❌ Error sending test email:', error)
+    const errorMsg = error instanceof Error ? error.message : 'Unknown error'
+    
+    if (errorMsg.includes('Invalid login')) {
+      return {
+        success: false,
+        error: 'Gagal mengirim email. Pastikan Anda login dengan Google dan memiliki izin untuk mengirim email.',
+      }
+    }
+    
     return { 
       success: false, 
-      error: error instanceof Error ? error.message : 'Unknown error' 
+      error: errorMsg
     }
   }
 }

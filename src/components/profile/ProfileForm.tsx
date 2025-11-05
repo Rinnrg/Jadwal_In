@@ -81,17 +81,22 @@ export function ProfileForm({ profile, onSuccess, onChangePassword, onSetPasswor
     fetchPhones()
   }, [session])
 
-  // Auto-sync NIM for Google Auth users on profile load
+  // Auto-sync data from pd-unesa when profile loads
   useEffect(() => {
-    const syncNIM = async () => {
-      if (!session) return
+    const syncData = async () => {
+      if (!session || session.role !== 'mahasiswa') return
       
-      // Only sync if user has no NIM or NIM is too short
-      const needsSync = !profile?.nim || (profile.nim.length < 8)
+      // Check if any critical data is missing
+      const needsSync = 
+        !profile?.nim || 
+        profile.nim.length < 8 ||
+        !profile?.jenisKelamin ||
+        !profile?.prodi ||
+        !profile?.semesterAwal
       
       if (needsSync && session.email) {
         try {
-          console.log('[ProfileForm] Syncing NIM for user:', session.email)
+          console.log('[ProfileForm] Auto-syncing data from pd-unesa for:', session.email)
           const response = await fetch('/api/profile/sync-nim', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -103,19 +108,21 @@ export function ProfileForm({ profile, onSuccess, onChangePassword, onSetPasswor
           
           if (response.ok) {
             const data = await response.json()
-            if (data.updated) {
-              console.log('[ProfileForm] NIM synced successfully:', data.nim)
-              // Note: All fields are now in User model
-              // Store will be updated when page reloads or from API response
+            if (data.updated || data.jenisKelamin || data.prodi || data.semesterAwal) {
+              console.log('[ProfileForm] Data synced successfully:', data)
+              // Reload page to show updated data
+              setTimeout(() => {
+                window.location.reload()
+              }, 1000)
             }
           }
         } catch (error) {
-          console.error('[ProfileForm] Error syncing NIM:', error)
+          console.error('[ProfileForm] Error syncing data:', error)
         }
       }
     }
     
-    syncNIM()
+    syncData()
   }, [session, profile])
 
   // Helper untuk extract NIM dari email
@@ -566,7 +573,11 @@ export function ProfileForm({ profile, onSuccess, onChangePassword, onSetPasswor
                   disabled
                   className="bg-muted"
                 />
-                <p className="text-xs text-muted-foreground">Jenis Kelamin tidak dapat diubah</p>
+                <p className="text-xs text-muted-foreground">
+                  {profile?.jenisKelamin 
+                    ? "Data dari pd-unesa.unesa.ac.id" 
+                    : "Data sedang disinkronkan..."}
+                </p>
               </div>
 
               {profile?.semesterAwal && (

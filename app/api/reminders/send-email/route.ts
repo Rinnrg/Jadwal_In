@@ -52,7 +52,7 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Send email
+    // Send email menggunakan email user yang login (Google Auth)
     const result = await sendReminderEmail({
       to: reminder.pengguna.email,
       reminder: {
@@ -64,6 +64,8 @@ export async function POST(request: NextRequest) {
           : undefined,
       },
       userName: reminder.pengguna.name,
+      fromEmail: reminder.pengguna.email, // Gunakan email user yang punya reminder
+      // accessToken bisa ditambahkan jika disimpan di database
     })
 
     if (!result.success) {
@@ -134,6 +136,7 @@ export async function GET(request: NextRequest) {
               : undefined,
           },
           userName: reminder.pengguna.name,
+          fromEmail: reminder.pengguna.email, // Gunakan email user
         })
 
         if (result.success) {

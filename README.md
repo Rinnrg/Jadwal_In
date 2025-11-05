@@ -17,9 +17,11 @@ Aplikasi manajemen jadwal perkuliahan dengan **Next.js + Tailwind CSS**, **Prism
 2. **KRS / KHS** — ambil/lepaskan mata kuliah, lihat nilai & ekspor.
 3. **Kehadiran** — sesi presensi & rekap kehadiran real-time.
 4. **Tugas & Materi** — unggah materi, pengumpulan tugas, dan penilaian.
-5. **Pengingat (Reminders)** — notifikasi perkuliahan & tenggat.
+5. **Pengingat (Reminders)** — notifikasi perkuliahan & tenggat dengan **Email + ICS Calendar** 📧
 6. **Multi-Role Access** — dashboard dan perizinan sesuai peran.
 7. **Responsif & Siap Produksi** — arsitektur modern, cocok untuk Vercel.
+
+> 📧 **[Setup Email Reminder →](docs/EMAIL_SETUP.md)** - Panduan lengkap mengaktifkan fitur email dengan file ICS
 
 ---
 

@@ -94,21 +94,31 @@ export default function RemindersPage() {
   const handleSendTestEmail = async () => {
     if (!session) return
     
-    const loadingToast = toast.loading('Mengirim test email...')
+    const loadingToast = toast.loading('Mengirim test email dari akun Google Anda...')
     
     try {
-      const response = await fetch('/api/reminders/send-email/test', {
+      const response = await fetch('/api/reminders/test-email', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email: session.email }),
+        body: JSON.stringify({ 
+          email: session.email,
+          fromEmail: session.email, // Email dari Google Auth
+        }),
       })
 
       const data = await response.json()
 
       if (response.ok && data.success) {
-        toast.success('Test email berhasil dikirim! Cek inbox Anda.', { id: loadingToast })
+        toast.success(data.message || 'Test email berhasil dikirim! Cek inbox Anda.', { 
+          id: loadingToast,
+          duration: 5000
+        })
       } else {
-        toast.error(data.error || 'Gagal mengirim test email', { id: loadingToast })
+        const errorMsg = data.details ? `${data.error}\n\n${data.details}` : data.error
+        toast.error(errorMsg || 'Gagal mengirim test email', { 
+          id: loadingToast,
+          duration: 8000 
+        })
       }
     } catch (error) {
       console.error('Error sending test email:', error)
@@ -208,13 +218,20 @@ export default function RemindersPage() {
             </div>
             <div className="flex-1">
               <h3 className="text-sm md:text-base font-bold text-purple-900 dark:text-purple-100">
-                📧 Fitur Email Reminder
+                📧 Fitur Email Reminder (Google Auth)
               </h3>
               <p className="text-xs md:text-sm text-purple-800/90 dark:text-purple-200/90 mt-1.5 leading-relaxed">
+                Email reminder otomatis menggunakan akun Google yang Anda gunakan untuk login! 
                 Aktifkan toggle <strong>"Kirim email (ICS)"</strong> saat membuat reminder untuk menerima email pengingat beserta file calendar ICS. 
                 File ICS bisa langsung ditambahkan ke Google Calendar, Outlook, atau aplikasi calendar favorit Anda! 
-                {' '}<span className="inline-block">Gunakan tombol <strong>Test Email</strong> untuk cek konfigurasi.</span>
+                {' '}<span className="inline-block">Gunakan tombol <strong>Test Email</strong> untuk test pengiriman.</span>
               </p>
+              <div className="mt-2 flex items-center gap-2 text-xs text-purple-700 dark:text-purple-300">
+                <svg className="h-4 w-4" viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/>
+                </svg>
+                <span>Email dikirim dari: <strong>{session?.email}</strong></span>
+              </div>
             </div>
           </div>
         </div>

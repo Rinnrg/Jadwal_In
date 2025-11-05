@@ -306,7 +306,88 @@ export async function scrapeDataMahasiswa(nim: string): Promise<MahasiswaInfo | 
     }
 
     const html = await response.text();
-    return parseMahasiswaHTML(html);
+    
+    // Check if we were redirected to a search-data/tmp page or direct profile
+    const finalUrl = response.url;
+    console.log(`📍 Final URL: ${finalUrl}`);
+    
+    // If we're on a search results page, try to find profile links
+    if (finalUrl.includes('/?s=') || html.includes('search-results') || html.includes('pencarian')) {
+      console.log('📋 Detected search results page, looking for profile links...');
+      
+      // Pattern for profile links - more flexible
+      const profileLinkPattern = /<a[^>]+href=["'](https?:\/\/pd-unesa\.unesa\.ac\.id\/[^"']+)["'][^>]*>/gi;
+      const links = Array.from(html.matchAll(profileLinkPattern));
+      
+      if (links.length > 0) {
+        console.log(`🔗 Ditemukan ${links.length} total links`);
+        
+        // Filter and try valid profile links
+        const validLinks = links
+          .map(m => m[1])
+          .filter(url => 
+            !url.includes('?s=') && 
+            !url.includes('/page/') && 
+            !url.endsWith('/') &&
+            !url.includes('/category/') &&
+            !url.includes('/tag/') &&
+            !url.includes('#') &&
+            url.length > 30 // Profile URLs are usually longer
+          );
+        
+        console.log(`� Found ${validLinks.length} potential profile links`);
+        
+        for (const profileUrl of validLinks) {
+          console.log(`📄 Trying profile: ${profileUrl}`);
+          
+          try {
+            const profileResponse = await fetch(profileUrl, {
+              headers: {
+                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+              },
+            });
+            
+            if (profileResponse.ok) {
+              const profileHtml = await profileResponse.text();
+              const mahasiswaData = parseMahasiswaHTML(profileHtml);
+              
+              if (mahasiswaData && mahasiswaData.nim && mahasiswaData.nim === nim) {
+                console.log(`✅ Data mahasiswa ditemukan di profil: ${profileUrl}`);
+                return mahasiswaData;
+              } else if (mahasiswaData && mahasiswaData.nim) {
+                console.log(`⚠️ Found profile but NIM doesn't match: ${mahasiswaData.nim} !== ${nim}`);
+              }
+            }
+          } catch (err) {
+            console.warn(`⚠️ Failed to fetch profile ${profileUrl}`);
+            continue;
+          }
+        }
+      }
+    }
+    
+    // Fallback: parse search results directly
+    console.log('📋 Trying to parse search results directly...');
+    const directResult = parseMahasiswaHTML(html);
+    
+    // If we got partial data without NIM, add the searched NIM
+    if (directResult && !directResult.nim) {
+      console.log('📝 Adding searched NIM to partial data...');
+      directResult.nim = nim;
+      return directResult;
+    }
+    
+    // If no result but we know the NIM exists in HTML, try to extract what we can
+    if (!directResult && html.includes(nim)) {
+      console.log('📝 NIM found in HTML but data not fully extracted, trying partial extraction...');
+      const partialData = parseMahasiswaHTML(html);
+      if (partialData) {
+        partialData.nim = nim;
+        return partialData;
+      }
+    }
+    
+    return directResult;
 
   } catch (error) {
     console.error('❌ Error scraping data mahasiswa:', error);
@@ -321,10 +402,24 @@ export async function scrapeDataMahasiswa(nim: string): Promise<MahasiswaInfo | 
  */
 function parseMahasiswaHTML(html: string): MahasiswaInfo | null {
   try {
+    // Debug: Log relevant parts of HTML for inspection
+    console.log('🔍 Parsing HTML length:', html.length);
+    
+    // Extract and log table data if present
+    const tableMatch = html.match(/<table[^>]*>[\s\S]*?<\/table>/i);
+    if (tableMatch) {
+      console.log('📋 Found table in HTML');
+      // Log a snippet of the table
+      const tableSnippet = tableMatch[0].substring(0, 500);
+      console.log('Table snippet:', tableSnippet);
+    }
+    
     // Pattern untuk NIM (berbagai format)
     const nimPatterns = [
+      // HTML table patterns
+      /<td[^>]*>\s*(?:NIM|Nomor Induk Mahasiswa)\s*<\/td>\s*<td[^>]*>\s*:\s*<\/td>\s*<td[^>]*>\s*(\d{8,})\s*<\/td>/i,
+      /<td[^>]*>\s*(?:NIM|Nomor Induk)\s*<\/td>\s*<td[^>]*>\s*(\d{8,})\s*<\/td>/i,
       /(?:NIM|Nomor Induk)[:\s]*(\d{8,})/i,
-      /<td[^>]*>NIM<\/td>\s*<td[^>]*>(\d{8,})<\/td>/i,
       /\b(\d{11})\b/i, // 11 digit NIM format
     ];
     let nimMatch = null;
@@ -333,6 +428,7 @@ function parseMahasiswaHTML(html: string): MahasiswaInfo | null {
       if (nimMatch && nimMatch[1]) {
         // Validate it's a proper NIM (at least 8 digits)
         if (/^\d{8,}$/.test(nimMatch[1])) {
+          console.log('✅ NIM found:', nimMatch[1]);
           break;
         }
       }
@@ -353,14 +449,62 @@ function parseMahasiswaHTML(html: string): MahasiswaInfo | null {
     
     // Pattern untuk prodi
     const prodiPatterns = [
-      /(?:Program Studi|Prodi|Program)[:\s]*([^<\n]+)/i,
-      /<td[^>]*>Program Studi<\/td>\s*<td[^>]*>([^<]+)<\/td>/i,
-      /<td[^>]*>Prodi<\/td>\s*<td[^>]*>([^<]+)<\/td>/i,
+      // Pattern untuk HTML table dengan tiga kolom (Label : Value)
+      /<td[^>]*>\s*Program Studi\s*<\/td>\s*<td[^>]*>\s*:\s*<\/td>\s*<td[^>]*>\s*([^<]+)\s*<\/td>/i,
+      /<td[^>]*>\s*Program Studi\s*<\/td>\s*<td[^>]*>\s*([^<]+)\s*<\/td>/i,
+      // Pattern untuk text dengan colon
+      /Program Studi\s*:?\s*([^\n<]+?)(?:\s*<|$)/i,
+      /Prodi\s*:?\s*([^\n<]+?)(?:\s*<|$)/i,
+      // Generic fallback
+      /(?:Program Studi|Prodi)[:\s]*([^<\n]+)/i,
     ];
     let prodiMatch = null;
     for (const pattern of prodiPatterns) {
       prodiMatch = html.match(pattern);
-      if (prodiMatch) break;
+      if (prodiMatch && prodiMatch[1]) {
+        const value = prodiMatch[1].trim();
+        // Filter out empty or invalid values
+        if (value && value.length > 2 && !value.includes('<?') && !value.includes('?>')) {
+          console.log('✅ Program Studi found:', value);
+          break;
+        }
+      }
+      prodiMatch = null;
+    }
+    
+    // Additional debug for prodi
+    if (!prodiMatch) {
+      console.log('⚠️ Program Studi not found with patterns, trying broader search...');
+      // Try to find common prodi names
+      const commonProdiPattern = /(S1 Pendidikan Teknologi Informasi|Pendidikan Teknologi Informasi|PTI|Teknik Informatika)/i;
+      const broadMatch = html.match(commonProdiPattern);
+      if (broadMatch) {
+        console.log('✅ Found common Prodi pattern:', broadMatch[0]);
+        prodiMatch = { 1: broadMatch[0].trim() } as any;
+      }
+    }
+    
+    // Pattern untuk jenjang (could be combined with prodi)
+    const jenjangPatterns = [
+      /<td[^>]*>\s*Jenjang\s*<\/td>\s*<td[^>]*>\s*:\s*<\/td>\s*<td[^>]*>\s*([^<]+)\s*<\/td>/i,
+      /<td[^>]*>\s*Jenjang\s*<\/td>\s*<td[^>]*>\s*([^<]+)\s*<\/td>/i,
+      /Jenjang\s*:?\s*([^\n<]+?)(?:\s*<|$)/i,
+    ];
+    let jenjangMatch = null;
+    for (const pattern of jenjangPatterns) {
+      jenjangMatch = html.match(pattern);
+      if (jenjangMatch && jenjangMatch[1]) {
+        const value = jenjangMatch[1].trim();
+        if (value && value.length > 0) {
+          console.log('✅ Jenjang found:', value);
+          // If prodi not found but jenjang found, we might be able to combine them
+          if (!prodiMatch && value.toUpperCase().includes('S1')) {
+            console.log('📝 Using Jenjang as part of Prodi info');
+          }
+          break;
+        }
+      }
+      jenjangMatch = null;
     }
     
     // Pattern untuk fakultas
@@ -398,43 +542,116 @@ function parseMahasiswaHTML(html: string): MahasiswaInfo | null {
     
     // Pattern untuk jenis kelamin
     const jenisKelaminPatterns = [
+      // Pattern untuk HTML table structure
+      /<td[^>]*>\s*Jenis Kelamin\s*<\/td>\s*<td[^>]*>\s*:\s*<\/td>\s*<td[^>]*>\s*([^<]+)\s*<\/td>/i,
+      /<td[^>]*>\s*Jenis Kelamin\s*<\/td>\s*<td[^>]*>\s*([^<]+)\s*<\/td>/i,
+      // Pattern untuk text dengan colon
+      /Jenis Kelamin\s*:?\s*(Laki\s*-?\s*[Ll]aki|Perempuan)/i,
+      /Gender\s*:?\s*(Laki\s*-?\s*[Ll]aki|Perempuan|Male|Female)/i,
+      // Generic pattern
       /(?:Jenis Kelamin|Gender)[:\s]*([^<\n]+)/i,
-      /<td[^>]*>Jenis Kelamin<\/td>\s*<td[^>]*>([^<]+)<\/td>/i,
-      /<td[^>]*>Gender<\/td>\s*<td[^>]*>([^<]+)<\/td>/i,
-      /(?:L|P)(?:aki-laki|erempuan)/i, // Match "Laki-laki" or "Perempuan"
     ];
     let jenisKelaminMatch = null;
     for (const pattern of jenisKelaminPatterns) {
       jenisKelaminMatch = html.match(pattern);
-      if (jenisKelaminMatch) {
+      if (jenisKelaminMatch && jenisKelaminMatch[1]) {
         // Normalize the value
-        const value = jenisKelaminMatch[1] || jenisKelaminMatch[0];
-        if (value && (value.toLowerCase().includes('laki') || value.toLowerCase() === 'l')) {
+        const value = jenisKelaminMatch[1].trim();
+        if (value && (value.toLowerCase().includes('laki') || value.toLowerCase() === 'l' || value.toLowerCase() === 'male')) {
           jenisKelaminMatch[1] = 'Laki - Laki';
+          console.log('✅ Jenis Kelamin found: Laki - Laki');
           break;
-        } else if (value && (value.toLowerCase().includes('perempuan') || value.toLowerCase() === 'p')) {
+        } else if (value && (value.toLowerCase().includes('perempuan') || value.toLowerCase() === 'p' || value.toLowerCase() === 'female')) {
           jenisKelaminMatch[1] = 'Perempuan';
+          console.log('✅ Jenis Kelamin found: Perempuan');
           break;
         }
       }
       jenisKelaminMatch = null;
     }
     
+    // Additional debug logging for jenis kelamin
+    if (!jenisKelaminMatch) {
+      console.log('⚠️ Jenis Kelamin not found, trying broader search...');
+      // Try to find any mention of Laki-laki or Perempuan in the HTML
+      if (/Laki\s*-?\s*[Ll]aki/i.test(html)) {
+        console.log('✅ Found "Laki-laki" in HTML');
+        jenisKelaminMatch = { 1: 'Laki - Laki' } as any;
+      } else if (/Perempuan/i.test(html)) {
+        console.log('✅ Found "Perempuan" in HTML');
+        jenisKelaminMatch = { 1: 'Perempuan' } as any;
+      }
+    }
+    
     // Pattern untuk semester awal
     const semesterAwalPatterns = [
-      /(?:Semester Awal)[:\s]*([^<\n]+)/i,
-      /<td[^>]*>Semester Awal<\/td>\s*<td[^>]*>([^<]+)<\/td>/i,
-      /(?:Periode Masuk|Semester Masuk)[:\s]*([^<\n]+)/i,
+      // Pattern untuk HTML table dengan tiga kolom (Label : Value)
+      /<td[^>]*>\s*Semester Awal\s*<\/td>\s*<td[^>]*>\s*:\s*<\/td>\s*<td[^>]*>\s*([^<]+)\s*<\/td>/i,
+      /<td[^>]*>\s*Semester Awal\s*<\/td>\s*<td[^>]*>\s*([^<]+)\s*<\/td>/i,
+      // Pattern untuk text dengan colon
+      /Semester Awal\s*:?\s*([^\n<]+?)(?:\s*<|$)/i,
+      /Periode Masuk\s*:?\s*([^\n<]+?)(?:\s*<|$)/i,
+      // Pattern untuk format tahun dengan "Gasal" atau "Ganjil"
+      /(\d{4}\/\d{4}\s+(?:Gasal|Ganjil|Genap))/i,
+      // Generic fallback
+      /(?:Semester Awal|Periode Masuk|Semester Masuk)[:\s]*([^<\n]+)/i,
     ];
     let semesterAwalMatch = null;
     for (const pattern of semesterAwalPatterns) {
       semesterAwalMatch = html.match(pattern);
-      if (semesterAwalMatch) break;
+      if (semesterAwalMatch && semesterAwalMatch[1]) {
+        const value = semesterAwalMatch[1].trim();
+        // Filter out empty or invalid values
+        if (value && value.length > 4 && !value.includes('<?') && !value.includes('?>')) {
+          console.log('✅ Semester Awal found:', value);
+          break;
+        }
+      }
+      semesterAwalMatch = null;
     }
     
-    // Jika tidak ada NIM yang ditemukan, return null
+    // Additional debug for semester awal
+    if (!semesterAwalMatch) {
+      console.log('⚠️ Semester Awal not found with patterns, trying broader search...');
+      // Try to find year pattern like "2022/2023 Gasal"
+      const yearPattern = /\b(\d{4}\/\d{4}\s+(?:Gasal|Ganjil|Genap))\b/i;
+      const yearMatch = html.match(yearPattern);
+      if (yearMatch) {
+        console.log('✅ Found year pattern for Semester Awal:', yearMatch[1]);
+        semesterAwalMatch = { 1: yearMatch[1].trim() } as any;
+      }
+    }
+    
+    // Log all found data
+    console.log('📊 Parsed data summary:');
+    console.log('  - NIM:', nimMatch ? nimMatch[1] : 'NOT FOUND');
+    console.log('  - Nama:', namaMatch ? namaMatch[1].trim() : 'NOT FOUND');
+    console.log('  - Prodi:', prodiMatch ? prodiMatch[1].trim() : 'NOT FOUND');
+    console.log('  - Fakultas:', fakultasMatch ? fakultasMatch[1].trim() : 'NOT FOUND');
+    console.log('  - Angkatan:', angkatanMatch ? angkatanMatch[1] : 'NOT FOUND');
+    console.log('  - Status:', statusMatch ? statusMatch[1].trim() : 'NOT FOUND');
+    console.log('  - Jenis Kelamin:', jenisKelaminMatch ? jenisKelaminMatch[1].trim() : 'NOT FOUND');
+    console.log('  - Semester Awal:', semesterAwalMatch ? semesterAwalMatch[1].trim() : 'NOT FOUND');
+    
+    // Return data even if NIM not found (will be filled by caller if available)
     if (!nimMatch || !nimMatch[1]) {
-      console.log(`⚠️ NIM tidak ditemukan di halaman`);
+      console.log(`⚠️ NIM tidak ditemukan di halaman, tetapi returning data lainnya...`);
+      
+      // Return partial data if we have at least some information
+      if (namaMatch || prodiMatch || jenisKelaminMatch || semesterAwalMatch) {
+        console.log(`✅ Returning partial data without NIM`);
+        return {
+          nim: null, // Will be filled by caller
+          nama: namaMatch ? namaMatch[1].trim() : null,
+          prodi: prodiMatch ? prodiMatch[1].trim() : null,
+          fakultas: fakultasMatch ? fakultasMatch[1].trim() : null,
+          angkatan: angkatanMatch ? angkatanMatch[1] : null,
+          status: statusMatch ? statusMatch[1].trim() : null,
+          jenisKelamin: jenisKelaminMatch ? jenisKelaminMatch[1].trim() : null,
+          semesterAwal: semesterAwalMatch ? semesterAwalMatch[1].trim() : null,
+        };
+      }
+      
       return null;
     }
     
