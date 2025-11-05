@@ -1,10 +1,35 @@
 // lib/google-auth.ts
 import { google } from "googleapis";
 
+// Automatically detect redirect URI based on environment
+function getRedirectUri() {
+  // 1. Use explicit GOOGLE_REDIRECT_URI if set
+  if (process.env.GOOGLE_REDIRECT_URI) {
+    return process.env.GOOGLE_REDIRECT_URI;
+  }
+  
+  // 2. Auto-detect from NEXT_PUBLIC_APP_URL
+  if (process.env.NEXT_PUBLIC_APP_URL) {
+    return `${process.env.NEXT_PUBLIC_APP_URL}/api/auth/google/callback`;
+  }
+  
+  // 3. Auto-detect from VERCEL_URL (Vercel deployment)
+  if (process.env.VERCEL_URL) {
+    const protocol = process.env.VERCEL_ENV === 'production' ? 'https' : 'https';
+    return `${protocol}://${process.env.VERCEL_URL}/api/auth/google/callback`;
+  }
+  
+  // 4. Fallback to localhost
+  return "http://localhost:3000/api/auth/google/callback";
+}
+
+const redirectUri = getRedirectUri();
+console.log('🔗 Google OAuth Redirect URI:', redirectUri);
+
 export const oauth2Client = new google.auth.OAuth2(
   process.env.GOOGLE_CLIENT_ID,
   process.env.GOOGLE_CLIENT_SECRET,
-  process.env.GOOGLE_REDIRECT_URI || "http://localhost:3000/api/auth/google/callback"
+  redirectUri
 );
 
 // Generate Google OAuth URL (tanpa consent/validasi ulang)

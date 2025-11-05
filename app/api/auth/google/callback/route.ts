@@ -8,6 +8,12 @@ import { cariNIPDosen } from '@/lib/unesa-scraper'
 export const dynamic = 'force-dynamic'
 export const runtime = 'nodejs'
 
+// Test database connection on module load
+console.log('🔌 Testing database connection...')
+prisma.$connect()
+  .then(() => console.log('✅ Database connection test successful'))
+  .catch((e) => console.error('❌ Database connection test failed:', e.message))
+
 // Helper function to retry database operations
 async function withDatabaseRetry<T>(
   operation: () => Promise<T>,
@@ -24,11 +30,14 @@ async function withDatabaseRetry<T>(
       return result
     } catch (error: any) {
       lastError = error
-      console.error(`❌ ${operationName} failed (attempt ${attempt}/${maxRetries}):`, error.message)
+      console.error(`❌ ${operationName} failed (attempt ${attempt}/${maxRetries}):`)
+      console.error(`   Error name: ${error.name}`)
+      console.error(`   Error message: ${error.message}`)
+      console.error(`   Error code: ${error.code || 'N/A'}`)
       
       if (attempt < maxRetries) {
         // Wait before retry with exponential backoff
-        const waitTime = Math.min(1000 * Math.pow(2, attempt - 1), 5000)
+        const waitTime = Math.min(1000 * Math.pow(2, attempt - 1), 3000)
         console.log(`⏳ Waiting ${waitTime}ms before retry...`)
         await new Promise(resolve => setTimeout(resolve, waitTime))
       }
@@ -36,6 +45,7 @@ async function withDatabaseRetry<T>(
   }
   
   console.error(`❌ ${operationName} failed after ${maxRetries} attempts`)
+  console.error(`   Final error:`, lastError)
   throw lastError
 }
 

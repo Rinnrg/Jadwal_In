@@ -42,6 +42,7 @@ Aplikasi manajemen jadwal perkuliahan dengan **Next.js + Tailwind CSS**, **Prism
 - Node.js 18.x atau lebih baru
 - pnpm (disarankan) / npm / yarn
 - Akun **Supabase** & project aktif (Postgres)
+- Akun **Google Cloud Platform** (untuk OAuth)
 
 ---
 
@@ -73,3 +74,50 @@ pnpm prisma:seed
 # 7) Jalanin dev server
 pnpm dev
 # http://localhost:3000
+
+# 8) (Untuk Production) Check environment configuration
+node check-production-env.js
+
+---
+
+## ?? Deployment ke Production
+
+### Quick Deploy - Vercel (Recommended)
+
+1. **Push kode ke GitHub**
+
+2. **Import project di Vercel:**
+   - Connect GitHub repository
+   - Framework: Next.js
+   - Root directory: `./`
+
+3. **Set Environment Variables** di Vercel Dashboard:
+   ```
+   DATABASE_URL=postgresql://...
+   DIRECT_URL=postgresql://...
+   GOOGLE_CLIENT_ID=...
+   GOOGLE_CLIENT_SECRET=...
+   NEXT_PUBLIC_APP_URL=https://your-domain.vercel.app
+   ```
+
+4. **Update Google Cloud Console:**
+   - Go to: https://console.cloud.google.com/
+   - APIs & Services ? Credentials ? OAuth 2.0 Client
+   - Add Authorized Redirect URI:
+     ```
+     https://your-domain.vercel.app/api/auth/google/callback
+     ```
+   - **SAVE** dan tunggu 5-10 menit
+
+5. **Deploy!**
+   ```bash
+   git push origin main
+   ```
+
+?? **[Panduan Lengkap Deployment ?](DEPLOYMENT.md)**
+
+?? **Troubleshooting:** Jika login gagal dengan error `database_error` atau `redirect_uri_mismatch`, pastikan:
+- ? `NEXT_PUBLIC_APP_URL` di Vercel sesuai dengan domain production
+- ? Authorized Redirect URI di Google Console sudah ditambahkan
+- ? Database URL dan credentials sudah benar
+
