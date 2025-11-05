@@ -122,12 +122,22 @@ export function ProfileForm({ profile, onSuccess, onChangePassword, onSetPasswor
     fetchPhone()
   }, [session])
 
-  // Auto-sync data from multi-source when profile loads - ALWAYS RUN for accuracy
+  // Auto-sync data from multi-source when profile loads - RUN ONCE per session
   useEffect(() => {
     const syncData = async () => {
       if (!session || session.role !== 'mahasiswa') return
       
-      // ALWAYS sync to ensure data is up-to-date (even if data exists)
+      // Check if we've already synced in this session to prevent infinite loop
+      const syncKey = `profile_synced_${session.id}`
+      const lastSync = sessionStorage.getItem(syncKey)
+      const now = Date.now()
+      
+      // Only sync if we haven't synced in the last 5 minutes
+      if (lastSync && now - parseInt(lastSync) < 5 * 60 * 1000) {
+        console.log('[ProfileForm] Skipping sync - recently synced')
+        return
+      }
+      
       try {
         console.log('[ProfileForm] Auto-syncing data using multi-source for:', session.email)
         const response = await fetch('/api/profile/sync-nim', {
@@ -143,10 +153,15 @@ export function ProfileForm({ profile, onSuccess, onChangePassword, onSetPasswor
           const data = await response.json()
           console.log('[ProfileForm] Sync response:', data)
           
-          // Reload if we got any new data
-          if (data.updated) {
+          // Mark as synced
+          sessionStorage.setItem(syncKey, now.toString())
+          
+          // Reload ONLY if data was updated AND we're not in a reload loop
+          if (data.updated && !sessionStorage.getItem('reload_pending')) {
             console.log('[ProfileForm] Data updated, reloading in 1.5s...')
+            sessionStorage.setItem('reload_pending', 'true')
             setTimeout(() => {
+              sessionStorage.removeItem('reload_pending')
               window.location.reload()
             }, 1500)
           } else {
