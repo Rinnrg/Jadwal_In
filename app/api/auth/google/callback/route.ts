@@ -8,11 +8,13 @@ import { cariNIPDosen } from '@/lib/unesa-scraper'
 export const dynamic = 'force-dynamic'
 export const runtime = 'nodejs'
 
-// Test database connection on module load
-console.log('🔌 Testing database connection...')
-prisma.$connect()
-  .then(() => console.log('✅ Database connection test successful'))
-  .catch((e) => console.error('❌ Database connection test failed:', e.message))
+// Test database connection on module load - ONLY at runtime, not during build
+if (process.env.VERCEL_ENV) {
+  console.log('🔌 Testing database connection...')
+  prisma.$connect()
+    .then(() => console.log('✅ Database connection test successful'))
+    .catch((e) => console.error('❌ Database connection test failed:', e.message))
+}
 
 // Helper function to retry database operations
 async function withDatabaseRetry<T>(
