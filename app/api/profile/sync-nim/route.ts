@@ -77,19 +77,6 @@ export async function POST(request: NextRequest) {
     // Check if other data needs to be updated
     const needsDataUpdate = !user.jenisKelamin || !user.prodi || !user.semesterAwal
     
-    // If NIM is valid and all data exists, no need to update
-    if (!needsNimUpdate && !needsDataUpdate && user.nim) {
-      return NextResponse.json({
-        success: true,
-        updated: false,
-        nim: user.nim,
-        jenisKelamin: user.jenisKelamin,
-        prodi: user.prodi,
-        semesterAwal: user.semesterAwal,
-        message: 'Data already complete'
-      })
-    }
-
     // Use existing NIM if available, otherwise extract from email
     const nimToUse = user.nim && user.nim.length >= 8 ? user.nim : extractedNim
     
@@ -100,16 +87,40 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Try to fetch additional data from pd-unesa.unesa.ac.id
+    // Always try to fetch additional data from pd-unesa.unesa.ac.id if data is missing
     let mahasiswaInfo = null
-    try {
-      const { cariDataMahasiswa } = await import('@/lib/unesa-scraper')
-      console.log('🔍 Fetching data from pd-unesa for NIM:', nimToUse)
-      mahasiswaInfo = await cariDataMahasiswa(nimToUse)
-      console.log('✅ Fetched mahasiswa info from pd-unesa:', mahasiswaInfo)
-    } catch (scrapeError) {
-      console.warn('⚠️ Failed to fetch data from pd-unesa:', scrapeError)
-      // Continue without scraping data
+    if (needsDataUpdate || needsNimUpdate) {
+      try {
+        const { cariDataMahasiswa } = await import('@/lib/unesa-scraper')
+        console.log('🔍 Fetching data from pd-unesa for NIM:', nimToUse)
+        mahasiswaInfo = await cariDataMahasiswa(nimToUse)
+        console.log('✅ Fetched mahasiswa info from pd-unesa:', mahasiswaInfo)
+        
+        if (mahasiswaInfo) {
+          console.log('📊 Mahasiswa data details:')
+          console.log('  - Jenis Kelamin:', mahasiswaInfo.jenisKelamin)
+          console.log('  - Prodi:', mahasiswaInfo.prodi)
+          console.log('  - Fakultas:', mahasiswaInfo.fakultas)
+          console.log('  - Semester Awal:', mahasiswaInfo.semesterAwal)
+          console.log('  - Angkatan:', mahasiswaInfo.angkatan)
+        }
+      } catch (scrapeError) {
+        console.warn('⚠️ Failed to fetch data from pd-unesa:', scrapeError)
+        // Continue without scraping data
+      }
+    } else {
+      // Data is complete, no need to fetch
+      console.log('✅ All data already complete, skipping pd-unesa fetch')
+      return NextResponse.json({
+        success: true,
+        updated: false,
+        nim: user.nim,
+        jenisKelamin: user.jenisKelamin,
+        prodi: user.prodi,
+        semesterAwal: user.semesterAwal,
+        angkatan: user.angkatan,
+        message: 'Data already complete'
+      })
     }
 
     // Prepare update data
@@ -119,17 +130,36 @@ export async function POST(request: NextRequest) {
     if (needsNimUpdate && nimToUse) {
       updateData.nim = nimToUse
       updateData.angkatan = extractAngkatan(nimToUse)
+      console.log('📝 Updating NIM:', nimToUse, 'Angkatan:', updateData.angkatan)
     }
     
-    // Update other fields from scraper if available
+    // Update other fields from scraper if available and needed
     if (mahasiswaInfo) {
-      if (mahasiswaInfo.prodi) updateData.prodi = mahasiswaInfo.prodi
-      if (mahasiswaInfo.jenisKelamin) updateData.jenisKelamin = mahasiswaInfo.jenisKelamin
-      if (mahasiswaInfo.semesterAwal) updateData.semesterAwal = mahasiswaInfo.semesterAwal
+      if (mahasiswaInfo.prodi && !user.prodi) {
+        updateData.prodi = mahasiswaInfo.prodi
+        console.log('📝 Updating Prodi:', mahasiswaInfo.prodi)
+      }
+      if (mahasiswaInfo.jenisKelamin && !user.jenisKelamin) {
+        updateData.jenisKelamin = mahasiswaInfo.jenisKelamin
+        console.log('📝 Updating Jenis Kelamin:', mahasiswaInfo.jenisKelamin)
+      }
+      if (mahasiswaInfo.semesterAwal && !user.semesterAwal) {
+        updateData.semesterAwal = mahasiswaInfo.semesterAwal
+        console.log('📝 Updating Semester Awal:', mahasiswaInfo.semesterAwal)
+      }
+      if (mahasiswaInfo.angkatan && !user.angkatan) {
+        // Convert angkatan from string to number
+        const angkatanNum = typeof mahasiswaInfo.angkatan === 'string' 
+          ? parseInt(mahasiswaInfo.angkatan) 
+          : mahasiswaInfo.angkatan
+        updateData.angkatan = angkatanNum
+        console.log('📝 Updating Angkatan from mahasiswa info:', angkatanNum)
+      }
     }
 
     // Only update if there's something to update
     if (Object.keys(updateData).length === 0) {
+      console.log('⚠️ No new data to update')
       return NextResponse.json({
         success: true,
         updated: false,
@@ -137,9 +167,12 @@ export async function POST(request: NextRequest) {
         jenisKelamin: user.jenisKelamin,
         prodi: user.prodi,
         semesterAwal: user.semesterAwal,
+        angkatan: user.angkatan,
         message: 'No data to update'
       })
     }
+
+    console.log('💾 Updating user with data:', updateData)
 
     // Update user with new data
     const updatedUser = await prisma.user.update({

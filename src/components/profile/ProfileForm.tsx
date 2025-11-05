@@ -12,7 +12,7 @@ import { AvatarUploader } from "@/components/profile/AvatarUploader"
 import { EKTMFullView } from "@/components/profile/EKTMFullView"
 import { showSuccess, showError } from "@/lib/alerts"
 import { ActivityLogger } from "@/lib/activity-logger"
-import { Lock, IdCard, Edit2, Check, X, KeyRound, Upload, Phone, Plus, Trash2 } from "lucide-react"
+import { Lock, IdCard, Edit2, Check, X, KeyRound, Upload, Phone, Plus, Trash2, RefreshCw } from "lucide-react"
 
 interface ProfileFormProps {
   profile?: any // API returns extended profile with User fields (nim, angkatan, avatarUrl)
@@ -37,6 +37,7 @@ export function ProfileForm({ profile, onSuccess, onChangePassword, onSetPasswor
   const [newPhone, setNewPhone] = useState("")
   const [isAddingPhone, setIsAddingPhone] = useState(false)
   const [isLoadingPhones, setIsLoadingPhones] = useState(true)
+  const [isSyncing, setIsSyncing] = useState(false)
 
   // Check if user has password
   useEffect(() => {
@@ -153,7 +154,7 @@ export function ProfileForm({ profile, onSuccess, onChangePassword, onSetPasswor
   // Get NIM dari profile atau email
   const currentNIM = profile?.nim || getNIMFromEmail(session?.email || "")
 
-  // Helper untuk mendapatkan fakultas dari NIM
+  // Helper untuk mendapatkan fakultas dari NIM (fallback only)
   const getFakultasFromNIM = (nim?: string): string => {
     if (!nim || nim.length < 4) return "-"
     const kodeFakultas = nim.substring(2, 4)
@@ -161,13 +162,20 @@ export function ProfileForm({ profile, onSuccess, onChangePassword, onSetPasswor
     // Map kode fakultas
     const fakultasMap: Record<string, string> = {
       "05": "Fakultas Teknik",
+      "01": "Fakultas Ilmu Pendidikan",
+      "02": "Fakultas Bahasa dan Seni",
+      "03": "Fakultas MIPA",
+      "04": "Fakultas Ilmu Sosial dan Hukum",
+      "06": "Fakultas Ilmu Keolahragaan",
+      "07": "Fakultas Ekonomi dan Bisnis",
+      "08": "Fakultas Vokasi",
       // Tambahkan mapping fakultas lain jika diperlukan
     }
     
     return fakultasMap[kodeFakultas] || "-"
   }
 
-  // Helper untuk mendapatkan program studi dari NIM
+  // Helper untuk mendapatkan program studi dari NIM (fallback only)
   const getProdiFromNIM = (nim?: string): string => {
     if (!nim || nim.length < 8) return "-"
     const kodeProdi = nim.substring(4, 8)
@@ -181,41 +189,83 @@ export function ProfileForm({ profile, onSuccess, onChangePassword, onSetPasswor
     return prodiMap[kodeProdi] || "-"
   }
 
-  // Get angkatan from semesterAwal (e.g., "2022/2023 Ganjil" -> 2022)
-  const getAngkatanFromSemesterAwal = (): number => {
+  // Helper to get angkatan - prioritize database value
+  const getAngkatan = (): number | string => {
+    // Priority 1: Database field
+    if (profile?.angkatan) {
+      return profile.angkatan
+    }
+    
+    // Priority 2: Extract from semesterAwal
     if (profile?.semesterAwal) {
-      // Extract first year from format "2022/2023 Ganjil"
       const match = profile.semesterAwal.match(/(\d{4})/)
       if (match) {
         return parseInt(match[1])
       }
     }
     
-    // Fallback: Extract from email
+    // Priority 3: Extract from NIM
+    if (currentNIM && currentNIM.length >= 2) {
+      const yearPrefix = currentNIM.substring(0, 2)
+      const year = parseInt(yearPrefix)
+      if (!isNaN(year) && year >= 0 && year <= 99) {
+        return 2000 + year
+      }
+    }
+    
+    // Priority 4: Extract from email
     if (session?.email) {
       const emailParts = session.email.split('@')[0]
       const parts = emailParts.split('.')
       
       if (parts.length >= 2) {
         const nim = parts[1]
-        // Extract first 2 digits from NIM
         if (nim && nim.length >= 2) {
           const yearPrefix = nim.substring(0, 2)
           const year = parseInt(yearPrefix)
           
-          // Convert to full year (22 -> 2022, 20 -> 2020)
-          if (!isNaN(year)) {
+          if (!isNaN(year) && year >= 0 && year <= 99) {
             return 2000 + year
           }
         }
       }
     }
     
-    // Default to current year if cannot extract
-    return new Date().getFullYear()
+    // Default
+    return "-"
   }
 
-  const angkatan = getAngkatanFromSemesterAwal()
+  const angkatan = getAngkatan()
+
+  // Helper to get Fakultas - prioritize database/extracted from prodi
+  const getFakultas = (): string => {
+    // If prodi contains fakultas info, extract it
+    if (profile?.prodi) {
+      // Some prodi names include fakultas info
+      if (profile.prodi.toLowerCase().includes('teknik')) return "Fakultas Teknik"
+      if (profile.prodi.toLowerCase().includes('pendidikan')) {
+        if (profile.prodi.toLowerCase().includes('ilmu pengetahuan') || 
+            profile.prodi.toLowerCase().includes('mipa')) {
+          return "Fakultas MIPA"
+        }
+        return "Fakultas Ilmu Pendidikan"
+      }
+    }
+    
+    // Fallback to NIM-based extraction
+    return getFakultasFromNIM(currentNIM)
+  }
+
+  // Helper to get Prodi - prioritize database field
+  const getProdi = (): string => {
+    // Priority 1: Database field from pd-unesa
+    if (profile?.prodi) {
+      return profile.prodi
+    }
+    
+    // Priority 2: Extract from NIM
+    return getProdiFromNIM(currentNIM)
+  }
 
   // Get current avatar from session or profile (session.image is synced from profile)
   const currentAvatar = session?.image || profile?.avatarUrl
@@ -390,6 +440,49 @@ export function ProfileForm({ profile, onSuccess, onChangePassword, onSetPasswor
     }
   }
 
+  const handleManualSync = async () => {
+    if (!session || session.role !== 'mahasiswa') return
+    
+    try {
+      setIsSyncing(true)
+      console.log('[ProfileForm] Manual sync triggered')
+      
+      const response = await fetch('/api/profile/sync-nim', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          userId: session.id,
+          email: session.email
+        })
+      })
+      
+      if (response.ok) {
+        const data = await response.json()
+        console.log('[ProfileForm] Sync response:', data)
+        
+        if (data.updated) {
+          showSuccess("Data berhasil disinkronkan dari pd-unesa.unesa.ac.id")
+          // Reload page to show updated data
+          setTimeout(() => {
+            window.location.reload()
+          }, 1000)
+        } else if (data.message) {
+          showSuccess(data.message)
+        } else {
+          showError("Tidak ada data baru untuk disinkronkan")
+        }
+      } else {
+        const errorData = await response.json()
+        throw new Error(errorData.error || 'Failed to sync data')
+      }
+    } catch (error) {
+      console.error('[ProfileForm] Manual sync error:', error)
+      showError(error instanceof Error ? error.message : "Gagal menyinkronkan data")
+    } finally {
+      setIsSyncing(false)
+    }
+  }
+
   if (!session) return null
 
   return (
@@ -401,8 +494,8 @@ export function ProfileForm({ profile, onSuccess, onChangePassword, onSetPasswor
           onOpenChange={setShowEKTM}
           name={session.name}
           nim={currentNIM || ""}
-          fakultas={getFakultasFromNIM(currentNIM)}
-          programStudi={getProdiFromNIM(currentNIM)}
+          fakultas={getFakultas()}
+          programStudi={getProdi()}
           avatarUrl={currentAvatar}
           userId={session.id}
         />
@@ -547,22 +640,30 @@ export function ProfileForm({ profile, onSuccess, onChangePassword, onSetPasswor
                 <Label htmlFor="fakultas">Fakultas</Label>
                 <Input
                   id="fakultas"
-                  value={getFakultasFromNIM(currentNIM)}
+                  value={getFakultas()}
                   disabled
                   className="bg-muted"
                 />
-                <p className="text-xs text-muted-foreground">Fakultas tidak dapat diubah</p>
+                <p className="text-xs text-muted-foreground">
+                  {profile?.prodi 
+                    ? "Data dari pd-unesa.unesa.ac.id" 
+                    : "Fakultas tidak dapat diubah"}
+                </p>
               </div>
 
               <div className="space-y-2">
                 <Label htmlFor="prodi">Program Studi</Label>
                 <Input
                   id="prodi"
-                  value={getProdiFromNIM(currentNIM)}
+                  value={getProdi()}
                   disabled
                   className="bg-muted"
                 />
-                <p className="text-xs text-muted-foreground">Program Studi tidak dapat diubah</p>
+                <p className="text-xs text-muted-foreground">
+                  {profile?.prodi 
+                    ? "Data dari pd-unesa.unesa.ac.id" 
+                    : "Data sedang disinkronkan..."}
+                </p>
               </div>
 
               <div className="space-y-2">
@@ -593,6 +694,30 @@ export function ProfileForm({ profile, onSuccess, onChangePassword, onSetPasswor
                 </div>
               )}
             </div>
+
+            {/* Manual Sync Button for Mahasiswa */}
+            {session.role === "mahasiswa" && (!profile?.jenisKelamin || !profile?.prodi || !profile?.semesterAwal) && (
+              <div className="flex items-start gap-2 p-3 bg-blue-50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-800 rounded-md">
+                <div className="flex-1">
+                  <p className="text-sm font-semibold text-blue-800 dark:text-blue-200 mb-1">
+                    Data Belum Lengkap
+                  </p>
+                  <p className="text-xs text-blue-700 dark:text-blue-300 mb-2">
+                    Beberapa data profil masih kosong. Klik tombol di bawah untuk menyinkronkan data dari pd-unesa.unesa.ac.id
+                  </p>
+                  <Button
+                    type="button"
+                    variant="default"
+                    size="sm"
+                    onClick={handleManualSync}
+                    disabled={isSyncing}
+                    className="bg-blue-600 hover:bg-blue-700 text-white"
+                  >
+                    {isSyncing ? "Menyinkronkan..." : "Sinkronkan Data dari UNESA"}
+                  </Button>
+                </div>
+              </div>
+            )}
 
             {/* Phone Numbers Section - Integrated */}
             <div className="pt-4 border-t">
