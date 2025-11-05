@@ -74,9 +74,6 @@ export async function POST(request: NextRequest) {
     // Check if NIM needs to be updated (null or too short)
     const needsNimUpdate = !user.nim || user.nim.length < 8
     
-    // Check if other data needs to be updated
-    const needsDataUpdate = !user.jenisKelamin || !user.prodi || !user.semesterAwal
-    
     // Use existing NIM if available, otherwise extract from email
     const nimToUse = user.nim && user.nim.length >= 8 ? user.nim : extractedNim
     
@@ -87,40 +84,32 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Always try to fetch additional data using multi-source strategy if data is missing
+    // ALWAYS try to fetch data using multi-source strategy to ensure accuracy
+    // This will correct any old wrong data (e.g., wrong gender, wrong prodi)
     let mahasiswaInfo = null
-    if (needsDataUpdate || needsNimUpdate) {
-      try {
-        const { getMahasiswaDataMultiSource } = await import('@/lib/unesa-scraper')
-        console.log('🔍 Fetching data using multi-source strategy for NIM:', nimToUse)
-        mahasiswaInfo = await getMahasiswaDataMultiSource(nimToUse, user.name)
-        console.log('✅ Fetched mahasiswa info from multi-source:', mahasiswaInfo)
-        
-        if (mahasiswaInfo) {
-          console.log('📊 Mahasiswa data details:')
-          console.log('  - Jenis Kelamin:', mahasiswaInfo.jenisKelamin)
-          console.log('  - Prodi:', mahasiswaInfo.prodi)
-          console.log('  - Fakultas:', mahasiswaInfo.fakultas)
-          console.log('  - Semester Awal:', mahasiswaInfo.semesterAwal)
-          console.log('  - Angkatan:', mahasiswaInfo.angkatan)
-        }
-      } catch (scrapeError) {
-        console.warn('⚠️ Failed to fetch data from pd-unesa:', scrapeError)
-        // Continue without scraping data
+    try {
+      const { getMahasiswaDataMultiSource } = await import('@/lib/unesa-scraper')
+      console.log('🔍 Fetching data using multi-source strategy for NIM:', nimToUse)
+      console.log('📊 Current user data:')
+      console.log('  - Jenis Kelamin:', user.jenisKelamin)
+      console.log('  - Prodi:', user.prodi)
+      console.log('  - Fakultas:', user.fakultas)
+      console.log('  - Angkatan:', user.angkatan)
+      
+      mahasiswaInfo = await getMahasiswaDataMultiSource(nimToUse, user.name)
+      console.log('✅ Fetched mahasiswa info from multi-source:', mahasiswaInfo)
+      
+      if (mahasiswaInfo) {
+        console.log('📊 New mahasiswa data from scraper:')
+        console.log('  - Jenis Kelamin:', mahasiswaInfo.jenisKelamin)
+        console.log('  - Prodi:', mahasiswaInfo.prodi)
+        console.log('  - Fakultas:', mahasiswaInfo.fakultas)
+        console.log('  - Semester Awal:', mahasiswaInfo.semesterAwal)
+        console.log('  - Angkatan:', mahasiswaInfo.angkatan)
       }
-    } else {
-      // Data is complete, no need to fetch
-      console.log('✅ All data already complete, skipping pd-unesa fetch')
-      return NextResponse.json({
-        success: true,
-        updated: false,
-        nim: user.nim,
-        jenisKelamin: user.jenisKelamin,
-        prodi: user.prodi,
-        semesterAwal: user.semesterAwal,
-        angkatan: user.angkatan,
-        message: 'Data already complete'
-      })
+    } catch (scrapeError) {
+      console.warn('⚠️ Failed to fetch data from multi-source:', scrapeError)
+      // Continue without scraping data
     }
 
     // Prepare update data
@@ -133,27 +122,36 @@ export async function POST(request: NextRequest) {
       console.log('📝 Updating NIM:', nimToUse, 'Angkatan:', updateData.angkatan)
     }
     
-    // Update other fields from scraper if available and needed
+    // Update other fields from scraper - ALWAYS UPDATE if scraper has data (force update for accuracy)
     if (mahasiswaInfo) {
-      if (mahasiswaInfo.prodi && !user.prodi) {
-        updateData.prodi = mahasiswaInfo.prodi
-        console.log('📝 Updating Prodi:', mahasiswaInfo.prodi)
+      if (mahasiswaInfo.prodi) {
+        // Always update prodi if scraper has data (for correcting old wrong data)
+        if (user.prodi !== mahasiswaInfo.prodi) {
+          updateData.prodi = mahasiswaInfo.prodi
+          console.log('📝 Updating Prodi:', user.prodi, '→', mahasiswaInfo.prodi)
+        }
       }
-      if (mahasiswaInfo.jenisKelamin && !user.jenisKelamin) {
-        updateData.jenisKelamin = mahasiswaInfo.jenisKelamin
-        console.log('📝 Updating Jenis Kelamin:', mahasiswaInfo.jenisKelamin)
+      if (mahasiswaInfo.jenisKelamin) {
+        // Always update gender if scraper has data (for correcting old wrong data)
+        if (user.jenisKelamin !== mahasiswaInfo.jenisKelamin) {
+          updateData.jenisKelamin = mahasiswaInfo.jenisKelamin
+          console.log('📝 Updating Jenis Kelamin:', user.jenisKelamin, '→', mahasiswaInfo.jenisKelamin)
+        }
       }
       if (mahasiswaInfo.semesterAwal && !user.semesterAwal) {
         updateData.semesterAwal = mahasiswaInfo.semesterAwal
         console.log('📝 Updating Semester Awal:', mahasiswaInfo.semesterAwal)
       }
-      if (mahasiswaInfo.angkatan && !user.angkatan) {
+      if (mahasiswaInfo.angkatan) {
         // Convert angkatan from string to number
         const angkatanNum = typeof mahasiswaInfo.angkatan === 'string' 
           ? parseInt(mahasiswaInfo.angkatan) 
           : mahasiswaInfo.angkatan
-        updateData.angkatan = angkatanNum
-        console.log('📝 Updating Angkatan from mahasiswa info:', angkatanNum)
+        // Always update if different (for correcting old wrong data)
+        if (user.angkatan !== angkatanNum) {
+          updateData.angkatan = angkatanNum
+          console.log('📝 Updating Angkatan:', user.angkatan, '→', angkatanNum)
+        }
       }
     }
 

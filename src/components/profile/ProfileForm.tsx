@@ -12,7 +12,7 @@ import { AvatarUploader } from "@/components/profile/AvatarUploader"
 import { EKTMFullView } from "@/components/profile/EKTMFullView"
 import { showSuccess, showError } from "@/lib/alerts"
 import { ActivityLogger } from "@/lib/activity-logger"
-import { Lock, IdCard, Edit2, Check, X, KeyRound, Upload, Phone, Plus, Trash2 } from "lucide-react"
+import { Lock, IdCard, Edit2, Check, X, KeyRound, Upload, Phone, Plus, Trash2, Loader2 } from "lucide-react"
 
 // Simple gender detection fallback
 function detectGenderFromNameSimple(name: string): string | null {
@@ -69,6 +69,9 @@ export function ProfileForm({ profile, onSuccess, onChangePassword, onSetPasswor
   const [isEditingGender, setIsEditingGender] = useState(false)
   const [editedGender, setEditedGender] = useState("")
   const [isSavingGender, setIsSavingGender] = useState(false)
+  
+  // Force refresh data state
+  const [isRefreshingData, setIsRefreshingData] = useState(false)
 
   // Check if user has password
   useEffect(() => {
@@ -530,6 +533,47 @@ export function ProfileForm({ profile, onSuccess, onChangePassword, onSetPasswor
       showError(error instanceof Error ? error.message : "Gagal menghapus nomor telepon")
     }
   }
+  
+  const handleForceRefreshData = async () => {
+    if (!session || session.role !== 'mahasiswa') return
+    
+    if (!confirm("Perbarui data dari pd-unesa.unesa.ac.id? Ini akan memperbarui data Prodi, Jenis Kelamin, dan Angkatan Anda.")) return
+    
+    try {
+      setIsRefreshingData(true)
+      console.log('[ProfileForm] Force refreshing data for:', session.email)
+      
+      const response = await fetch('/api/profile/sync-nim', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          userId: session.id,
+          email: session.email
+        })
+      })
+      
+      if (response.ok) {
+        const data = await response.json()
+        console.log('[ProfileForm] Force refresh response:', data)
+        
+        showSuccess("Data berhasil diperbarui dari pd-unesa.unesa.ac.id")
+        
+        // Reload page after 1.5 seconds
+        setTimeout(() => {
+          window.location.reload()
+        }, 1500)
+      } else {
+        const errorData = await response.json()
+        console.error('[ProfileForm] Force refresh failed:', errorData)
+        showError(errorData.error || "Gagal memperbarui data")
+      }
+    } catch (error) {
+      console.error('[ProfileForm] Error force refreshing data:', error)
+      showError("Terjadi kesalahan saat memperbarui data")
+    } finally {
+      setIsRefreshingData(false)
+    }
+  }
 
   if (!session) return null
 
@@ -600,8 +644,34 @@ export function ProfileForm({ profile, onSuccess, onChangePassword, onSetPasswor
 
       <Card className="lg:col-span-2">
         <CardHeader>
-          <CardTitle>Informasi Profil</CardTitle>
-          <CardDescription>Kelola informasi pribadi Anda</CardDescription>
+          <div className="flex items-start justify-between">
+            <div>
+              <CardTitle>Informasi Profil</CardTitle>
+              <CardDescription>Kelola informasi pribadi Anda</CardDescription>
+            </div>
+            {session.role === "mahasiswa" && (
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={handleForceRefreshData}
+                disabled={isRefreshingData}
+                className="shrink-0"
+              >
+                {isRefreshingData ? (
+                  <>
+                    <Loader2 className="h-3.5 w-3.5 mr-2 animate-spin" />
+                    Memperbarui...
+                  </>
+                ) : (
+                  <>
+                    <KeyRound className="h-3.5 w-3.5 mr-2" />
+                    Perbarui Data
+                  </>
+                )}
+              </Button>
+            )}
+          </div>
         </CardHeader>
         <CardContent>
           <div className="space-y-4">
