@@ -14,6 +14,32 @@ import { showSuccess, showError } from "@/lib/alerts"
 import { ActivityLogger } from "@/lib/activity-logger"
 import { Lock, IdCard, Edit2, Check, X, KeyRound, Upload, Phone, Plus } from "lucide-react"
 
+// Simple gender detection fallback
+function detectGenderFromNameSimple(name: string): string | null {
+  if (!name) return null
+  const lowerName = name.toLowerCase()
+  
+  // Common male indicators
+  const maleNames = ['ahmad', 'muhammad', 'budi', 'andi', 'agus', 'dedi', 'rino', 'raihan']
+  const maleEndings = ['wan', 'man', 'din']
+  
+  // Common female indicators  
+  const femaleNames = ['siti', 'nur', 'dewi', 'putri', 'ayu', 'ratna']
+  const femaleEndings = ['wati', 'ningsih', 'yani', 'yanti', 'tun', 'ni', 'tika']
+  
+  // Check male patterns
+  if (lowerName.startsWith('muhammad ') || lowerName.startsWith('ahmad ')) return 'Laki - Laki'
+  if (maleNames.some(n => lowerName.includes(n))) return 'Laki - Laki'
+  if (maleEndings.some(e => lowerName.endsWith(e))) return 'Laki - Laki'
+  
+  // Check female patterns
+  if (lowerName.startsWith('siti ') || lowerName.startsWith('dewi ') || lowerName.startsWith('putri ')) return 'Perempuan'
+  if (femaleNames.some(n => lowerName.includes(n))) return 'Perempuan'
+  if (femaleEndings.some(e => lowerName.endsWith(e))) return 'Perempuan'
+  
+  return null
+}
+
 interface ProfileFormProps {
   profile?: any // API returns extended profile with User fields (nim, angkatan, avatarUrl)
   onSuccess?: () => void
@@ -91,22 +117,20 @@ export function ProfileForm({ profile, onSuccess, onChangePassword, onSetPasswor
     fetchPhone()
   }, [session])
 
-  // Auto-sync data from pd-unesa when profile loads
+  // Auto-sync data from multi-source when profile loads
   useEffect(() => {
     const syncData = async () => {
       if (!session || session.role !== 'mahasiswa') return
       
-      // Check if any critical data is missing
+      // Always check if critical data is missing
       const needsSync = 
-        !profile?.nim || 
-        profile.nim.length < 8 ||
         !profile?.jenisKelamin ||
         !profile?.prodi ||
         !profile?.semesterAwal
       
-      if (needsSync && session.email) {
+      if (needsSync) {
         try {
-          console.log('[ProfileForm] Auto-syncing data from pd-unesa for:', session.email)
+          console.log('[ProfileForm] Auto-syncing data using multi-source for:', session.email)
           const response = await fetch('/api/profile/sync-nim', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -118,22 +142,33 @@ export function ProfileForm({ profile, onSuccess, onChangePassword, onSetPasswor
           
           if (response.ok) {
             const data = await response.json()
+            console.log('[ProfileForm] Sync response:', data)
+            
+            // Reload if we got any new data
             if (data.updated || data.jenisKelamin || data.prodi || data.semesterAwal) {
-              console.log('[ProfileForm] Data synced successfully:', data)
-              // Reload page to show updated data
+              console.log('[ProfileForm] New data received, reloading...')
               setTimeout(() => {
                 window.location.reload()
-              }, 1000)
+              }, 1500)
+            } else {
+              console.log('[ProfileForm] No new data from sync')
             }
+          } else {
+            const errorData = await response.json()
+            console.error('[ProfileForm] Sync failed:', errorData)
           }
         } catch (error) {
           console.error('[ProfileForm] Error syncing data:', error)
         }
+      } else {
+        console.log('[ProfileForm] All critical data present, no sync needed')
       }
     }
     
-    syncData()
-  }, [session, profile])
+    // Run sync after component mounts
+    const timer = setTimeout(syncData, 500)
+    return () => clearTimeout(timer)
+  }, [session, profile?.jenisKelamin, profile?.prodi, profile?.semesterAwal])
 
   // Helper untuk extract NIM dari email
   const getNIMFromEmail = (email: string): string | undefined => {
@@ -610,8 +645,10 @@ export function ProfileForm({ profile, onSuccess, onChangePassword, onSetPasswor
                 />
                 <p className="text-xs text-muted-foreground">
                   {profile?.prodi 
-                    ? "Data dari pd-unesa.unesa.ac.id" 
-                    : "Data sedang disinkronkan..."}
+                    ? "Data dari multi-source (PDDIKTI/pd-unesa)" 
+                    : getProdi() !== "-"
+                    ? "Data dari kode NIM (fallback)"
+                    : "Menunggu sinkronisasi data..."}
                 </p>
               </div>
 
@@ -619,14 +656,27 @@ export function ProfileForm({ profile, onSuccess, onChangePassword, onSetPasswor
                 <Label htmlFor="jenisKelamin">Jenis Kelamin</Label>
                 <Input
                   id="jenisKelamin"
-                  value={profile?.jenisKelamin || "-"}
+                  value={(() => {
+                    // Priority 1: Database value
+                    if (profile?.jenisKelamin) return profile.jenisKelamin
+                    
+                    // Priority 2: Detect from name as fallback
+                    if (session?.name) {
+                      const detected = detectGenderFromNameSimple(session.name)
+                      if (detected) return `${detected} (terdeteksi)`
+                    }
+                    
+                    return "-"
+                  })()}
                   disabled
                   className="bg-muted"
                 />
                 <p className="text-xs text-muted-foreground">
                   {profile?.jenisKelamin 
-                    ? "Data dari pd-unesa.unesa.ac.id" 
-                    : "Data sedang disinkronkan..."}
+                    ? "Data dari multi-source (PDDIKTI/pd-unesa)" 
+                    : session?.name && detectGenderFromNameSimple(session.name)
+                    ? "Terdeteksi otomatis dari nama"
+                    : "Menunggu sinkronisasi data..."}
                 </p>
               </div>
 
