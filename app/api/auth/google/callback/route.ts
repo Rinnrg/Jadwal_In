@@ -8,14 +8,6 @@ import { cariNIPDosen } from '@/lib/unesa-scraper'
 export const dynamic = 'force-dynamic'
 export const runtime = 'nodejs'
 
-// Test database connection on module load - ONLY at runtime, not during build
-if (process.env.VERCEL_ENV) {
-  console.log('🔌 Testing database connection...')
-  prisma.$connect()
-    .then(() => console.log('✅ Database connection test successful'))
-    .catch((e) => console.error('❌ Database connection test failed:', e.message))
-}
-
 // Helper function to retry database operations
 async function withDatabaseRetry<T>(
   operation: () => Promise<T>,
@@ -26,28 +18,19 @@ async function withDatabaseRetry<T>(
   
   for (let attempt = 1; attempt <= maxRetries; attempt++) {
     try {
-      console.log(`🔄 Attempting ${operationName} (attempt ${attempt}/${maxRetries})`)
       const result = await operation()
-      console.log(`✅ ${operationName} successful`)
       return result
     } catch (error: any) {
       lastError = error
-      console.error(`❌ ${operationName} failed (attempt ${attempt}/${maxRetries}):`)
-      console.error(`   Error name: ${error.name}`)
-      console.error(`   Error message: ${error.message}`)
-      console.error(`   Error code: ${error.code || 'N/A'}`)
       
       if (attempt < maxRetries) {
-        // Wait before retry with exponential backoff
         const waitTime = Math.min(1000 * Math.pow(2, attempt - 1), 3000)
-        console.log(`⏳ Waiting ${waitTime}ms before retry...`)
         await new Promise(resolve => setTimeout(resolve, waitTime))
       }
     }
   }
   
-  console.error(`❌ ${operationName} failed after ${maxRetries} attempts`)
-  console.error(`   Final error:`, lastError)
+  console.error(`Database operation failed: ${operationName}`, lastError)
   throw lastError
 }
 
@@ -109,42 +92,33 @@ function extractAngkatan(nim: string | null): number {
 
 export async function GET(request: NextRequest) {
   try {
-    console.log('🔵 Google Callback Started')
     const searchParams = request.nextUrl.searchParams
     const code = searchParams.get('code')
     const error = searchParams.get('error')
 
-    console.log('📥 Received params:', { code: code?.substring(0, 20) + '...', error })
-
     // Handle user cancellation
     if (error) {
-      console.log('❌ User cancelled or error:', error)
       return NextResponse.redirect(
         new URL(`/login?error=${error}`, request.url)
       )
     }
 
     if (!code) {
-      console.log('❌ No authorization code received')
       return NextResponse.redirect(
         new URL('/login?error=no_code', request.url)
       )
     }
 
     // Get user info from Google
-    console.log('🔍 Getting user info from Google...')
     const googleUser = await getGoogleUserInfo(code)
-    console.log('✅ Google user info:', { email: googleUser.email, name: googleUser.name })
 
     if (!googleUser.email) {
-      console.log('❌ No email from Google')
       return NextResponse.redirect(
         new URL('/login?error=no_email', request.url)
       )
     }
 
     // Find or create user in database
-    console.log('🔍 Finding user in database...')
     let user: any = null
     try {
       user = await withDatabaseRetry(
@@ -154,21 +128,17 @@ export async function GET(request: NextRequest) {
         'Find user by email'
       )
     } catch (dbError: any) {
-      console.error('❌ Database error when finding user:', dbError)
+      console.error('Database error when finding user:', dbError)
       return NextResponse.redirect(
         new URL(`/login?error=database_error&details=${encodeURIComponent(dbError.message)}`, request.url)
       )
     }
 
     if (!user) {
-      console.log('➕ Creating new user...')
-      
-      // Determine role based on email domain
+        // Determine role based on email domain
       const isDosen = googleUser.email.endsWith('@unesa.ac.id')
       const userRole = isDosen ? 'dosen' : 'mahasiswa'
-      console.log(`📧 Email domain check: ${googleUser.email} → Role: ${userRole}`)
-      
-      let extractedNim: string | null = null
+        let extractedNim: string | null = null
       let extractedNip: string | null = null
       let extractedAngkatan: number | null = null
       let extractedProdi: string | null = null
@@ -177,8 +147,7 @@ export async function GET(request: NextRequest) {
       
       if (isDosen) {
         // For dosen, try to fetch NIP and prodi from cv.unesa.ac.id
-        console.log('👨‍🏫 User is dosen, fetching data from cv.unesa.ac.id...')
-        try {
+            try {
           const dosenInfo = await Promise.race([
             cariNIPDosen(googleUser.name || ''),
             new Promise<null>((_, reject) => setTimeout(() => reject(new Error('Timeout')), 10000))
@@ -186,20 +155,15 @@ export async function GET(request: NextRequest) {
           if (dosenInfo) {
             extractedNip = dosenInfo.nip
             extractedProdi = dosenInfo.prodi
-            console.log('✅ Dosen data found:')
-            console.log('   - NIP:', extractedNip || 'Not found')
-            console.log('   - Prodi:', extractedProdi || 'Not found')
-          } else {
-            console.log('⚠️ Dosen data not found')
-          }
+                                  } else {
+                  }
         } catch (error) {
           console.error('❌ Error fetching dosen data (continuing without it):', error)
           // Continue without dosen data - login should not fail
         }
       } else {
         // For mahasiswa, fetch ALL data from pd-unesa.unesa.ac.id using name
-        console.log('👨‍🎓 Fetching mahasiswa data from pd-unesa.unesa.ac.id...')
-        try {
+            try {
           const { cariDataMahasiswa } = await import('@/lib/unesa-scraper')
           const mahasiswaInfo = await Promise.race([
             cariDataMahasiswa(googleUser.name || ''),
@@ -220,26 +184,17 @@ export async function GET(request: NextRequest) {
               extractedAngkatan = extractAngkatan(extractedNim)
             }
             
-            console.log('✅ Mahasiswa data found from pd-unesa:')
-            console.log('   - NIM:', extractedNim || 'Not found')
-            console.log('   - Prodi:', extractedProdi || 'Not found')
-            console.log('   - Angkatan:', extractedAngkatan || 'Not found')
-            console.log('   - Jenis Kelamin:', extractedJenisKelamin || 'Not found')
-            console.log('   - Semester Awal:', extractedSemesterAwal || 'Not found')
-          } else {
-            console.log('⚠️ Data not found on pd-unesa, trying to extract NIM from email as fallback...')
+                                                          } else {
             // Fallback: extract from email if pd-unesa scraping fails
             extractedNim = extractNIMFromEmail(googleUser.email)
             extractedAngkatan = extractAngkatan(extractedNim)
-            console.log('   - NIM (from email):', extractedNim || 'Not found')
           }
         } catch (error) {
           console.error('❌ Error fetching mahasiswa data (continuing with fallback):', error)
           // Fallback: extract from email if error occurs
           extractedNim = extractNIMFromEmail(googleUser.email)
           extractedAngkatan = extractAngkatan(extractedNim)
-          console.log('   - Using fallback NIM from email:', extractedNim)
-        }
+              }
       }
       
       // Create new user (all data in User table)
@@ -263,23 +218,14 @@ export async function GET(request: NextRequest) {
           }),
           'Create new user'
         )
-        console.log('✅ User created:', user.id)
-      } catch (createError: any) {
+          } catch (createError: any) {
         console.error('❌ Error creating user:', createError)
         return NextResponse.redirect(
           new URL(`/login?error=user_creation_failed&details=${encodeURIComponent(createError.message)}`, request.url)
         )
       }
-      console.log('   - Role:', userRole)
-      console.log('   - NIM:', extractedNim || 'N/A')
-      console.log('   - NIP:', extractedNip || 'N/A')
-      console.log('   - Angkatan:', extractedAngkatan || 'N/A')
-      console.log('   - Prodi:', extractedProdi || 'N/A')
-      console.log('   - Avatar URL:', !!googleUser.picture)
-    } else if (!user.googleId) {
-      console.log('🔄 Updating existing user with Google ID...')
-      
-      // Determine role based on email domain
+                } else if (!user.googleId) {
+        // Determine role based on email domain
       const isDosen = googleUser.email.endsWith('@unesa.ac.id')
       const userRole = isDosen ? 'dosen' : 'mahasiswa'
       
@@ -293,23 +239,18 @@ export async function GET(request: NextRequest) {
       
       if (isDosen && (!user.nip || !user.prodi)) {
         // For dosen without complete data, try to fetch from cv.unesa.ac.id
-        console.log('👨‍🏫 User is dosen, fetching data from cv.unesa.ac.id...')
-        try {
+            try {
           const dosenInfo = await cariNIPDosen(googleUser.name || '')
           if (dosenInfo) {
             if (!user.nip) extractedNip = dosenInfo.nip
             if (!user.prodi) extractedProdi = dosenInfo.prodi
-            console.log('✅ Dosen data found:')
-            console.log('   - NIP:', extractedNip || 'Already set')
-            console.log('   - Prodi:', extractedProdi || 'Already set')
-          }
+                                  }
         } catch (error) {
           console.error('❌ Error fetching dosen data:', error)
         }
       } else if (!isDosen && (!user.nim || !user.prodi || !user.jenisKelamin || !user.semesterAwal)) {
         // For existing mahasiswa with missing data, fetch from pd-unesa
-        console.log('👨‍🎓 Fetching mahasiswa data from pd-unesa.unesa.ac.id...')
-        try {
+            try {
           const { cariDataMahasiswa } = await import('@/lib/unesa-scraper')
           
           // Try to search by name first (primary method)
@@ -317,16 +258,14 @@ export async function GET(request: NextRequest) {
           
           // If not found by name and we have NIM, try by NIM
           if (!mahasiswaInfo && user.nim) {
-            console.log('   - Name search failed, trying by NIM...')
-            mahasiswaInfo = await cariDataMahasiswa(user.nim)
+                    mahasiswaInfo = await cariDataMahasiswa(user.nim)
           }
           
           // If still not found and NIM can be extracted from email, try that
           if (!mahasiswaInfo) {
             const emailNim = extractNIMFromEmail(googleUser.email)
             if (emailNim) {
-              console.log('   - Trying by email-extracted NIM as fallback...')
-              mahasiswaInfo = await cariDataMahasiswa(emailNim)
+                        mahasiswaInfo = await cariDataMahasiswa(emailNim)
             }
           }
           
@@ -341,20 +280,12 @@ export async function GET(request: NextRequest) {
             if (mahasiswaInfo.jenisKelamin) extractedJenisKelamin = mahasiswaInfo.jenisKelamin
             if (mahasiswaInfo.semesterAwal) extractedSemesterAwal = mahasiswaInfo.semesterAwal
             
-            console.log('✅ Mahasiswa data found from pd-unesa:')
-            console.log('   - NIM:', extractedNim || 'Already set')
-            console.log('   - Prodi:', extractedProdi || 'Already set')
-            console.log('   - Angkatan:', extractedAngkatan || 'Already set')
-            console.log('   - Jenis Kelamin:', extractedJenisKelamin || 'Already set')
-            console.log('   - Semester Awal:', extractedSemesterAwal || 'Already set')
-          } else {
-            console.log('⚠️ Could not find mahasiswa data on pd-unesa')
-            // Last resort fallback: extract NIM from email
+                                                          } else {
+                    // Last resort fallback: extract NIM from email
             if (!user.nim) {
               extractedNim = extractNIMFromEmail(googleUser.email)
               extractedAngkatan = extractAngkatan(extractedNim)
-              console.log('   - Using fallback NIM from email:', extractedNim)
-            }
+                      }
           }
         } catch (error) {
           console.error('❌ Error fetching mahasiswa data:', error)
@@ -362,8 +293,7 @@ export async function GET(request: NextRequest) {
           if (!user.nim) {
             extractedNim = extractNIMFromEmail(googleUser.email)
             extractedAngkatan = extractAngkatan(extractedNim)
-            console.log('   - Using fallback NIM from email:', extractedNim)
-          }
+                  }
         }
       }
       
@@ -404,17 +334,14 @@ export async function GET(request: NextRequest) {
           }),
           'Update user with Google ID'
         )
-        console.log('✅ User updated:', user.id)
-      } catch (updateError: any) {
+          } catch (updateError: any) {
         console.error('❌ Error updating user:', updateError)
         return NextResponse.redirect(
           new URL(`/login?error=user_update_failed&details=${encodeURIComponent(updateError.message)}`, request.url)
         )
       }
     } else {
-      console.log('✅ User found:', user.id)
-      
-      // Determine role based on email domain
+        // Determine role based on email domain
       const isDosen = googleUser.email.endsWith('@unesa.ac.id')
       const userRole = isDosen ? 'dosen' : 'mahasiswa'
       
@@ -423,22 +350,19 @@ export async function GET(request: NextRequest) {
       
       // Update role if email domain indicates dosen
       if (user.role !== userRole) {
-        console.log(`🔄 Updating role: "${user.role}" → "${userRole}"`)
-        updateData.role = userRole
+            updateData.role = userRole
         needsUpdate = true
       }
       
       // Update image if Google has newer one
       if (googleUser.picture && user.image !== googleUser.picture) {
-        console.log('🖼️ Updating user image from Google...')
-        updateData.image = googleUser.picture
+            updateData.image = googleUser.picture
         needsUpdate = true
       }
       
       // Update avatarUrl if Google has newer one
       if (googleUser.picture && user.avatarUrl !== googleUser.picture) {
-        console.log('🖼️ Updating avatarUrl from Google...')
-        updateData.avatarUrl = googleUser.picture
+            updateData.avatarUrl = googleUser.picture
         needsUpdate = true
       }
       
@@ -454,16 +378,14 @@ export async function GET(request: NextRequest) {
       if (nimNeedsUpdate) {
         const extractedNim = extractNIMFromEmail(googleUser.email)
         if (extractedNim) {
-          console.log(`🔄 Updating NIM: "${currentNim || 'NULL'}" → "${extractedNim}"`)
-          updateData.nim = extractedNim
+                updateData.nim = extractedNim
           updateData.angkatan = extractAngkatan(extractedNim)
           needsUpdate = true
         }
       }
       
       if (dataDosenNeedsUpdate) {
-        console.log('👨‍🏫 Fetching dosen data from cv.unesa.ac.id...')
-        try {
+            try {
           const dosenInfo = await Promise.race([
             cariNIPDosen(googleUser.name || ''),
             new Promise<null>((_, reject) => setTimeout(() => reject(new Error('Timeout')), 10000))
@@ -471,13 +393,11 @@ export async function GET(request: NextRequest) {
           if (dosenInfo) {
             if (!currentNip && dosenInfo.nip) {
               updateData.nip = dosenInfo.nip
-              console.log('✅ NIP found:', dosenInfo.nip)
-              needsUpdate = true
+                        needsUpdate = true
             }
             if (!currentProdi && dosenInfo.prodi) {
               updateData.prodi = dosenInfo.prodi
-              console.log('✅ Prodi found:', dosenInfo.prodi)
-              needsUpdate = true
+                        needsUpdate = true
             }
           }
         } catch (error) {
@@ -487,8 +407,7 @@ export async function GET(request: NextRequest) {
       }
       
       if (dataMahasiswaNeedsUpdate) {
-        console.log('👨‍🎓 Fetching mahasiswa data from pd-unesa.unesa.ac.id...')
-        try {
+            try {
           const { cariDataMahasiswa } = await import('@/lib/unesa-scraper')
           const mahasiswaInfo = await Promise.race([
             cariDataMahasiswa(currentNim!),
@@ -497,18 +416,15 @@ export async function GET(request: NextRequest) {
           if (mahasiswaInfo) {
             if (!currentProdi && mahasiswaInfo.prodi) {
               updateData.prodi = mahasiswaInfo.prodi
-              console.log('✅ Prodi found:', mahasiswaInfo.prodi)
-              needsUpdate = true
+                        needsUpdate = true
             }
             if (mahasiswaInfo.jenisKelamin) {
               updateData.jenisKelamin = mahasiswaInfo.jenisKelamin
-              console.log('✅ Jenis Kelamin found:', mahasiswaInfo.jenisKelamin)
-              needsUpdate = true
+                        needsUpdate = true
             }
             if (mahasiswaInfo.semesterAwal) {
               updateData.semesterAwal = mahasiswaInfo.semesterAwal
-              console.log('✅ Semester Awal found:', mahasiswaInfo.semesterAwal)
-              needsUpdate = true
+                        needsUpdate = true
             }
           }
         } catch (error) {
@@ -528,57 +444,33 @@ export async function GET(request: NextRequest) {
             'Update existing user data',
             2 // Only 2 retries for this non-critical update
           )
-          console.log('✅ User data updated')
-          console.log('   - NIM:', user.nim || 'N/A')
-          console.log('   - NIP:', user.nip || 'N/A')
-          console.log('   - Angkatan:', user.angkatan || 'N/A')
-        } catch (updateError) {
+                                } catch (updateError) {
           console.error('❌ Error updating existing user data:', updateError)
           // Don't fail login, just log the error and continue
-          console.log('⚠️ Continuing login without data update')
-        }
+              }
       } else {
-        console.log(`✅ All data already up to date`)
-        console.log(`   - NIM: ${currentNim || 'N/A'}`)
-        console.log(`   - NIP: ${currentNip || 'N/A'}`)
-      }
+                  }
     }
 
     // Ensure user exists before creating session
     if (!user) {
-      console.log('❌ User is null after all operations')
-      return NextResponse.redirect(
+        return NextResponse.redirect(
         new URL('/login?error=user_creation_failed', request.url)
       )
     }
 
     // Final verification: Log user profile details
-    console.log('📊 Final User Status:')
-    console.log('   - User ID:', user.id)
-    console.log('   - Email:', user.email)
-    console.log('   - Role:', user.role)
-    console.log('   - NIM:', user.nim || 'NULL')
-    console.log('   - NIP:', user.nip || 'NULL')
-    console.log('   - Angkatan:', user.angkatan || 'NULL')
-    console.log('   - Prodi:', user.prodi || 'NULL')
-    console.log('   - Avatar URL:', user.avatarUrl ? 'SET' : 'NULL')
-    console.log('   - Google ID:', user.googleId || 'NULL')
-
     // Create session token
-    console.log('🔐 Creating session...')
     const sessionToken = randomBytes(32).toString('hex')
 
     // Get callback URL from cookie
     const callbackUrl = request.cookies.get('google_callback_url')?.value || '/dashboard'
-    console.log('🎯 Redirecting to:', callbackUrl)
-
     // Create response with redirect
     const response = NextResponse.redirect(
       new URL(callbackUrl, request.url)
     )
 
     // Set session cookie (client-side session, not database-backed)
-    console.log('🍪 Setting session cookie:', sessionToken.substring(0, 20) + '...')
     response.cookies.set('session_token', sessionToken, {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
@@ -586,8 +478,6 @@ export async function GET(request: NextRequest) {
       maxAge: 60 * 60 * 24 * 30, // 30 days
       path: '/',
     })
-    console.log('✅ Session cookie set')
-
     // Set user ID cookie for session validation (non-httpOnly so client can read)
     response.cookies.set('user_id', user.id, {
       httpOnly: false,
@@ -596,9 +486,6 @@ export async function GET(request: NextRequest) {
       maxAge: 60 * 60 * 24 * 30, // 30 days
       path: '/',
     })
-    console.log('✅ User ID cookie set')
-    console.log('✅ Session created')
-
     // Clear callback URL cookie
     response.cookies.delete('google_callback_url')
 

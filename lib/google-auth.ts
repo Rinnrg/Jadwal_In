@@ -24,7 +24,6 @@ function getRedirectUri() {
 }
 
 const redirectUri = getRedirectUri();
-console.log('🔗 Google OAuth Redirect URI:', redirectUri);
 
 export const oauth2Client = new google.auth.OAuth2(
   process.env.GOOGLE_CLIENT_ID,

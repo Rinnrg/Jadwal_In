@@ -20,12 +20,8 @@ if (process.env.NODE_ENV !== 'production') globalForPrisma.prisma = prisma
 // Test connection on initialization - ONLY in development or at runtime (not during build)
 if (process.env.NODE_ENV === 'development' && typeof window === 'undefined') {
   prisma.$connect()
-    .then(() => {
-      console.log('✅ Database connected successfully')
-    })
     .catch((error) => {
-      console.error('❌ Database connection failed:', error.message)
-      console.error('Please check your DATABASE_URL and DIRECT_URL in .env file')
+      console.error('Database connection failed:', error.message)
     })
 }
 
