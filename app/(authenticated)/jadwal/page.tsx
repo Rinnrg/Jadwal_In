@@ -612,7 +612,7 @@ export default function JadwalPage() {
 
       {/* Import Dialog */}
       <Dialog open={showImportDialog} onOpenChange={setShowImportDialog}>
-        <DialogContent className="glass-effect border-2 border-primary/20">
+        <DialogContent>
           <DialogHeader>
             <DialogTitle className="flex items-center space-x-2">
               <Upload className="h-5 w-5 text-primary" />

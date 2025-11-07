@@ -402,7 +402,7 @@ export function AssignmentTab({ subjectId, canManage, userRole }: AssignmentTabP
                 Tambah Tugas
               </Button>
             </DialogTrigger>
-            <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto w-[calc(100vw-2rem)] sm:w-full">
+            <DialogContent className="w-[90vw] max-w-2xl max-h-[85vh] overflow-y-auto">
               <DialogHeader>
                 <DialogTitle>{editingAssignment ? "Edit Tugas" : "Tambah Tugas Baru"}</DialogTitle>
                 <DialogDescription>
@@ -729,7 +729,7 @@ export function AssignmentTab({ subjectId, canManage, userRole }: AssignmentTabP
       )}
 
       <Dialog open={isSubmissionDialogOpen} onOpenChange={setIsSubmissionDialogOpen}>
-        <DialogContent className="max-w-4xl max-h-[calc(100vh-4rem)] w-[calc(100vw-2rem)] sm:w-full">
+        <DialogContent className="w-[90vw] max-w-4xl max-h-[calc(100vh-4rem)] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>
               {selectedSubmission && !Array.isArray(selectedSubmission) && (selectedSubmission.status === "submitted" || selectedSubmission.status === "graded")
@@ -759,7 +759,7 @@ export function AssignmentTab({ subjectId, canManage, userRole }: AssignmentTabP
 
       {/* Submissions List Dialog for Dosen/Kaprodi */}
       <Dialog open={isSubmissionsListDialogOpen} onOpenChange={setIsSubmissionsListDialogOpen}>
-        <DialogContent className="max-w-4xl max-h-[85vh] overflow-y-auto w-[calc(100vw-2rem)] sm:w-full">
+        <DialogContent className="w-[90vw] max-w-4xl max-h-[85vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Daftar Pengumpulan Tugas</DialogTitle>
             <DialogDescription>

@@ -101,7 +101,7 @@ export function AnnouncementPopup() {
 
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
-      <DialogContent className="max-w-2xl max-h-[85vh] overflow-hidden flex flex-col gap-0 p-0">
+      <DialogContent className="w-[90vw] max-w-2xl max-h-[85vh] overflow-hidden flex flex-col gap-0 p-0">
         <DialogHeader className="px-6 pt-4 pb-3">
           <div className="flex items-center gap-2">
             <Megaphone className="h-5 w-5 text-primary" />

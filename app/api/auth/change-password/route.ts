@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { z } from 'zod'
+import bcrypt from 'bcryptjs'
 
 const changePasswordSchema = z.object({
   email: z.string().email(),
@@ -25,18 +26,30 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Verify current password
-    if (user.password !== data.currentPassword) {
+    // Check if user has a password
+    if (!user.password) {
+      return NextResponse.json(
+        { error: 'User belum memiliki password. Gunakan fitur "Atur Password" terlebih dahulu.' },
+        { status: 400 }
+      )
+    }
+
+    // Verify current password using bcrypt
+    const isPasswordValid = await bcrypt.compare(data.currentPassword, user.password)
+    if (!isPasswordValid) {
       return NextResponse.json(
         { error: 'Password saat ini tidak sesuai' },
         { status: 400 }
       )
     }
 
+    // Hash the new password
+    const hashedPassword = await bcrypt.hash(data.newPassword, 10)
+
     // Update password
     await prisma.user.update({
       where: { id: user.id },
-      data: { password: data.newPassword },
+      data: { password: hashedPassword },
     })
 
     return NextResponse.json({ 

@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { prisma } from '@/src/lib/prisma'
+import { prisma } from '@/lib/prisma'
 import { z } from 'zod'
 
 // Mark as dynamic route

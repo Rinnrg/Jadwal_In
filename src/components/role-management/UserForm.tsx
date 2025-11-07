@@ -599,7 +599,7 @@ export function UserForm({ user, onSuccess, onCancel }: UserFormProps) {
     
     {/* Dialog untuk menampilkan credentials yang di-generate */}
     <Dialog open={!!generatedCredentials} onOpenChange={(open) => !open && handleCloseCredentials()}>
-      <DialogContent className="sm:max-w-md">
+      <DialogContent>
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <CheckCircle className="h-5 w-5 text-green-500" />
