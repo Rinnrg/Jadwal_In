@@ -200,7 +200,6 @@ export const ReminderSchema = z.object({
   dueUTC: z.number(),
   relatedSubjectId: z.string().optional(),
   isActive: z.boolean(),
-  sendEmail: z.boolean().optional(),
 })
 
 export type Reminder = z.infer<typeof ReminderSchema>

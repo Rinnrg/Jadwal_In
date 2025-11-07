@@ -9,7 +9,7 @@ import { Badge } from "@/components/ui/badge"
 import { Input } from "@/components/ui/input"
 import { Switch } from "@/components/ui/switch"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Edit, Trash2, Search, Clock, AlertTriangle, CheckCircle, Mail } from "lucide-react"
+import { Edit, Trash2, Search, Clock, AlertTriangle, CheckCircle } from "lucide-react"
 import { confirmAction, showSuccess } from "@/lib/alerts"
 import { fmtDateTime, nowUTC } from "@/lib/time"
 import { cn } from "@/lib/utils"
@@ -212,9 +212,6 @@ export function ReminderList({ userId, onEdit, onClearAll, hasReminders = false 
                             {reminder.title}
                           </h3>
                           {getStatusBadge(reminder)}
-                          {reminder.sendEmail && (
-                            <Mail className="h-3 w-3 text-muted-foreground" />
-                          )}
                         </div>
 
                         <div className="space-y-1 text-xs text-muted-foreground">

@@ -11,7 +11,6 @@ const reminderSchema = z.object({
   dueUTC: z.number(),
   relatedSubjectId: z.string().optional().nullable(),
   isActive: z.boolean().default(true),
-  sendEmail: z.boolean().default(false),
 })
 
 // GET - Get reminders (optionally filtered by userId)
@@ -83,7 +82,6 @@ export async function POST(request: NextRequest) {
         dueUTC: BigInt(data.dueUTC),
         relatedSubjectId: data.relatedSubjectId || null,
         isActive: data.isActive,
-        sendEmail: data.sendEmail,
       }
     })
 

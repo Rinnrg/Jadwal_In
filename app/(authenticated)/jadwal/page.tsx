@@ -276,7 +276,6 @@ export default function JadwalPage() {
       dueUTC,
       relatedSubjectId: event.subjectId,
       isActive: true,
-      sendEmail: false,
     })
     
     showSuccess(`Pengingat untuk "${eventName}" berhasil ditambahkan`)

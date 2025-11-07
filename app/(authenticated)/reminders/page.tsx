@@ -13,9 +13,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { ReminderForm } from "@/components/reminders/ReminderForm"
 import { ReminderList } from "@/components/reminders/ReminderList"
-import { Bell, AlertTriangle, Trash2, Plus, Mail, Send } from "lucide-react"
+import { Bell, AlertTriangle, Trash2, Plus } from "lucide-react"
 import { confirmAction, showSuccess, showError } from "@/lib/alerts"
-import { toast } from "sonner"
 
 export default function RemindersPage() {
   const { session } = useSessionStore()
@@ -91,65 +90,6 @@ export default function RemindersPage() {
     }
   }
 
-  const handleSendTestEmail = async () => {
-    if (!session) return
-    
-    const loadingToast = toast.loading('Mengirim test email dari akun Google Anda...')
-    
-    try {
-      const response = await fetch('/api/reminders/test-email', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ 
-          email: session.email,
-          fromEmail: session.email, // Email dari Google Auth
-        }),
-      })
-
-      const data = await response.json()
-
-      if (response.ok && data.success) {
-        toast.success(data.message || 'Test email berhasil dikirim! Cek inbox Anda.', { 
-          id: loadingToast,
-          duration: 5000
-        })
-      } else {
-        const errorMsg = data.details ? `${data.error}\n\n${data.details}` : data.error
-        toast.error(errorMsg || 'Gagal mengirim test email', { 
-          id: loadingToast,
-          duration: 8000 
-        })
-      }
-    } catch (error) {
-      console.error('Error sending test email:', error)
-      toast.error('Terjadi kesalahan saat mengirim test email', { id: loadingToast })
-    }
-  }
-
-  const handleCheckAndSendEmails = async () => {
-    const loadingToast = toast.loading('Memeriksa dan mengirim email reminder...')
-    
-    try {
-      const response = await fetch('/api/reminders/send-email', {
-        method: 'GET',
-      })
-
-      const data = await response.json()
-
-      if (response.ok && data.success) {
-        toast.success(
-          `Email reminder berhasil dikirim: ${data.results.sent} berhasil, ${data.results.failed} gagal`,
-          { id: loadingToast }
-        )
-      } else {
-        toast.error(data.error || 'Gagal mengirim email reminder', { id: loadingToast })
-      }
-    } catch (error) {
-      console.error('Error checking/sending emails:', error)
-      toast.error('Terjadi kesalahan', { id: loadingToast })
-    }
-  }
-
   if (!session) return null
 
   // If showing form, render form view like jadwal page
@@ -193,14 +133,6 @@ export default function RemindersPage() {
           </p>
         </div>
         <div className="flex gap-2 flex-wrap">
-          <Button variant="outline" size="sm" onClick={handleSendTestEmail}>
-            <Mail className="h-4 w-4 mr-2" />
-            Test Email
-          </Button>
-          <Button variant="outline" size="sm" onClick={handleCheckAndSendEmails}>
-            <Send className="h-4 w-4 mr-2" />
-            Kirim Email Now
-          </Button>
           <Button onClick={handleAddReminder}>
             <Plus className="h-4 w-4 mr-2" />
             Tambah
@@ -210,32 +142,6 @@ export default function RemindersPage() {
 
       {/* Main Content */}
       <div className="space-y-4 md:space-y-6">
-        {/* Email Feature Info */}
-        <div className="bg-gradient-to-r from-purple-50 to-pink-50 dark:from-purple-950/30 dark:to-pink-950/30 border-l-4 border-purple-500 dark:border-purple-400 rounded-lg p-4 md:p-5 shadow-sm">
-          <div className="flex items-start gap-3 md:gap-4">
-            <div className="flex-shrink-0 w-10 h-10 md:w-12 md:h-12 rounded-full bg-purple-100 dark:bg-purple-900/50 flex items-center justify-center">
-              <Mail className="h-5 w-5 md:h-6 md:w-6 text-purple-600 dark:text-purple-400" />
-            </div>
-            <div className="flex-1">
-              <h3 className="text-sm md:text-base font-bold text-purple-900 dark:text-purple-100">
-                📧 Fitur Email Reminder (Google Auth)
-              </h3>
-              <p className="text-xs md:text-sm text-purple-800/90 dark:text-purple-200/90 mt-1.5 leading-relaxed">
-                Email reminder otomatis menggunakan akun Google yang Anda gunakan untuk login! 
-                Aktifkan toggle <strong>"Kirim email (ICS)"</strong> saat membuat reminder untuk menerima email pengingat beserta file calendar ICS. 
-                File ICS bisa langsung ditambahkan ke Google Calendar, Outlook, atau aplikasi calendar favorit Anda! 
-                {' '}<span className="inline-block">Gunakan tombol <strong>Test Email</strong> untuk test pengiriman.</span>
-              </p>
-              <div className="mt-2 flex items-center gap-2 text-xs text-purple-700 dark:text-purple-300">
-                <svg className="h-4 w-4" viewBox="0 0 24 24" fill="currentColor">
-                  <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/>
-                </svg>
-                <span>Email dikirim dari: <strong>{session?.email}</strong></span>
-              </div>
-            </div>
-          </div>
-        </div>
-
         {/* KRS Info Alert - Show only if no KRS and trying to use schedule feature */}
         {!hasKrsItems && (
           <div className="bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-950/30 dark:to-indigo-950/30 border-l-4 border-blue-500 dark:border-blue-400 rounded-lg p-4 md:p-5 shadow-sm animate-slide-down">
@@ -264,7 +170,6 @@ export default function RemindersPage() {
           {/* Mobile Stats */}
           <div className="md:hidden grid grid-cols-3 gap-2">
             <div className="bg-blue-50 dark:bg-blue-950/40 rounded-lg p-3 border border-blue-200 dark:border-blue-800 text-center">
-              <Bell className="h-5 w-5 text-blue-500 mx-auto mb-1" />
               <p className="text-xs text-muted-foreground">Aktif</p>
               <p className="text-xl font-bold text-blue-600 dark:text-blue-400">{activeReminders.length}</p>
             </div>

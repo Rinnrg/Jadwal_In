@@ -295,7 +295,6 @@ model Reminder {
   dueUTC           BigInt
   relatedSubjectId String?
   isActive         Boolean  @default(true)
-  sendEmail        Boolean  @default(false)
   createdAt        DateTime @default(now())
   updatedAt        DateTime @updatedAt
   matakuliah       Subject? @relation(fields: [relatedSubjectId], references: [id], map: "reminders_relatedSubjectId_fkey")

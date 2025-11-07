@@ -228,7 +228,6 @@ export function KrsTable({ userId, term, onScheduleSuggestion }: KrsTableProps) 
       dueUTC,
       relatedSubjectId: reminderDialog.subjectId,
       isActive: true,
-      sendEmail: false
     })
 
     showSuccess(`Reminder untuk ${reminderDialog.subjectName} berhasil ditambahkan`)

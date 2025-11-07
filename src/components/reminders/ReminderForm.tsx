@@ -25,7 +25,6 @@ const reminderFormSchema = z.object({
   dueTime: z.string().min(1, "Waktu wajib diisi"),
   relatedSubjectId: z.string().optional(),
   isActive: z.boolean(),
-  sendEmail: z.boolean(),
 })
 
 type ReminderFormData = z.infer<typeof reminderFormSchema>
@@ -73,7 +72,6 @@ export function ReminderForm({ userId, reminder, onSuccess, onCancel }: Reminder
       dueTime: reminder ? toZoned(reminder.dueUTC).toTimeString().slice(0, 5) : "09:00",
       relatedSubjectId: reminder?.relatedSubjectId || "",
       isActive: reminder?.isActive ?? true,
-      sendEmail: reminder?.sendEmail ?? false,
     },
   })
 
@@ -124,7 +122,6 @@ export function ReminderForm({ userId, reminder, onSuccess, onCancel }: Reminder
         dueUTC,
         relatedSubjectId: data.relatedSubjectId || undefined,
         isActive: data.isActive,
-        sendEmail: data.sendEmail,
       }
 
       if (reminder) {
@@ -241,24 +238,13 @@ export function ReminderForm({ userId, reminder, onSuccess, onCancel }: Reminder
         </div>
       </div>
 
-      <div className="flex flex-col sm:flex-row gap-3 sm:gap-4">
-        <div className="flex items-center space-x-2">
-          <Switch
-            id="isActive"
-            checked={form.watch("isActive")}
-            onCheckedChange={(checked) => form.setValue("isActive", checked)}
-          />
-          <Label htmlFor="isActive" className="text-xs md:text-sm">Aktifkan pengingat</Label>
-        </div>
-
-        <div className="flex items-center space-x-2">
-          <Switch
-            id="sendEmail"
-            checked={form.watch("sendEmail")}
-            onCheckedChange={(checked) => form.setValue("sendEmail", checked)}
-          />
-          <Label htmlFor="sendEmail" className="text-xs md:text-sm">Kirim email (ICS)</Label>
-        </div>
+      <div className="flex items-center space-x-2">
+        <Switch
+          id="isActive"
+          checked={form.watch("isActive")}
+          onCheckedChange={(checked) => form.setValue("isActive", checked)}
+        />
+        <Label htmlFor="isActive" className="text-xs md:text-sm">Aktifkan pengingat</Label>
       </div>
 
       <div className="flex justify-end space-x-2">

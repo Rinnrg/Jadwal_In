@@ -125,7 +125,6 @@ export function ScheduleGrid({ userId, onEditEvent, onAddEvent }: ScheduleGridPr
       dueUTC,
       relatedSubjectId: event.subjectId,
       isActive: true,
-      sendEmail: false,
     })
     
     showSuccess(`Pengingat untuk "${eventName}" berhasil ditambahkan`)
