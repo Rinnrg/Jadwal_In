@@ -22,6 +22,7 @@ export const UserSchema = z.object({
   // Academic fields
   nim: z.string().optional().nullable(),
   nip: z.string().optional().nullable(),
+  phoneNumber: z.string().optional().nullable(),
   angkatan: z.number().optional().nullable(),
   prodi: z.string().optional().nullable(),
   fakultas: z.string().optional().nullable(),

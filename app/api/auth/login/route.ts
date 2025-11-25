@@ -46,8 +46,22 @@ async function withRetry<T>(
 
 export async function POST(request: NextRequest) {
   try {
+    console.log('🔐 Login attempt started')
     const body = await request.json()
+    console.log('📧 Email:', body.email)
     const { email, password } = loginSchema.parse(body)
+
+    // Test database connection first
+    try {
+      await prisma.$queryRaw`SELECT 1`
+      console.log('✅ Database connection OK')
+    } catch (dbError) {
+      console.error('❌ Database connection failed:', dbError)
+      return NextResponse.json(
+        { error: 'Database tidak tersedia. Silakan coba lagi dalam beberapa saat.' },
+        { status: 503 }
+      )
+    }
 
     // Find user by email with retry logic
     const user = await withRetry(
@@ -137,15 +151,28 @@ export async function POST(request: NextRequest) {
 
     return response
   } catch (error) {
-    console.error('Login error:', error)
+    console.error('❌ Login error:', error)
     if (error instanceof z.ZodError) {
       return NextResponse.json(
         { error: 'Data tidak valid', details: error.errors },
         { status: 400 }
       )
     }
+    
+    // Provide more specific error messages
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error'
+    console.error('❌ Error details:', errorMessage)
+    
+    // Check for database-related errors
+    if (errorMessage.includes('prisma') || errorMessage.includes('database') || errorMessage.includes('connection')) {
+      return NextResponse.json(
+        { error: 'Koneksi database bermasalah. Silakan coba lagi atau gunakan login Google.' },
+        { status: 503 }
+      )
+    }
+    
     return NextResponse.json(
-      { error: 'Terjadi kesalahan saat login' },
+      { error: 'Terjadi kesalahan saat login. Silakan coba lagi atau gunakan login Google.' },
       { status: 500 }
     )
   }

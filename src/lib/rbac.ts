@@ -50,33 +50,9 @@ export function getMenuItems(role: UserSession["role"]): ExtendedRouteConfig[] {
 
   const roleSpecificItems: Record<UserSession["role"], ExtendedRouteConfig[]> = {
     mahasiswa: [
-      {
-        path: "#",
-        title: "Perkuliahan",
-        icon: "book",
-        requiresAuth: true,
-        isDropdown: true,
-        children: [
-          { path: APP_ROUTES.ASYNCHRONOUS, title: "Asynchronous", icon: "monitor", requiresAuth: true },
-          { path: APP_ROUTES.KRS, title: "KRS", icon: "file-text", requiresAuth: true },
-          { path: APP_ROUTES.KHS, title: "KHS", icon: "award", requiresAuth: true },
-        ]
-      },
+      { path: APP_ROUTES.KRS, title: "KRS", icon: "file-text", requiresAuth: true },
     ],
-    dosen: [
-      {
-        path: "#",
-        title: "Perkuliahan",
-        icon: "book",
-        requiresAuth: true,
-        isDropdown: true,
-        children: [
-          { path: APP_ROUTES.ASYNCHRONOUS, title: "Asynchronous", icon: "monitor", requiresAuth: true },
-          { path: APP_ROUTES.ATTENDANCE, title: "Kehadiran", icon: "users", requiresAuth: true },
-          { path: APP_ROUTES.GRADE_ENTRY, title: "Entry Nilai", icon: "edit", requiresAuth: true },
-        ]
-      },
-    ],
+    dosen: [],
     kaprodi: [
       { path: APP_ROUTES.SUBJECTS, title: "Mata Kuliah", icon: "library", requiresAuth: true },
       {

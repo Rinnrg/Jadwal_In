@@ -22,6 +22,7 @@ model User {
   googleId      String?            @unique(map: "users_googleId_key")
   nim           String?
   nip           String?
+  phoneNumber   String?
   angkatan      Int?
   prodi         String?
   avatarUrl     String?

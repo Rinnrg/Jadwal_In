@@ -47,6 +47,8 @@ const staffFormSchema = z.object({
   password: z.string().min(6, "Password minimal 6 karakter").optional().or(z.literal("")),
   role: z.enum(["dosen", "kaprodi", "super_admin"]),
   prodi: z.string().min(3, "Prodi minimal 3 karakter").optional(),
+  nip: z.string().min(1, "NIP wajib diisi untuk Dosen/Kaprodi").optional().or(z.literal("")),
+  phoneNumber: z.string().regex(/^[0-9+\-\s()]*$/, "Format nomor telepon tidak valid").optional().or(z.literal("")),
 })
 
 // Schema untuk edit staff
@@ -56,6 +58,8 @@ const editStaffFormSchema = z.object({
   password: z.string().min(6, "Password minimal 6 karakter").optional().or(z.literal("")),
   role: z.enum(["mahasiswa", "dosen", "kaprodi", "super_admin"]),
   prodi: z.string().min(3, "Prodi minimal 3 karakter").optional(),
+  nip: z.string().min(1, "NIP wajib diisi untuk Dosen/Kaprodi").optional().or(z.literal("")),
+  phoneNumber: z.string().regex(/^[0-9+\-\s()]*$/, "Format nomor telepon tidak valid").optional().or(z.literal("")),
 })
 
 // Union schema (changed from discriminatedUnion to union to avoid ZodEffects incompatibility)
@@ -104,6 +108,8 @@ export function UserForm({ user, onSuccess, onCancel }: UserFormProps) {
               password: "",
               role: user?.role || "dosen",
               prodi: user?.prodi || "", // prodi is now directly in User model
+              nip: user?.nip || "",
+              phoneNumber: user?.phoneNumber || "",
             })
       : (selectedRole === "mahasiswa" 
           ? {
@@ -120,6 +126,8 @@ export function UserForm({ user, onSuccess, onCancel }: UserFormProps) {
               password: "",
               role: selectedRole,
               prodi: "",
+              nip: "",
+              phoneNumber: "",
             }),
   })
 
@@ -140,6 +148,8 @@ export function UserForm({ user, onSuccess, onCancel }: UserFormProps) {
           password: "",
           role: user.role,
           prodi: user.prodi || "", // prodi is already directly in User model
+          nip: user.nip || "",
+          phoneNumber: user.phoneNumber || "",
         })
         setSelectedRole(user.role)
       }
@@ -165,6 +175,8 @@ export function UserForm({ user, onSuccess, onCancel }: UserFormProps) {
           password: "",
           role: selectedRole,
           prodi: "",
+          nip: "",
+          phoneNumber: "",
         })
       }
     }
@@ -176,6 +188,12 @@ export function UserForm({ user, onSuccess, onCancel }: UserFormProps) {
     // Manual validation for prodi (since we removed .refine() from schema)
     if (data.role === "kaprodi" && !data.prodi) {
       showError("Prodi wajib diisi untuk role Kaprodi")
+      return
+    }
+    
+    // Manual validation for NIP (required for dosen and kaprodi)
+    if ((data.role === "dosen" || data.role === "kaprodi") && !data.nip) {
+      showError("NIP wajib diisi untuk Dosen/Kaprodi")
       return
     }
     
@@ -209,6 +227,12 @@ export function UserForm({ user, onSuccess, onCancel }: UserFormProps) {
           updates.prodi = data.prodi || null
         }
         
+        // Update NIP dan phoneNumber untuk dosen/kaprodi
+        if (data.role === "dosen" || data.role === "kaprodi") {
+          updates.nip = data.nip || null
+          updates.phoneNumber = data.phoneNumber || null
+        }
+        
         await updateUser(user.id, updates)
         showSuccess("User berhasil diperbarui")
         form.reset()
@@ -232,13 +256,21 @@ export function UserForm({ user, onSuccess, onCancel }: UserFormProps) {
           }
         } else {
           // Data staff (dosen, kaprodi, super_admin)
-          await addUser({
+          const staffData: any = {
             name: data.name,
             email: data.email,
             role: data.role,
             password: data.password || undefined,
             prodi: data.prodi || undefined,
-          })
+          }
+          
+          // Add NIP and phoneNumber for dosen/kaprodi
+          if (data.role === "dosen" || data.role === "kaprodi") {
+            staffData.nip = data.nip || undefined
+            staffData.phoneNumber = data.phoneNumber || undefined
+          }
+          
+          await addUser(staffData)
           showSuccess("User berhasil ditambahkan")
           form.reset()
           onSuccess?.()
@@ -517,6 +549,54 @@ export function UserForm({ user, onSuccess, onCancel }: UserFormProps) {
                   </p>
                 )}
               </div>
+
+              {/* NIP field - Required for Dosen and Kaprodi */}
+              {(selectedRole === "dosen" || selectedRole === "kaprodi") && (
+                <div className="space-y-2">
+                  <Label htmlFor="nip" className="flex items-center gap-2">
+                    <UserIcon className="h-4 w-4" />
+                    NIP <span className="text-destructive">*</span>
+                  </Label>
+                  <Input
+                    id="nip"
+                    placeholder="198012345678901234"
+                    {...form.register("nip")}
+                    className="cursor-pointer font-mono"
+                  />
+                  {form.formState.errors.nip && (
+                    <p className="text-sm text-destructive">
+                      {String(form.formState.errors.nip.message || "")}
+                    </p>
+                  )}
+                  <p className="text-xs text-muted-foreground">
+                    Nomor Induk Pegawai (NIP) {selectedRole === "dosen" ? "dosen" : "kaprodi"}
+                  </p>
+                </div>
+              )}
+
+              {/* Phone Number field - Optional for Dosen and Kaprodi */}
+              {(selectedRole === "dosen" || selectedRole === "kaprodi") && (
+                <div className="space-y-2">
+                  <Label htmlFor="phoneNumber" className="flex items-center gap-2">
+                    <UserIcon className="h-4 w-4" />
+                    Nomor Telepon <span className="text-muted-foreground text-xs">(Opsional)</span>
+                  </Label>
+                  <Input
+                    id="phoneNumber"
+                    placeholder="08123456789 atau +62812345678"
+                    {...form.register("phoneNumber")}
+                    className="cursor-pointer"
+                  />
+                  {form.formState.errors.phoneNumber && (
+                    <p className="text-sm text-destructive">
+                      {String(form.formState.errors.phoneNumber.message || "")}
+                    </p>
+                  )}
+                  <p className="text-xs text-muted-foreground">
+                    Nomor telepon yang dapat dihubungi (format: angka, +, -, spasi, atau kurung)
+                  </p>
+                </div>
+              )}
 
               {/* Prodi field - Required for Kaprodi, Optional for Dosen */}
               {(selectedRole === "kaprodi" || selectedRole === "dosen") && (
