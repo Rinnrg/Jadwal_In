@@ -55,18 +55,6 @@ export function getMenuItems(role: UserSession["role"]): ExtendedRouteConfig[] {
     dosen: [],
     kaprodi: [
       { path: APP_ROUTES.SUBJECTS, title: "Mata Kuliah", icon: "library", requiresAuth: true },
-      {
-        path: "#",
-        title: "Perkuliahan",
-        icon: "book",
-        requiresAuth: true,
-        isDropdown: true,
-        children: [
-          { path: APP_ROUTES.ASYNCHRONOUS, title: "Asynchronous", icon: "monitor", requiresAuth: true },
-          { path: APP_ROUTES.ATTENDANCE, title: "Kehadiran", icon: "users", requiresAuth: true },
-          { path: APP_ROUTES.GRADE_ENTRY, title: "Entry Nilai", icon: "edit", requiresAuth: true },
-        ]
-      },
     ],
     super_admin: [
       { path: APP_ROUTES.SUBJECTS, title: "Mata Kuliah", icon: "library", requiresAuth: true },
