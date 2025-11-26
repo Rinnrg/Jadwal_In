@@ -51,18 +51,6 @@ export async function POST(request: NextRequest) {
     console.log('📧 Email:', body.email)
     const { email, password } = loginSchema.parse(body)
 
-    // Test database connection first
-    try {
-      await prisma.$queryRaw`SELECT 1`
-      console.log('✅ Database connection OK')
-    } catch (dbError) {
-      console.error('❌ Database connection failed:', dbError)
-      return NextResponse.json(
-        { error: 'Database tidak tersedia. Silakan coba lagi dalam beberapa saat.' },
-        { status: 503 }
-      )
-    }
-
     // Find user by email with retry logic
     const user = await withRetry(
       () => prisma.user.findUnique({
