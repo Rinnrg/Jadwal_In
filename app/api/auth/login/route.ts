@@ -51,19 +51,8 @@ export async function POST(request: NextRequest) {
     console.log('📧 Email:', body.email)
     const { email, password } = loginSchema.parse(body)
 
-    // Test database connection first
-    try {
-      await prisma.$queryRaw`SELECT 1`
-      console.log('✅ Database connection OK')
-    } catch (dbError) {
-      console.error('❌ Database connection failed:', dbError)
-      return NextResponse.json(
-        { error: 'Database tidak tersedia. Silakan coba lagi dalam beberapa saat.' },
-        { status: 503 }
-      )
-    }
-
     // Find user by email with retry logic
+    // Note: Removed test connection using $queryRaw as it causes prepared statement conflicts with pgbouncer
     const user = await withRetry(
       () => prisma.user.findUnique({
         where: { email },
@@ -162,6 +151,15 @@ export async function POST(request: NextRequest) {
     // Provide more specific error messages
     const errorMessage = error instanceof Error ? error.message : 'Unknown error'
     console.error('❌ Error details:', errorMessage)
+    
+    // Check for prepared statement errors (pgbouncer issues)
+    if (errorMessage.includes('prepared statement') || errorMessage.includes('P2010') || errorMessage.includes('26000')) {
+      console.error('⚠️ Prepared statement error detected - pgbouncer configuration issue')
+      return NextResponse.json(
+        { error: 'Error koneksi database. Silakan coba lagi dalam beberapa saat.' },
+        { status: 503 }
+      )
+    }
     
     // Check for database-related errors
     if (errorMessage.includes('prisma') || errorMessage.includes('database') || errorMessage.includes('connection')) {
