@@ -6,7 +6,6 @@ import { useActivityStore } from "@/stores/activity.store"
 import { useScheduleStore } from "@/stores/schedule.store"
 import { useSubjectsStore } from "@/stores/subjects.store"
 import { useKrsStore } from "@/stores/krs.store"
-import { useCourseworkStore } from "@/stores/coursework.store"
 import { useRemindersStore } from "@/stores/reminders.store"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -41,8 +40,6 @@ import {
   Download,
   User,
   FileText,
-  ClipboardList,
-  FileText as FilesIcon,
 } from "lucide-react"
 import { useState, useEffect } from "react"
 import Link from "next/link"
@@ -57,12 +54,10 @@ export default function DashboardPage() {
   const { getEventsByDay } = useScheduleStore()
   const { getSubjectById, subjects, fetchSubjects } = useSubjectsStore()
   const { getKrsByUser, krsItems } = useKrsStore()
-  const { assignments, materials } = useCourseworkStore()
   const { getActiveReminders, reminders } = useRemindersStore()
   const [currentTime, setCurrentTime] = useState(new Date())
-  const [showAssignments, setShowAssignments] = useState(true)
   const [dialogOpen, setDialogOpen] = useState(false)
-  const [dialogType, setDialogType] = useState<"schedule" | "subjects" | "reminders" | "coursework">("schedule")
+  const [dialogType, setDialogType] = useState<"schedule" | "subjects" | "reminders">("schedule")
   const [dialogData, setDialogData] = useState<any[]>([])
   
   // Force re-render trigger for reactive updates
@@ -90,7 +85,7 @@ export default function DashboardPage() {
   // Force update when store data changes (for real-time updates)
   useEffect(() => {
     setForceUpdate(prev => prev + 1)
-  }, [subjects.length, krsItems.length, assignments.length, materials.length, reminders.length])
+  }, [subjects.length, krsItems.length, reminders.length])
   
   // Debug log
   useEffect(() => {
@@ -362,24 +357,7 @@ export default function DashboardPage() {
     }
   }, [reminders.length, activeReminders.length, urgentReminders.length])
 
-  // Get assignments and materials
-  // For dosen/kaprodi: only show from their taught subjects
-  // For mahasiswa: show from their KRS subjects
-  const relevantSubjectIds = session?.role === "mahasiswa" 
-    ? userKrsItems.map(item => item.subjectId)
-    : taughtSubjects.map(s => s.id)
-    
-  const allAssignments = assignments.filter(a => {
-    if (!a.dueUTC) return false
-    if (!relevantSubjectIds.includes(a.subjectId)) return false
-    return a.dueUTC > Date.now() // Only show upcoming assignments
-  }).sort((a, b) => (a.dueUTC || 0) - (b.dueUTC || 0))
-
-  const allMaterials = materials
-    .filter(m => relevantSubjectIds.includes(m.subjectId))
-    .sort((a, b) => b.createdAt - a.createdAt)
-
-  const handleOpenDialog = (type: "schedule" | "subjects" | "reminders" | "coursework") => {
+  const handleOpenDialog = (type: "schedule" | "subjects" | "reminders") => {
     setDialogType(type)
     
     console.log('[Dashboard Dialog] Opening dialog:', type)
@@ -428,23 +406,6 @@ export default function DashboardPage() {
         }))
         console.log('[Dashboard Dialog] Reminders data:', remindersData)
         setDialogData(remindersData)
-        break
-      case "coursework":
-        if (showAssignments) {
-          const assignmentsData = allAssignments.map(a => ({
-            ...a,
-            subject: getSubjectById(a.subjectId)
-          }))
-          console.log('[Dashboard Dialog] Assignments data:', assignmentsData)
-          setDialogData(assignmentsData)
-        } else {
-          const materialsData = allMaterials.map(m => ({
-            ...m,
-            subject: getSubjectById(m.subjectId)
-          }))
-          console.log('[Dashboard Dialog] Materials data:', materialsData)
-          setDialogData(materialsData)
-        }
         break
     }
     
@@ -709,7 +670,7 @@ export default function DashboardPage() {
         </Card>
       </div>
 
-      <div className={`grid gap-4 md:gap-6 grid-cols-2 w-full ${session.role === "mahasiswa" ? "lg:grid-cols-4" : "lg:grid-cols-3"}`}>
+      <div className="grid gap-4 md:gap-6 grid-cols-2 lg:grid-cols-3 w-full">
         <Card
           className="card-interactive border-2 border-blue-200 dark:border-blue-800 hover:border-blue-400 dark:hover:border-blue-600 group w-full min-w-0 cursor-pointer select-none transition-all duration-200"
           style={{ animationDelay: "0.1s" }}
@@ -789,64 +750,6 @@ export default function DashboardPage() {
             </div>
           </CardContent>
         </Card>
-
-        {/* Tugas/Materi Card - Only show for mahasiswa */}
-        {session.role === "mahasiswa" && (
-          <Card
-            className="card-interactive border-2 border-purple-200 dark:border-purple-800 hover:border-purple-400 dark:hover:border-purple-600 group w-full min-w-0 cursor-pointer select-none transition-all duration-200"
-            style={{ animationDelay: "0.4s" }}
-            onClick={() => handleOpenDialog("coursework")}
-          >
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 md:pb-3 px-4 md:px-6 pt-4 md:pt-6">
-              <CardTitle className="text-xs md:text-sm font-bold">
-                {showAssignments ? "Tugas" : "Materi"}
-              </CardTitle>
-              {showAssignments ? (
-                <ClipboardList className="h-5 w-5 md:h-6 md:w-6 text-purple-500 group-hover:scale-125 transition-transform duration-300" />
-              ) : (
-                <FilesIcon className="h-5 w-5 md:h-6 md:w-6 text-purple-500 group-hover:scale-125 transition-transform duration-300" />
-              )}
-            </CardHeader>
-            <CardContent className="px-4 md:px-6 pb-4 md:pb-6">
-              <div className="text-3xl md:text-4xl font-bold text-purple-600 mb-1 md:mb-2">
-                {showAssignments ? allAssignments.length : allMaterials.length}
-              </div>
-              <p className="text-xs md:text-sm text-muted-foreground">
-                {showAssignments ? "Tugas mendatang" : "Materi tersedia"}
-              </p>
-              <div className="mt-2 md:mt-3 flex items-center justify-between">
-                <div className="flex items-center text-[10px] md:text-xs text-purple-600">
-                  <Activity className="h-3 w-3 mr-1" />
-                  {showAssignments 
-                    ? allAssignments.length === 0 ? "Tidak ada tugas" : `${allAssignments.length} belum selesai`
-                    : allMaterials.length === 0 ? "Tidak ada materi" : `${allMaterials.length} total materi`
-                  }
-                </div>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="h-6 px-2 text-[10px] md:text-xs border-purple-300 text-purple-700 dark:text-purple-300 hover:bg-purple-50 hover:text-purple-900 dark:hover:bg-purple-900/20 dark:hover:text-purple-100 transition-colors"
-                  onClick={(e) => {
-                    e.stopPropagation()
-                    setShowAssignments(!showAssignments)
-                  }}
-                >
-                  {showAssignments ? (
-                    <>
-                      <FilesIcon className="h-3 w-3 mr-1" />
-                      Materi
-                    </>
-                  ) : (
-                    <>
-                      <ClipboardList className="h-3 w-3 mr-1" />
-                      Tugas
-                    </>
-                  )}
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
-        )}
       </div>
 
       <div className="grid gap-4 md:gap-6 grid-cols-1 lg:grid-cols-3 w-full">
@@ -974,15 +877,10 @@ export default function DashboardPage() {
               {dialogType === "schedule" && <Calendar className="h-5 w-5 text-blue-500 animate-scale-in" />}
               {dialogType === "subjects" && <BookOpen className="h-5 w-5 text-green-500 animate-scale-in" />}
               {dialogType === "reminders" && <Clock className="h-5 w-5 text-orange-500 animate-scale-in" />}
-              {dialogType === "coursework" && (showAssignments ? 
-                <ClipboardList className="h-5 w-5 text-purple-500 animate-scale-in" /> : 
-                <FilesIcon className="h-5 w-5 text-purple-500 animate-scale-in" />
-              )}
               <span>
                 {dialogType === "schedule" && "Jadwal Hari Ini"}
                 {dialogType === "subjects" && "Daftar Mata Kuliah"}
                 {dialogType === "reminders" && "Daftar Pengingat"}
-                {dialogType === "coursework" && (showAssignments ? "Daftar Tugas" : "Daftar Materi")}
               </span>
             </DialogTitle>
             <DialogDescription>
@@ -990,8 +888,6 @@ export default function DashboardPage() {
               {dialogType === "subjects" && session?.role === "mahasiswa" && `${dialogData.length} mata kuliah di KRS Anda`}
               {dialogType === "subjects" && (session?.role === "dosen" || session?.role === "kaprodi") && `${dialogData.length} mata kuliah yang diampu`}
               {dialogType === "reminders" && `${dialogData.length} pengingat aktif`}
-              {dialogType === "coursework" && showAssignments && `${dialogData.length} tugas mendatang`}
-              {dialogType === "coursework" && !showAssignments && `${dialogData.length} materi tersedia`}
             </DialogDescription>
           </DialogHeader>
 
@@ -1003,8 +899,6 @@ export default function DashboardPage() {
                   {dialogType === "subjects" && session?.role === "mahasiswa" && "Belum ada mata kuliah di KRS"}
                   {dialogType === "subjects" && (session?.role === "dosen" || session?.role === "kaprodi") && "Belum mengampu mata kuliah"}
                   {dialogType === "reminders" && "Tidak ada pengingat aktif"}
-                  {dialogType === "coursework" && showAssignments && "Tidak ada tugas"}
-                  {dialogType === "coursework" && !showAssignments && "Tidak ada materi"}
                 </p>
               </div>
             ) : (
@@ -1105,77 +999,6 @@ export default function DashboardPage() {
                       </div>
                     </Link>
                   )
-                }
-
-                if (dialogType === "coursework") {
-                  if (showAssignments) {
-                    const dueDate = item.dueUTC ? new Date(item.dueUTC) : null
-                    const isUrgent = dueDate && item.dueUTC < Date.now() + 3 * 24 * 60 * 60 * 1000 // 3 days
-                    return (
-                      <Link key={item.id} href="/asynchronous">
-                        <div className={`p-4 rounded-lg border hover:shadow-md transition-all cursor-pointer ${
-                          isUrgent 
-                            ? "bg-red-50 border-red-200 dark:bg-red-950/20 dark:border-red-800" 
-                            : "bg-purple-50 border-purple-200 dark:bg-purple-950/20 dark:border-purple-800"
-                        }`}>
-                          <div className="flex items-start justify-between">
-                            <div className="flex-1">
-                              <div className="flex items-center gap-2 mb-1">
-                                <h4 className="font-semibold text-sm">{item.title}</h4>
-                                {isUrgent && (
-                                  <Badge variant="destructive" className="text-xs">Deadline Soon</Badge>
-                                )}
-                              </div>
-                              <div className="flex flex-col gap-1 text-xs text-muted-foreground">
-                                {item.subject && (
-                                  <span className="flex items-center gap-1">
-                                    <BookOpen className="h-3 w-3" />
-                                    {item.subject.nama}
-                                  </span>
-                                )}
-                                {dueDate && (
-                                  <span className="flex items-center gap-1">
-                                    <Clock className="h-3 w-3" />
-                                    Deadline: {format(dueDate, "dd MMM yyyy HH:mm", { locale: idLocale })}
-                                  </span>
-                                )}
-                              </div>
-                            </div>
-                          </div>
-                        </div>
-                      </Link>
-                    )
-                  } else {
-                    const createdDate = new Date(item.createdAt)
-                    return (
-                      <Link key={item.id} href="/asynchronous">
-                        <div className="p-4 rounded-lg border bg-purple-50 border-purple-200 dark:bg-purple-950/20 dark:border-purple-800 hover:shadow-md transition-all cursor-pointer">
-                          <div className="flex items-start justify-between">
-                            <div className="flex-1">
-                              <div className="flex items-center gap-2 mb-1">
-                                <h4 className="font-semibold text-sm">{item.title}</h4>
-                                {item.createdAt > Date.now() - 7 * 24 * 60 * 60 * 1000 && (
-                                  <Badge variant="outline" className="text-xs bg-green-50 text-green-700 border-green-300">Baru</Badge>
-                                )}
-                              </div>
-                              <div className="flex flex-col gap-1 text-xs text-muted-foreground">
-                                {item.subject && (
-                                  <span className="flex items-center gap-1">
-                                    <BookOpen className="h-3 w-3" />
-                                    {item.subject.nama}
-                                  </span>
-                                )}
-                                <span className="flex items-center gap-1">
-                                  <Clock className="h-3 w-3" />
-                                  {format(createdDate, "dd MMM yyyy", { locale: idLocale })}
-                                </span>
-                              </div>
-                            </div>
-                          </div>
-                        </div>
-                      </Link>
-                    )
-                  }
                 }
 
                 return null
