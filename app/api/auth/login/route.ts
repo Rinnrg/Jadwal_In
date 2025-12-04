@@ -51,15 +51,19 @@ export async function POST(request: NextRequest) {
     console.log('📧 Email:', body.email)
     const { email, password } = loginSchema.parse(body)
 
-    // Test database connection first
+    // Test database connection first with retry
     try {
-      await prisma.$queryRawUnsafe('SELECT 1')
+      await withRetry(
+        () => prisma.$queryRaw`SELECT 1`,
+        'Database connection test',
+        2
+      )
       console.log('✅ Database connection successful')
     } catch (dbError: any) {
-      console.error('❌ Database connection failed:', dbError)
+      console.error('❌ Database connection failed after retries:', dbError)
       return NextResponse.json(
         { 
-          error: 'Database tidak dapat diakses. Silakan coba lagi dalam beberapa saat.',
+          error: 'Database tidak dapat diakses saat ini. Silakan coba lagi atau gunakan login Google.',
           details: process.env.NODE_ENV === 'development' ? dbError.message : undefined
         },
         { status: 503 }

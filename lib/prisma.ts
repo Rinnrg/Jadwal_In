@@ -13,7 +13,13 @@ function createPrismaClient() {
         url: process.env.DATABASE_URL, // Use pooled connection with pgbouncer
       },
     },
-  })
+    // Add configuration for pgbouncer compatibility
+    __internal: {
+      engine: {
+        cwd: process.cwd(),
+      },
+    },
+  } as any)
 
   return client.$extends({
     query: {
