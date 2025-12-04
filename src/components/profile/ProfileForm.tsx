@@ -647,7 +647,7 @@ export function ProfileForm({ profile, onSuccess, onChangePassword, onSetPasswor
                 </div>
               )}
 
-              {session.role !== "admin" && (
+              {session.role !== "super_admin" && (
                 <div className="space-y-2">
                   <Label htmlFor="fakultas">Fakultas</Label>
                   <Input
@@ -664,7 +664,7 @@ export function ProfileForm({ profile, onSuccess, onChangePassword, onSetPasswor
                 </div>
               )}
 
-              {session.role !== "admin" && (
+              {session.role !== "super_admin" && (
                 <div className="space-y-2">
                   <Label htmlFor="prodi">Program Studi</Label>
                   <Input
