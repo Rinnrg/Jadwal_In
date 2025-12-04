@@ -92,6 +92,23 @@ function extractAngkatan(nim: string | null): number {
 
 export async function GET(request: NextRequest) {
   try {
+    console.log('🔐 Google OAuth callback started')
+    
+    // Test database connection first
+    try {
+      await withDatabaseRetry(
+        () => prisma.$queryRaw`SELECT 1`,
+        'Database connection test',
+        2
+      )
+      console.log('✅ Database connection successful')
+    } catch (dbError: any) {
+      console.error('❌ Database connection failed:', dbError)
+      return NextResponse.redirect(
+        new URL(`/login?error=database_unavailable&message=${encodeURIComponent('Database tidak dapat diakses. Silakan coba lagi.')}`, request.url)
+      )
+    }
+    
     const searchParams = request.nextUrl.searchParams
     const code = searchParams.get('code')
     const error = searchParams.get('error')

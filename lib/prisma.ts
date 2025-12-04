@@ -6,20 +6,22 @@ const globalForPrisma = globalThis as unknown as {
 
 // Create Prisma Client with retry logic extension
 function createPrismaClient() {
+  // Ensure DATABASE_URL uses pgbouncer pooler (port 6543)
+  const databaseUrl = process.env.DATABASE_URL
+  
+  // Log connection info (remove sensitive data in production)
+  if (process.env.NODE_ENV === 'development') {
+    console.log('[Prisma] Using DATABASE_URL:', databaseUrl?.replace(/:[^:@]+@/, ':***@'))
+  }
+  
   const client = new PrismaClient({
     log: process.env.NODE_ENV === 'development' ? ['query', 'error', 'warn'] : ['error'],
     datasources: {
       db: {
-        url: process.env.DATABASE_URL, // Use pooled connection with pgbouncer
+        url: databaseUrl, // Must use pooled connection with pgbouncer (port 6543)
       },
     },
-    // Add configuration for pgbouncer compatibility
-    __internal: {
-      engine: {
-        cwd: process.cwd(),
-      },
-    },
-  } as any)
+  })
 
   return client.$extends({
     query: {
