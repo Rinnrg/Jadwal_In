@@ -41,6 +41,7 @@ export type Profile = {
   semesterAwal?: string | null
   nim?: string | null
   nip?: string | null
+  phoneNumber?: string | null
   angkatan?: number | null
   prodi?: string | null
   avatarUrl?: string | null
