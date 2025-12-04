@@ -12,7 +12,7 @@ import { AvatarUploader } from "@/components/profile/AvatarUploader"
 import { EKTMFullView } from "@/components/profile/EKTMFullView"
 import { showSuccess, showError } from "@/lib/alerts"
 import { ActivityLogger } from "@/lib/activity-logger"
-import { Lock, IdCard, Edit2, Check, X, KeyRound, Phone, Plus, Trash2 } from "lucide-react"
+import { Lock, IdCard, Edit2, Check, X, KeyRound, Phone, Plus, Trash2, Upload } from "lucide-react"
 
 // Simple gender detection fallback
 function detectGenderFromNameSimple(name: string): string | null {
