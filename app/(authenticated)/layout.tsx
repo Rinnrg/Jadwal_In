@@ -6,7 +6,6 @@ import { Topbar } from "@/components/layout/Topbar"
 import { Sidebar } from "@/components/layout/Sidebar"
 import { NotificationManager } from "@/components/layout/NotificationManager"
 import { FloatingNotifications } from "@/components/layout/FloatingNotifications"
-import { AnnouncementPopup } from "@/components/announcement-popup"
 import { useNotificationSync } from "@/hooks/use-notification-sync"
 import "@/utils/notification-test" // Load test utilities in development
 
@@ -18,7 +17,6 @@ function LayoutContent({ children }: { children: React.ReactNode }) {
     <>
       <NotificationManager />
       <FloatingNotifications />
-      <AnnouncementPopup />
       <div className="min-h-screen bg-gray-50 dark:bg-gray-900 transition-colors duration-300 overflow-x-hidden w-full animate-in fade-in duration-700">
         <Topbar />
         <div className="flex pt-16 overflow-x-hidden w-full">
