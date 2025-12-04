@@ -134,17 +134,6 @@ export function FloatingNotifications() {
           onClick: () => router.push("/krs"),
         },
       },
-      asynchronous: {
-        title: "Konten Pembelajaran Baru",
-        description: count === 1 
-          ? "1 materi atau tugas baru telah ditambahkan"
-          : `${count} materi/tugas baru telah ditambahkan`,
-        icon: FileText,
-        action: {
-          label: "Buka Asynchronous",
-          onClick: () => router.push("/asynchronous"),
-        },
-      },
       jadwal: {
         title: "Jadwal Diperbarui",
         description: "Jadwal kuliah telah disinkronisasi",
@@ -152,17 +141,6 @@ export function FloatingNotifications() {
         action: {
           label: "Lihat Jadwal",
           onClick: () => router.push("/jadwal"),
-        },
-      },
-      khs: {
-        title: "Nilai Baru Tersedia",
-        description: count === 1
-          ? "1 nilai baru tersedia di KHS"
-          : `${count} nilai baru tersedia di KHS`,
-        icon: GraduationCap,
-        action: {
-          label: "Cek Nilai",
-          onClick: () => router.push("/khs"),
         },
       },
       reminder: {

@@ -20,24 +20,18 @@ import { Calendar, BookOpen, ClipboardList, FileText, Clock } from "lucide-react
 const notificationIcons = {
   krs: BookOpen,
   jadwal: Calendar,
-  asynchronous: ClipboardList,
-  khs: FileText,
   reminder: Clock,
 }
 
 const notificationLabels = {
   krs: "KRS",
   jadwal: "Jadwal",
-  asynchronous: "Tugas & Materi",
-  khs: "KHS",
   reminder: "Pengingat",
 }
 
 const notificationLinks = {
   krs: "/krs",
   jadwal: "/jadwal",
-  asynchronous: "/asynchronous",
-  khs: "/khs",
   reminder: "/reminders",
 }
 

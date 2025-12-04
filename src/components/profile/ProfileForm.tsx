@@ -12,7 +12,7 @@ import { AvatarUploader } from "@/components/profile/AvatarUploader"
 import { EKTMFullView } from "@/components/profile/EKTMFullView"
 import { showSuccess, showError } from "@/lib/alerts"
 import { ActivityLogger } from "@/lib/activity-logger"
-import { Lock, IdCard, Edit2, Check, X, KeyRound, Upload, Phone, Plus, Trash2 } from "lucide-react"
+import { Lock, IdCard, Edit2, Check, X, KeyRound, Phone, Plus, Trash2 } from "lucide-react"
 
 // Simple gender detection fallback
 function detectGenderFromNameSimple(name: string): string | null {
@@ -58,12 +58,10 @@ export function ProfileForm({ profile, onSuccess, onChangePassword, onSetPasswor
   const [isCheckingPassword, setIsCheckingPassword] = useState(true)
   const fileInputRef = useRef<HTMLInputElement>(null)
   
-  // Phone state - single phone only
-  const [phone, setPhone] = useState<{id: string, phoneNumber: string} | null>(null)
-  const [phoneInput, setPhoneInput] = useState("")
+  // Phone state - using phoneNumber from User model
+  const [phoneInput, setPhoneInput] = useState(profile?.phoneNumber || "")
   const [isEditingPhone, setIsEditingPhone] = useState(false)
   const [isSavingPhone, setIsSavingPhone] = useState(false)
-  const [isLoadingPhone, setIsLoadingPhone] = useState(true)
   
   // Gender state
   const [isEditingGender, setIsEditingGender] = useState(false)
@@ -91,36 +89,12 @@ export function ProfileForm({ profile, onSuccess, onChangePassword, onSetPasswor
     checkPassword()
   }, [session])
 
-  // Fetch phone (single)
+  // Sync phoneInput when profile changes
   useEffect(() => {
-    const fetchPhone = async () => {
-      if (!session) return
-      
-      try {
-        setIsLoadingPhone(true)
-        const response = await fetch(`/api/profile/${session.id}/phone`)
-        if (response.ok) {
-          const data = await response.json()
-          // Get first phone (primary or first in list)
-          const phones = data.phones || []
-          if (phones.length > 0) {
-            const primaryPhone = phones.find((p: any) => p.isPrimary) || phones[0]
-            setPhone({
-              id: primaryPhone.id,
-              phoneNumber: primaryPhone.phoneNumber
-            })
-            setPhoneInput(primaryPhone.phoneNumber)
-          }
-        }
-      } catch (error) {
-        console.error('Error fetching phone:', error)
-      } finally {
-        setIsLoadingPhone(false)
-      }
+    if (profile?.phoneNumber) {
+      setPhoneInput(profile.phoneNumber)
     }
-    
-    fetchPhone()
-  }, [session])
+  }, [profile?.phoneNumber])
 
   // Auto-sync data from multi-source when profile loads - RUN ONCE per session
   useEffect(() => {
@@ -457,48 +431,26 @@ export function ProfileForm({ profile, onSuccess, onChangePassword, onSetPasswor
     try {
       setIsSavingPhone(true)
       
-      if (phone) {
-        // Update existing phone
-        const response = await fetch(`/api/profile/${session.id}/phone`, {
-          method: 'PATCH',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ 
-            phoneId: phone.id, 
-            phoneNumber: phoneInput.trim() 
-          })
+      // Update phoneNumber directly in User model
+      const response = await fetch(`/api/profile/${session.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ 
+          phoneNumber: phoneInput.trim()
         })
-        
-        if (!response.ok) {
-          const errorData = await response.json()
-          throw new Error(errorData.error || 'Failed to update phone')
-        }
-        
-        setPhone({ id: phone.id, phoneNumber: phoneInput.trim() })
-        showSuccess("Nomor telepon berhasil diperbarui")
-      } else {
-        // Add new phone
-        const response = await fetch(`/api/profile/${session.id}/phone`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ 
-            phoneNumber: phoneInput.trim(),
-            isPrimary: true
-          })
-        })
-        
-        if (!response.ok) {
-          const errorData = await response.json()
-          throw new Error(errorData.error || 'Failed to add phone')
-        }
-        
-        const data = await response.json()
-        setPhone({
-          id: data.phone.id,
-          phoneNumber: data.phone.phoneNumber
-        })
-        showSuccess("Nomor telepon berhasil ditambahkan")
+      })
+      
+      if (!response.ok) {
+        const errorData = await response.json()
+        throw new Error(errorData.error || 'Failed to update phone')
       }
       
+      // Update local profile store
+      if (profile) {
+        updateProfile(session.id, { phoneNumber: phoneInput.trim() })
+      }
+      
+      showSuccess("Nomor telepon berhasil diperbarui")
       setIsEditingPhone(false)
     } catch (error) {
       console.error('Save phone error:', error)
@@ -509,18 +461,20 @@ export function ProfileForm({ profile, onSuccess, onChangePassword, onSetPasswor
   }
 
   const handleCancelPhoneEdit = () => {
-    setPhoneInput(phone?.phoneNumber || "")
+    setPhoneInput(profile?.phoneNumber || "")
     setIsEditingPhone(false)
   }
   
   const handleDeletePhone = async () => {
-    if (!session || !phone) return
+    if (!session || !profile?.phoneNumber) return
     
     if (!confirm("Yakin ingin menghapus nomor telepon?")) return
     
     try {
-      const response = await fetch(`/api/profile/${session.id}/phone?phoneId=${phone.id}`, {
-        method: 'DELETE'
+      const response = await fetch(`/api/profile/${session.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ phoneNumber: null })
       })
       
       if (!response.ok) {
@@ -528,7 +482,8 @@ export function ProfileForm({ profile, onSuccess, onChangePassword, onSetPasswor
         throw new Error(errorData.error || 'Failed to delete phone')
       }
       
-      setPhone(null)
+      // Update local profile store
+      updateProfile(session.id, { phoneNumber: null })
       setPhoneInput("")
       showSuccess("Nomor telepon berhasil dihapus")
     } catch (error) {
@@ -825,16 +780,13 @@ export function ProfileForm({ profile, onSuccess, onChangePassword, onSetPasswor
                 <p className="text-xs text-muted-foreground mt-1">Nomor telepon untuk dihubungi</p>
               </div>
               
-              {isLoadingPhone ? (
-                <div className="text-sm text-muted-foreground">Memuat nomor telepon...</div>
-              ) : (
-                <div className="space-y-2 mb-4">
-                  {!isEditingPhone && phone ? (
+              <div className="space-y-2 mb-4">
+                  {!isEditingPhone && profile?.phoneNumber ? (
                     // Display mode
                     <div className="flex items-center justify-between p-3 border rounded-lg bg-muted/30">
                       <div className="flex items-center gap-3">
                         <Phone className="h-4 w-4 text-muted-foreground" />
-                        <p className="font-medium">{phone.phoneNumber}</p>
+                        <p className="font-medium">{profile.phoneNumber}</p>
                       </div>
                       <div className="flex gap-2">
                         <Button
@@ -877,7 +829,7 @@ export function ProfileForm({ profile, onSuccess, onChangePassword, onSetPasswor
                         >
                           <Check className="h-4 w-4" />
                         </Button>
-                        {phone && (
+                        {profile?.phoneNumber && (
                           <Button
                             type="button"
                             variant="outline"
@@ -890,12 +842,12 @@ export function ProfileForm({ profile, onSuccess, onChangePassword, onSetPasswor
                         )}
                       </div>
                       <p className="text-xs text-muted-foreground">
-                        {phone ? 'Ubah nomor telepon Anda' : 'Tambahkan nomor telepon'}
+                        {profile?.phoneNumber ? 'Ubah nomor telepon Anda' : 'Tambahkan nomor telepon'}
                       </p>
                     </div>
                   )}
                   
-                  {!phone && !isEditingPhone && (
+                  {!profile?.phoneNumber && !isEditingPhone && (
                     <Button
                       type="button"
                       variant="outline"
@@ -907,7 +859,6 @@ export function ProfileForm({ profile, onSuccess, onChangePassword, onSetPasswor
                     </Button>
                   )}
                 </div>
-              )}
             </div>
 
             <div className="flex flex-col sm:flex-row gap-2 pt-2">

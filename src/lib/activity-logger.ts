@@ -1,6 +1,6 @@
 import { useActivityStore } from "@/stores/activity.store"
 
-export type ActivityCategory = "schedule" | "krs" | "reminder" | "subject" | "attendance" | "assignment" | "material" | "profile" | "password" | "other"
+export type ActivityCategory = "schedule" | "krs" | "reminder" | "subject" | "profile" | "password" | "other"
 export type ActivityAction = "created" | "updated" | "deleted" | "submitted" | "uploaded" | "completed" | "changed"
 
 interface LogActivityOptions {
@@ -20,9 +20,6 @@ const categoryDefaults: Record<ActivityCategory, { icon: string; color: string }
   krs: { icon: "Users", color: "text-purple-500" },
   reminder: { icon: "Bell", color: "text-orange-500" },
   subject: { icon: "BookOpen", color: "text-green-500" },
-  attendance: { icon: "CheckCircle", color: "text-teal-500" },
-  assignment: { icon: "FileText", color: "text-indigo-500" },
-  material: { icon: "Download", color: "text-cyan-500" },
   profile: { icon: "User", color: "text-pink-500" },
   password: { icon: "Lock", color: "text-red-500" },
   other: { icon: "Star", color: "text-yellow-500" },
@@ -222,122 +219,6 @@ export const ActivityLogger = {
       icon: "Trash2",
       color: "text-red-500",
       metadata: { subjectName },
-    })
-  },
-  
-  // Assignment activities
-  assignmentCreated: (userId: string, assignmentTitle: string, subjectName?: string) => {
-    logActivity({
-      userId,
-      title: `Tugas "${assignmentTitle}" dibuat`,
-      description: subjectName ? `Mata kuliah: ${subjectName}` : undefined,
-      category: "assignment",
-      action: "created",
-      icon: "Plus",
-      color: "text-green-500",
-      metadata: { assignmentTitle, subjectName },
-    })
-  },
-  
-  assignmentSubmitted: (userId: string, assignmentTitle: string, subjectName?: string) => {
-    logActivity({
-      userId,
-      title: `Tugas "${assignmentTitle}" dikumpulkan`,
-      description: subjectName ? `Mata kuliah: ${subjectName}` : undefined,
-      category: "assignment",
-      action: "submitted",
-      icon: "Upload",
-      color: "text-blue-500",
-      metadata: { assignmentTitle, subjectName },
-    })
-  },
-  
-  assignmentUpdated: (userId: string, assignmentTitle: string) => {
-    logActivity({
-      userId,
-      title: `Tugas "${assignmentTitle}" diperbarui`,
-      category: "assignment",
-      action: "updated",
-      icon: "Edit",
-      color: "text-blue-500",
-      metadata: { assignmentTitle },
-    })
-  },
-  
-  assignmentDeleted: (userId: string, assignmentTitle: string) => {
-    logActivity({
-      userId,
-      title: `Tugas "${assignmentTitle}" dihapus`,
-      category: "assignment",
-      action: "deleted",
-      icon: "Trash2",
-      color: "text-red-500",
-      metadata: { assignmentTitle },
-    })
-  },
-  
-  assignmentGraded: (userId: string, assignmentTitle: string, grade: number) => {
-    logActivity({
-      userId,
-      title: `Tugas "${assignmentTitle}" dinilai`,
-      description: `Nilai: ${grade}`,
-      category: "assignment",
-      action: "updated",
-      icon: "Star",
-      color: "text-yellow-500",
-      metadata: { assignmentTitle, grade },
-    })
-  },
-  
-  // Material activities
-  materialAdded: (userId: string, materialTitle: string, subjectName?: string) => {
-    logActivity({
-      userId,
-      title: `Materi "${materialTitle}" ditambahkan`,
-      description: subjectName ? `Mata kuliah: ${subjectName}` : undefined,
-      category: "material",
-      action: "uploaded",
-      icon: "Plus",
-      color: "text-green-500",
-      metadata: { materialTitle, subjectName },
-    })
-  },
-  
-  materialDownloaded: (userId: string, materialTitle: string) => {
-    logActivity({
-      userId,
-      title: `Materi "${materialTitle}" diunduh`,
-      category: "material",
-      action: "completed",
-      icon: "Download",
-      color: "text-blue-500",
-      metadata: { materialTitle },
-    })
-  },
-  
-  materialDeleted: (userId: string, materialTitle: string) => {
-    logActivity({
-      userId,
-      title: `Materi "${materialTitle}" dihapus`,
-      category: "material",
-      action: "deleted",
-      icon: "Trash2",
-      color: "text-red-500",
-      metadata: { materialTitle },
-    })
-  },
-  
-  // Attendance activities
-  attendanceRecorded: (userId: string, courseName: string, status: string) => {
-    logActivity({
-      userId,
-      title: `Kehadiran ${courseName} dicatat`,
-      description: status,
-      category: "attendance",
-      action: "created",
-      icon: "CheckCircle",
-      color: status === "Hadir" ? "text-green-500" : "text-red-500",
-      metadata: { courseName, status },
     })
   },
   

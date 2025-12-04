@@ -15,16 +15,11 @@ export const APP_ROUTES = {
   // Protected app routes
   DASHBOARD: "/dashboard",
   SCHEDULE: "/jadwal",
-  ATTENDANCE: "/kehadiran",
   SUBJECTS: "/subjects",
-  GRADE_ENTRY: "/entry-nilai",
   KRS: "/krs",
-  KHS: "/khs",
-  ASYNCHRONOUS: "/asynchronous",
   PROFILE: "/profile",
   REMINDERS: "/reminders",
   ROLE_MANAGEMENT: "/role-management",
-  ANNOUNCEMENTS: "/announcements",
 } as const
 
 export const ROUTE_CONFIGS: Record<string, RouteConfig> = {
@@ -54,13 +49,6 @@ export const ROUTE_CONFIGS: Record<string, RouteConfig> = {
     icon: "calendar",
     requiresAuth: true,
   },
-  [APP_ROUTES.ATTENDANCE]: {
-    path: APP_ROUTES.ATTENDANCE,
-    title: "Kehadiran",
-    description: "Manajemen kehadiran mahasiswa",
-    icon: "users",
-    requiresAuth: true,
-  },
   [APP_ROUTES.SUBJECTS]: {
     path: APP_ROUTES.SUBJECTS,
     title: "Mata Kuliah",
@@ -68,32 +56,11 @@ export const ROUTE_CONFIGS: Record<string, RouteConfig> = {
     icon: "book",
     requiresAuth: true,
   },
-  [APP_ROUTES.GRADE_ENTRY]: {
-    path: APP_ROUTES.GRADE_ENTRY,
-    title: "Entry Nilai",
-    description: "Input nilai mahasiswa",
-    icon: "edit",
-    requiresAuth: true,
-  },
   [APP_ROUTES.KRS]: {
     path: APP_ROUTES.KRS,
     title: "KRS",
     description: "Kartu Rencana Studi",
     icon: "file-text",
-    requiresAuth: true,
-  },
-  [APP_ROUTES.KHS]: {
-    path: APP_ROUTES.KHS,
-    title: "KHS",
-    description: "Kartu Hasil Studi",
-    icon: "award",
-    requiresAuth: true,
-  },
-  [APP_ROUTES.ASYNCHRONOUS]: {
-    path: APP_ROUTES.ASYNCHRONOUS,
-    title: "Asinkron",
-    description: "Pembelajaran asinkron",
-    icon: "monitor",
     requiresAuth: true,
   },
   [APP_ROUTES.PROFILE]: {
@@ -118,26 +85,14 @@ export const ROUTE_CONFIGS: Record<string, RouteConfig> = {
     requiresAuth: true,
     roles: ["super_admin"],
   },
-  [APP_ROUTES.ANNOUNCEMENTS]: {
-    path: APP_ROUTES.ANNOUNCEMENTS,
-    title: "Pengumuman",
-    description: "Kelola pengumuman untuk mahasiswa dan dosen",
-    icon: "megaphone",
-    requiresAuth: true,
-    roles: ["super_admin"],
-  },
 }
 
 // Navigation menu items for sidebar
 export const NAVIGATION_ITEMS = [
   ROUTE_CONFIGS[APP_ROUTES.DASHBOARD],
   ROUTE_CONFIGS[APP_ROUTES.SCHEDULE],
-  ROUTE_CONFIGS[APP_ROUTES.ATTENDANCE],
   ROUTE_CONFIGS[APP_ROUTES.SUBJECTS],
-  ROUTE_CONFIGS[APP_ROUTES.GRADE_ENTRY],
   ROUTE_CONFIGS[APP_ROUTES.KRS],
-  ROUTE_CONFIGS[APP_ROUTES.KHS],
-  ROUTE_CONFIGS[APP_ROUTES.ASYNCHRONOUS],
   ROUTE_CONFIGS[APP_ROUTES.REMINDERS],
 ]
 

@@ -4,8 +4,6 @@ import { useSubjectsStore } from "@/stores/subjects.store"
 import { useOfferingsStore } from "@/stores/offerings.store"
 import { useKrsStore } from "@/stores/krs.store"
 import { useNotificationStore } from "@/stores/notification.store"
-import { useGradesStore } from "@/stores/grades.store"
-import { useCourseworkStore } from "@/stores/coursework.store"
 import { useRemindersStore } from "@/stores/reminders.store"
 import { useScheduleStore } from "@/stores/schedule.store"
 import { nowUTC } from "@/lib/time"
@@ -29,8 +27,6 @@ export function useRealtimeSync(options: RealtimeSyncOptions = {}) {
   const { subjects, fetchSubjects } = useSubjectsStore()
   const { fetchOfferings } = useOfferingsStore()
   const { krsItems } = useKrsStore()
-  const { grades } = useGradesStore()
-  const { assignments, materials } = useCourseworkStore()
   const { reminders } = useRemindersStore()
   const { events } = useScheduleStore()
   const { updateBadge, triggerNotification } = useNotificationStore()
@@ -38,9 +34,6 @@ export function useRealtimeSync(options: RealtimeSyncOptions = {}) {
   const [isPolling, setIsPolling] = useState(false)
   const previousSubjectsCount = useRef(subjects.length)
   const previousKrsCount = useRef(krsItems.length)
-  const previousGradesCount = useRef(grades.length)
-  const previousAssignmentsCount = useRef(assignments.length)
-  const previousMaterialsCount = useRef(materials.length)
   const previousRemindersCount = useRef(reminders.length)
   const previousScheduleCount = useRef(events.length)
   const intervalRef = useRef<NodeJS.Timeout | null>(null)
@@ -107,48 +100,6 @@ export function useRealtimeSync(options: RealtimeSyncOptions = {}) {
             }
           }
           
-          // Fetch assignments and materials for all users
-          try {
-            const assignmentsResponse = await fetch(`/api/assignments?_t=${Date.now()}`, {
-              cache: 'no-store',
-              headers: {
-                'Cache-Control': 'no-cache',
-              }
-            })
-            if (assignmentsResponse.ok) {
-              const latestAssignments = await assignmentsResponse.json()
-              const assignments = latestAssignments.map((a: any) => ({
-                ...a,
-                dueUTC: a.dueUTC ? Number(a.dueUTC) : undefined,
-                createdAt: new Date(a.createdAt).getTime(),
-              }))
-              useCourseworkStore.setState({ assignments })
-              console.log('[RealtimeSync] Synced assignments:', assignments.length, 'items')
-            }
-          } catch (error) {
-            console.error('[RealtimeSync] Error syncing assignments:', error)
-          }
-
-          try {
-            const materialsResponse = await fetch(`/api/materials?_t=${Date.now()}`, {
-              cache: 'no-store',
-              headers: {
-                'Cache-Control': 'no-cache',
-              }
-            })
-            if (materialsResponse.ok) {
-              const latestMaterials = await materialsResponse.json()
-              const materials = latestMaterials.map((m: any) => ({
-                ...m,
-                createdAt: new Date(m.createdAt).getTime(),
-              }))
-              useCourseworkStore.setState({ materials })
-              console.log('[RealtimeSync] Synced materials:', materials.length, 'items')
-            }
-          } catch (error) {
-            console.error('[RealtimeSync] Error syncing materials:', error)
-          }
-          
           // On initial mount, just update the count silently
           if (isInitialMount.current) {
             previousSubjectsCount.current = latestSubjects.length
@@ -157,7 +108,6 @@ export function useRealtimeSync(options: RealtimeSyncOptions = {}) {
             // Initialize all counts for the user
             if (session.role === "mahasiswa") {
               const { getKrsByUser } = useKrsStore.getState()
-              const { getGradesByUser } = useGradesStore.getState()
               const { getActiveReminders } = useRemindersStore.getState()
               const { getEventsByUser } = useScheduleStore.getState()
               
@@ -169,9 +119,6 @@ export function useRealtimeSync(options: RealtimeSyncOptions = {}) {
               const currentKrs = getKrsByUser(session.id, currentTerm)
               previousKrsCount.current = currentKrs.length
               
-              const currentGrades = getGradesByUser(session.id, currentTerm)
-              previousGradesCount.current = currentGrades.filter((g: any) => g.nilaiHuruf).length
-              
               const now = nowUTC()
               const activeReminders = getActiveReminders(session.id)
               // Count all active reminders (not just upcoming in 30 minutes)
@@ -180,11 +127,6 @@ export function useRealtimeSync(options: RealtimeSyncOptions = {}) {
               
               const userEvents = getEventsByUser(session.id)
               previousScheduleCount.current = userEvents.length
-              
-              previousAssignmentsCount.current = assignments.filter(a => 
-                a.dueUTC && a.dueUTC > now
-              ).length
-              previousMaterialsCount.current = materials.length
             }
             
             isInitialMount.current = false
@@ -228,45 +170,9 @@ export function useRealtimeSync(options: RealtimeSyncOptions = {}) {
               previousKrsCount.current = currentKrsLength
             }
             
-            // Check for new grades (KHS)
-            if (session.role === "mahasiswa") {
-              const { getGradesByUser } = useGradesStore.getState()
-              const currentYear = new Date().getFullYear()
-              const currentMonth = new Date().getMonth()
-              const isOddSemester = currentMonth >= 8 || currentMonth <= 1
-              const currentTerm = `${currentYear}/${currentYear + 1}-${isOddSemester ? "Ganjil" : "Genap"}`
-              
-              const currentGrades = getGradesByUser(session.id, currentTerm)
-              const currentGradesWithValue = currentGrades.filter((g: any) => g.nilaiHuruf).length
-              const previousGradesLength = previousGradesCount.current
-              
-              if (currentGradesWithValue > previousGradesLength && hasShownInitialNotification.current) {
-                // Trigger notification to show badge and toast
-                const addedCount = currentGradesWithValue - previousGradesLength
-                triggerNotification("khs", session.id, `${addedCount} nilai baru ditambahkan`, addedCount)
-              }
-              
-              previousGradesCount.current = currentGradesWithValue
-            }
+            // KHS feature removed
             
-            // Check for new assignments/materials (Asynchronous)
-            if (session.role === "mahasiswa") {
-              const now = nowUTC()
-              const newAssignments = assignments.filter(a => a.dueUTC && a.dueUTC > now)
-              const currentAssignmentsCount = newAssignments.length
-              const currentMaterialsCount = materials.length
-              const totalAsyncCount = currentAssignmentsCount + currentMaterialsCount
-              const previousAsyncCount = previousAssignmentsCount.current + previousMaterialsCount.current
-              
-              if (totalAsyncCount > previousAsyncCount && hasShownInitialNotification.current) {
-                // Trigger notification to show badge and toast
-                const addedCount = totalAsyncCount - previousAsyncCount
-                triggerNotification("asynchronous", session.id, `${addedCount} tugas/materi baru ditambahkan`, addedCount)
-              }
-              
-              previousAssignmentsCount.current = currentAssignmentsCount
-              previousMaterialsCount.current = currentMaterialsCount
-            }
+            // Asynchronous feature removed
             
             // Check for upcoming reminders (Pengingat)
             if (session.role === "mahasiswa") {

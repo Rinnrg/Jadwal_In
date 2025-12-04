@@ -28,15 +28,10 @@ model User {
   avatarUrl     String?
   jenisKelamin  String?
   semesterAwal  String?
-  absen         AttendanceRecord[]
   jadwal        ScheduleEvent[]
   krs           KrsItem[]
   logAktivitas  ActivityLog[]
-  nilai         Grade[]
   pengingat     Reminder[]
-  nilaiDiberi   Submission[]       @relation("GradedBy")
-  pengumpulan   Submission[]
-  telepon       Phone[]
   mengajar      Subject[]          @relation("DosenSubjects")
 
   @@index([email], map: "users_email_idx")
@@ -44,19 +39,6 @@ model User {
   @@index([nip], map: "users_nip_idx")
   @@index([role], map: "users_role_idx")
   @@map("pengguna")
-}
-
-model Phone {
-  id          String   @id(map: "phones_pkey") @default(cuid())
-  userId      String
-  phoneNumber String
-  isPrimary   Boolean  @default(false)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade, map: "phones_userId_fkey")
-
-  @@index([userId], map: "phones_userId_idx")
-  @@map("telepon")
 }
 
 model Subject {
@@ -78,12 +60,8 @@ model Subject {
   updatedAt    DateTime            @updatedAt
   jadwal       ScheduleEvent[]
   krs          KrsItem[]
-  materi       Material[]
-  nilai        Grade[]
   penawaran    CourseOffering[]
   pengingat    Reminder[]
-  sesiAbsen    AttendanceSession[]
-  tugas        Assignment[]
   pengampu     User[]              @relation("DosenSubjects")
 
   @@index([angkatan], map: "subjects_angkatan_idx")
@@ -107,124 +85,12 @@ model CourseOffering {
   createdAt    DateTime       @default(now())
   updatedAt    DateTime       @updatedAt
   krs          KrsItem[]
-  nilai        Grade[]
   matakuliah   Subject        @relation(fields: [subjectId], references: [id], onDelete: Cascade, map: "course_offerings_subjectId_fkey")
 
   @@index([angkatan], map: "course_offerings_angkatan_idx")
   @@index([status], map: "course_offerings_status_idx")
   @@index([subjectId], map: "course_offerings_subjectId_idx")
   @@map("penawaran")
-}
-
-model Assignment {
-  id               String           @id(map: "assignments_pkey") @default(cuid())
-  subjectId        String
-  title            String
-  description      String?
-  dueUTC           BigInt?
-  allowedFileTypes String[]         @default([".pdf", ".doc", ".docx"])
-  maxFileSize      Int              @default(10485760)
-  maxFiles         Int              @default(3)
-  createdAt        DateTime         @default(now())
-  updatedAt        DateTime         @updatedAt
-  lampiran         FileAttachment[]
-  pengumpulan      Submission[]
-  matakuliah       Subject          @relation(fields: [subjectId], references: [id], onDelete: Cascade, map: "assignments_subjectId_fkey")
-
-  @@index([dueUTC], map: "assignments_dueUTC_idx")
-  @@index([subjectId], map: "assignments_subjectId_idx")
-  @@map("tugas")
-}
-
-model Submission {
-  id           String           @id(map: "submissions_pkey") @default(cuid())
-  assignmentId String
-  studentId    String
-  note         String?
-  submittedAt  BigInt
-  status       SubmissionStatus @default(draft)
-  grade        Float?
-  feedback     String?
-  gradedAt     BigInt?
-  gradedBy     String?
-  createdAt    DateTime         @default(now())
-  updatedAt    DateTime         @updatedAt
-  lampiran     FileAttachment[]
-  tugas        Assignment       @relation(fields: [assignmentId], references: [id], onDelete: Cascade, map: "submissions_assignmentId_fkey")
-  penilai      User?            @relation("GradedBy", fields: [gradedBy], references: [id], map: "submissions_gradedBy_fkey")
-  mahasiswa    User             @relation(fields: [studentId], references: [id], onDelete: Cascade, map: "submissions_studentId_fkey")
-
-  @@unique([assignmentId, studentId], map: "submissions_assignmentId_studentId_key")
-  @@index([assignmentId], map: "submissions_assignmentId_idx")
-  @@index([status], map: "submissions_status_idx")
-  @@index([studentId], map: "submissions_studentId_idx")
-  @@map("pengumpulan")
-}
-
-model FileAttachment {
-  id           String      @id @default(cuid())
-  name         String
-  url          String
-  size         Int
-  type         String
-  uploadType   UploadType  @default(file)
-  uploadedAt   BigInt
-  assignmentId String?
-  submissionId String?
-  materialId   String?
-  tugas        Assignment? @relation(fields: [assignmentId], references: [id], onDelete: Cascade, map: "file_attachments_assignmentId_fkey")
-  materi       Material?   @relation(fields: [materialId], references: [id], onDelete: Cascade, map: "file_attachments_materialId_fkey")
-  pengumpulan  Submission? @relation(fields: [submissionId], references: [id], onDelete: Cascade, map: "file_attachments_submissionId_fkey")
-
-  @@index([assignmentId], map: "file_attachments_assignmentId_idx")
-  @@index([materialId], map: "file_attachments_materialId_idx")
-  @@index([submissionId], map: "file_attachments_submissionId_idx")
-  @@map("lampiran")
-}
-
-model Material {
-  id         String           @id @default(cuid())
-  subjectId  String
-  title      String
-  content    String?
-  createdAt  DateTime         @default(now())
-  updatedAt  DateTime         @updatedAt
-  lampiran   FileAttachment[]
-  matakuliah Subject          @relation(fields: [subjectId], references: [id], onDelete: Cascade, map: "materials_subjectId_fkey")
-
-  @@index([subjectId], map: "materials_subjectId_idx")
-  @@map("materi")
-}
-
-model AttendanceSession {
-  id            String             @id(map: "attendance_sessions_pkey") @default(cuid())
-  subjectId     String
-  dateUTC       BigInt
-  meetingNumber Int
-  createdAt     DateTime           @default(now())
-  updatedAt     DateTime           @updatedAt
-  absen         AttendanceRecord[]
-  matakuliah    Subject            @relation(fields: [subjectId], references: [id], onDelete: Cascade, map: "attendance_sessions_subjectId_fkey")
-
-  @@index([dateUTC], map: "attendance_sessions_dateUTC_idx")
-  @@index([subjectId], map: "attendance_sessions_subjectId_idx")
-  @@map("sesi_absen")
-}
-
-model AttendanceRecord {
-  id        String            @id @default(cuid())
-  sessionId String
-  studentId String
-  status    AttendanceStatus  @default(alfa)
-  createdAt DateTime          @default(now())
-  updatedAt DateTime          @updatedAt
-  sesi      AttendanceSession @relation(fields: [sessionId], references: [id], onDelete: Cascade, map: "attendance_records_sessionId_fkey")
-  mahasiswa User              @relation(fields: [studentId], references: [id], onDelete: Cascade, map: "attendance_records_studentId_fkey")
-
-  @@unique([sessionId, studentId], map: "attendance_records_sessionId_studentId_key")
-  @@index([sessionId], map: "attendance_records_sessionId_idx")
-  @@index([studentId], map: "attendance_records_studentId_idx")
-  @@map("absen")
 }
 
 model KrsItem {
@@ -244,27 +110,6 @@ model KrsItem {
   @@index([term], map: "krs_items_term_idx")
   @@index([userId], map: "krs_items_userId_idx")
   @@map("krs")
-}
-
-model Grade {
-  id         String          @id @default(cuid())
-  userId     String
-  subjectId  String
-  offeringId String?
-  term       String
-  nilaiAngka Float?
-  nilaiHuruf GradeValue?
-  createdAt  DateTime        @default(now())
-  updatedAt  DateTime        @updatedAt
-  penawaran  CourseOffering? @relation(fields: [offeringId], references: [id], map: "grades_offeringId_fkey")
-  matakuliah Subject         @relation(fields: [subjectId], references: [id], onDelete: Cascade, map: "grades_subjectId_fkey")
-  pengguna   User            @relation(fields: [userId], references: [id], onDelete: Cascade, map: "grades_userId_fkey")
-
-  @@unique([userId, subjectId, term], map: "grades_userId_subjectId_term_key")
-  @@index([subjectId], map: "grades_subjectId_idx")
-  @@index([term], map: "grades_term_idx")
-  @@index([userId], map: "grades_userId_idx")
-  @@map("nilai")
 }
 
 model ScheduleEvent {
@@ -326,22 +171,6 @@ model ActivityLog {
   @@map("log_aktivitas")
 }
 
-model Announcement {
-  id          String   @id(map: "announcements_pkey") @default(cuid())
-  title       String
-  description String
-  imageUrl    String?
-  fileUrl     String?
-  targetRoles String[]
-  isActive    Boolean  @default(true)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-  createdById String
-
-  @@index([isActive, createdAt], map: "announcements_isActive_createdAt_idx")
-  @@map("pengumuman")
-}
-
 enum UserRole {
   mahasiswa
   dosen
@@ -354,34 +183,7 @@ enum SubjectStatus {
   arsip
 }
 
-enum AttendanceStatus {
-  hadir
-  alfa
-  izin
-}
-
-enum GradeValue {
-  A
-  B_PLUS
-  B
-  C_PLUS
-  C
-  D
-  E
-}
-
-enum SubmissionStatus {
-  draft
-  submitted
-  graded
-}
-
 enum OfferingStatus {
   buka
   tutup
-}
-
-enum UploadType {
-  file
-  link
 }

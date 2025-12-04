@@ -212,7 +212,8 @@ export async function POST(request: NextRequest) {
           password: staffData.password,
           role: staffData.role,
           prodi: staffData.prodi || null, // Save prodi to user table
-          angkatan: new Date().getFullYear(),
+          nip: staffData.nip || null,
+          phoneNumber: staffData.phoneNumber || null,
         },
       })
 

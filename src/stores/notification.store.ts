@@ -3,7 +3,7 @@ import { persist, createJSONStorage } from "zustand/middleware"
 
 export interface NotificationBadge {
   id: string
-  type: "krs" | "jadwal" | "asynchronous" | "khs" | "reminder"
+  type: "krs" | "jadwal" | "reminder"
   userId: string
   count: number
   lastUpdated: number

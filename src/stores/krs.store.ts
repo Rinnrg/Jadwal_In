@@ -2,7 +2,6 @@
 import { create } from "zustand"
 import type { KrsItem } from "@/data/schema"
 import { ActivityLogger } from "@/lib/activity-logger"
-import { useGradesStore } from "./grades.store"
 
 interface KrsState {
   krsItems: KrsItem[]

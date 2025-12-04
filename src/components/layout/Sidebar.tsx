@@ -185,8 +185,6 @@ export function Sidebar() {
     return {
       krs: getBadgeCount("krs", session.id),
       jadwal: getBadgeCount("jadwal", session.id),
-      asynchronous: getBadgeCount("asynchronous", session.id),
-      khs: getBadgeCount("khs", session.id),
       reminder: getBadgeCount("reminder", session.id),
     }
   }, [session, getBadgeCount])
@@ -195,8 +193,6 @@ export function Sidebar() {
   const getMenuBadgeCount = useCallback((path: string): number => {
     if (path.includes("/krs")) return badgeCounts.krs || 0
     if (path.includes("/jadwal")) return badgeCounts.jadwal || 0
-    if (path.includes("/asynchronous")) return badgeCounts.asynchronous || 0
-    if (path.includes("/khs")) return badgeCounts.khs || 0
     if (path.includes("/reminders")) return badgeCounts.reminder || 0
     
     return 0
@@ -208,8 +204,6 @@ export function Sidebar() {
     
     if (path.includes("/krs")) markAsRead("krs", session.id)
     if (path.includes("/jadwal")) markAsRead("jadwal", session.id)
-    if (path.includes("/asynchronous")) markAsRead("asynchronous", session.id)
-    if (path.includes("/khs")) markAsRead("khs", session.id)
     if (path.includes("/reminders")) markAsRead("reminder", session.id)
   }, [session, markAsRead])
 

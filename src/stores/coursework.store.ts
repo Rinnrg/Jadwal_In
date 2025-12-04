@@ -176,16 +176,7 @@ export const useCourseworkStore = create<CourseworkState>()(
               // Get all students enrolled in this subject
               const enrolledStudents = getKrsBySubject(assignment.subjectId)
               
-              const message = assignment.title 
-                ? `Tugas baru: "${assignment.title}"` 
-                : 'Tugas baru telah ditambahkan'
-              
-              // Notify each enrolled student
-              enrolledStudents.forEach(krsItem => {
-                triggerNotification('asynchronous', krsItem.userId, message, 1)
-              })
-              
-              console.log('[Coursework Store] Assignment notification triggered for', enrolledStudents.length, 'students')
+              console.log('[Coursework Store] Assignment notification skipped (asynchronous removed)', enrolledStudents.length, 'students')
             })()
           } catch (error) {
             console.error('[Coursework Store] Failed to trigger assignment notification:', error)
@@ -306,16 +297,7 @@ export const useCourseworkStore = create<CourseworkState>()(
               // Get all students enrolled in this subject
               const enrolledStudents = getKrsBySubject(material.subjectId)
               
-              const message = material.title 
-                ? `Materi baru: "${material.title}"` 
-                : 'Materi baru telah ditambahkan'
-              
-              // Notify each enrolled student
-              enrolledStudents.forEach(krsItem => {
-                triggerNotification('asynchronous', krsItem.userId, message, 1)
-              })
-              
-              console.log('[Coursework Store] Material notification triggered for', enrolledStudents.length, 'students')
+              console.log('[Coursework Store] Material notification skipped (asynchronous removed)', enrolledStudents.length, 'students')
             })()
           } catch (error) {
             console.error('[Coursework Store] Failed to trigger material notification:', error)

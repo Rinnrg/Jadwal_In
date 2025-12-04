@@ -9,7 +9,7 @@ export interface Activity {
   timestamp: number
   icon: string // Icon name as string for persistence
   color: string
-  category: "schedule" | "krs" | "reminder" | "subject" | "attendance" | "assignment" | "material" | "profile" | "password" | "other"
+  category: "schedule" | "krs" | "reminder" | "subject" | "attendance" | "profile" | "password" | "other"
 }
 
 interface ActivityState {

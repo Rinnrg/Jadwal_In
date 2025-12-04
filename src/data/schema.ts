@@ -88,70 +88,6 @@ export const FileAttachmentSchema = z.object({
 
 export type FileAttachment = z.infer<typeof FileAttachmentSchema>
 
-// Assignment Schema for asynchronous content
-export const AssignmentSchema = z.object({
-  id: z.string(),
-  subjectId: z.string(),
-  title: z.string(),
-  description: z.string().optional(),
-  dueUTC: z.number().optional(),
-  createdAt: z.number(),
-  imageUrl: z.string().optional(),
-  fileUrl: z.string().optional(),
-  attachments: z.array(FileAttachmentSchema).default([]),
-  allowedFileTypes: z.array(z.string()).default([".pdf", ".doc", ".docx"]),
-  maxFileSize: z.number().default(10 * 1024 * 1024), // 10MB default
-  maxFiles: z.number().default(3),
-})
-
-export type Assignment = z.infer<typeof AssignmentSchema>
-
-// Submission Schema for student submissions
-export const SubmissionSchema = z.object({
-  id: z.string(),
-  assignmentId: z.string(),
-  studentId: z.string(),
-  files: z.array(FileAttachmentSchema).default([]),
-  note: z.string().optional(),
-  submittedAt: z.number(),
-  status: z.enum(["draft", "submitted", "graded"]).default("draft"),
-  grade: z.number().min(0).max(100).optional(),
-  feedback: z.string().optional(),
-  gradedAt: z.number().optional(),
-  gradedBy: z.string().optional(),
-})
-
-export type Submission = z.infer<typeof SubmissionSchema>
-
-// Material Schema for asynchronous content
-export const MaterialSchema = z.object({
-  id: z.string(),
-  subjectId: z.string(),
-  title: z.string(),
-  content: z.string().optional(),
-  attachments: z.array(FileAttachmentSchema).default([]),
-  createdAt: z.number(),
-})
-
-export type Material = z.infer<typeof MaterialSchema>
-
-// AttendanceSession Schema for asynchronous content
-export const AttendanceSessionSchema = z.object({
-  id: z.string(),
-  subjectId: z.string(),
-  dateUTC: z.number(),
-  meetingNumber: z.number().min(1).max(16), // Added meeting number field
-  sessionType: z.enum(["regular", "UTS", "UAS"]).default("regular").optional(), // Added session type
-  records: z.array(
-    z.object({
-      studentId: z.string(),
-      status: z.enum(["hadir", "alfa", "izin", "sakit"]).default("alfa"), // Added sakit status
-    }),
-  ),
-})
-
-export type AttendanceSession = z.infer<typeof AttendanceSessionSchema>
-
 // KRS Item Schema
 export const KrsItemSchema = z.object({
   id: z.string(),
@@ -163,19 +99,6 @@ export const KrsItemSchema = z.object({
 })
 
 export type KrsItem = z.infer<typeof KrsItemSchema>
-
-// Grade Schema
-export const GradeSchema = z.object({
-  id: z.string(),
-  userId: z.string(),
-  subjectId: z.string(),
-  offeringId: z.string().optional(), // Added offeringId for per-class grading
-  term: z.string(),
-  nilaiAngka: z.number().min(0).max(100).optional(),
-  nilaiHuruf: z.enum(["A", "B+", "B", "C+", "C", "D", "E"]).optional(),
-})
-
-export type Grade = z.infer<typeof GradeSchema>
 
 // Schedule Event Schema
 export const ScheduleEventSchema = z.object({

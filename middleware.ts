@@ -8,12 +8,8 @@ const publicRoutes = ["/login", "/admin", "/", "/auth"]
 const protectedRoutes = [
   "/dashboard",
   "/jadwal",
-  "/kehadiran",
   "/subjects",
-  "/entry-nilai",
   "/krs",
-  "/khs",
-  "/asynchronous",
   "/profile",
   "/reminders",
 ]
