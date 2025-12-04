@@ -263,20 +263,12 @@ export async function DELETE(request: NextRequest) {
       )
     }
 
-    // Get the KRS item to check for grades
+    // Get the KRS item
     const krsItem = await prisma.krsItem.findUnique({
       where: { id },
       include: {
-        pengguna: {
-          include: {
-            nilai: {
-              where: {
-                subjectId: undefined, // Will be set dynamically
-                term: undefined,
-              },
-            },
-          },
-        },
+        pengguna: true,
+        matakuliah: true,
       },
     })
 
