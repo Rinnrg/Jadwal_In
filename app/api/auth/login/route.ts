@@ -6,7 +6,8 @@ import { randomBytes } from 'crypto'
 
 // Mark as dynamic route
 export const dynamic = 'force-dynamic'
-export const maxDuration = 10 // Allow up to 10 seconds for serverless function
+export const maxDuration = 60 // Increase timeout to 60 seconds for Vercel Pro
+export const runtime = 'nodejs'
 
 const loginSchema = z.object({
   email: z.string().email(),
@@ -17,7 +18,7 @@ const loginSchema = z.object({
 async function withRetry<T>(
   operation: () => Promise<T>,
   operationName: string = 'Database operation',
-  maxRetries = 3
+  maxRetries = 2 // Reduce to 2 retries to avoid timeout
 ): Promise<T> {
   let lastError: any
   
@@ -32,8 +33,8 @@ async function withRetry<T>(
       console.error(`❌ ${operationName} failed (attempt ${attempt}/${maxRetries}):`, error)
       
       if (attempt < maxRetries) {
-        // Exponential backoff: 1s, 2s, 4s
-        const waitTime = Math.min(1000 * Math.pow(2, attempt - 1), 5000)
+        // Faster retry: 500ms, 1s
+        const waitTime = 500 * attempt
         console.log(`⏳ Waiting ${waitTime}ms before retry...`)
         await new Promise(resolve => setTimeout(resolve, waitTime))
       }
@@ -45,38 +46,44 @@ async function withRetry<T>(
 }
 
 export async function POST(request: NextRequest) {
+  const startTime = Date.now()
+  
   try {
     console.log('🔐 Login attempt started')
     const body = await request.json()
     console.log('📧 Email:', body.email)
     const { email, password } = loginSchema.parse(body)
 
-    // Test database connection first with retry
+    console.log('⚡ Finding user in database...')
+
+    // Find user by email with timeout protection (no retry to save time)
+    let user: any = null
     try {
-      await withRetry(
-        () => prisma.$queryRaw`SELECT 1`,
-        'Database connection test',
-        2
-      )
-      console.log('✅ Database connection successful')
-    } catch (dbError: any) {
-      console.error('❌ Database connection failed after retries:', dbError)
+      user = await Promise.race([
+        prisma.user.findUnique({
+          where: { email },
+          select: {
+            id: true,
+            email: true,
+            name: true,
+            password: true,
+            role: true,
+            image: true,
+            prodi: true,
+          }
+        }),
+        new Promise<never>((_, reject) => 
+          setTimeout(() => reject(new Error('Database query timeout')), 8000)
+        )
+      ])
+      console.log(`✅ User query completed in ${Date.now() - startTime}ms`)
+    } catch (queryError: any) {
+      console.error('❌ Database query failed:', queryError.message)
       return NextResponse.json(
-        { 
-          error: 'Database tidak dapat diakses saat ini. Silakan coba lagi atau gunakan login Google.',
-          details: process.env.NODE_ENV === 'development' ? dbError.message : undefined
-        },
+        { error: 'Database timeout. Silakan gunakan Google Sign-In atau coba lagi.' },
         { status: 503 }
       )
     }
-
-    // Find user by email with retry logic
-    const user = await withRetry(
-      () => prisma.user.findUnique({
-        where: { email },
-      }),
-      'Find user by email'
-    )
 
     // User not found in database
     if (!user) {

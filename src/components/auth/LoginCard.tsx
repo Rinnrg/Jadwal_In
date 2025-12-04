@@ -57,9 +57,25 @@ export function LoginCard() {
       })
 
       if (!response.ok) {
-        const error = await response.json()
+        // Handle 504 Gateway Timeout specifically
+        if (response.status === 504) {
+          setIsLoading(false)
+          showError('Server timeout. Silakan gunakan tombol "Sign in with Google" sebagai alternatif.')
+          return
+        }
+        
+        // Try to parse JSON error response
+        let errorMessage = 'Login gagal'
+        try {
+          const error = await response.json()
+          errorMessage = error.error || errorMessage
+        } catch (e) {
+          // If response is not JSON, use status text
+          errorMessage = `Error ${response.status}: ${response.statusText}`
+        }
+        
         setIsLoading(false)
-        showError(error.error || 'Login gagal')
+        showError(errorMessage)
         return
       }
 
