@@ -228,26 +228,6 @@ export async function POST(request: NextRequest) {
 
     console.log('[KRS API] Created KRS item:', krsItem.id)
 
-    // Also create a grade entry (initially empty)
-    await prisma.grade.upsert({
-      where: {
-        userId_subjectId_term: {
-          userId: data.userId,
-          subjectId: data.subjectId,
-          term: data.term,
-        },
-      },
-      update: {},
-      create: {
-        userId: data.userId,
-        subjectId: data.subjectId,
-        offeringId: data.offeringId,
-        term: data.term,
-      },
-    })
-
-    console.log('[KRS API] Grade entry created/updated')
-
     return NextResponse.json({
       ...krsItem,
       createdAt: new Date(krsItem.createdAt).getTime(),
@@ -307,28 +287,10 @@ export async function DELETE(request: NextRequest) {
       )
     }
 
-    // Check if there's a grade for this subject
-    const grade = await prisma.grade.findUnique({
-      where: {
-        userId_subjectId_term: {
-          userId: krsItem.userId,
-          subjectId: krsItem.subjectId,
-          term: krsItem.term,
-        },
-      },
-    })
-
     // Delete the KRS item
     await prisma.krsItem.delete({
       where: { id },
     })
-
-    // Only delete grade if it's empty (no value)
-    if (grade && !grade.nilaiAngka && !grade.nilaiHuruf) {
-      await prisma.grade.delete({
-        where: { id: grade.id },
-      })
-    }
 
     return NextResponse.json({ 
       success: true, 

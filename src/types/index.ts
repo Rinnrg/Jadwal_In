@@ -28,26 +28,6 @@ export interface Schedule {
   type: "lecture" | "lab" | "seminar"
 }
 
-export interface Attendance {
-  id: string
-  studentId: string
-  subjectId: string
-  meetingNumber: number
-  status: "hadir" | "alfa" | "izin"
-  date: string
-  notes?: string
-}
-
-export interface Grade {
-  id: string
-  studentId: string
-  subjectId: string
-  type: "tugas" | "quiz" | "uts" | "uas"
-  score: number
-  maxScore: number
-  date: string
-}
-
 export interface Assignment {
   id: string
   subjectId: string
