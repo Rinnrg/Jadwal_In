@@ -633,49 +633,55 @@ export function ProfileForm({ profile, onSuccess, onChangePassword, onSetPasswor
                 </div>
               )}
 
-              <div className="space-y-2">
-                <Label htmlFor="angkatan">Angkatan</Label>
-                <Input
-                  id="angkatan"
-                  type="number"
-                  value={angkatan}
-                  disabled
-                  className="bg-muted"
-                />
-                <p className="text-xs text-muted-foreground">Angkatan tidak dapat diubah</p>
-              </div>
+              {session.role === "mahasiswa" && (
+                <div className="space-y-2">
+                  <Label htmlFor="angkatan">Angkatan</Label>
+                  <Input
+                    id="angkatan"
+                    type="number"
+                    value={angkatan}
+                    disabled
+                    className="bg-muted"
+                  />
+                  <p className="text-xs text-muted-foreground">Angkatan tidak dapat diubah</p>
+                </div>
+              )}
 
-              <div className="space-y-2">
-                <Label htmlFor="fakultas">Fakultas</Label>
-                <Input
-                  id="fakultas"
-                  value={getFakultas()}
-                  disabled
-                  className="bg-muted"
-                />
-                <p className="text-xs text-muted-foreground">
-                  {profile?.prodi 
-                    ? "Data dari pd-unesa.unesa.ac.id" 
-                    : "Fakultas tidak dapat diubah"}
-                </p>
-              </div>
+              {session.role === "mahasiswa" && (
+                <div className="space-y-2">
+                  <Label htmlFor="fakultas">Fakultas</Label>
+                  <Input
+                    id="fakultas"
+                    value={getFakultas()}
+                    disabled
+                    className="bg-muted"
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    {profile?.prodi 
+                      ? "Data dari pd-unesa.unesa.ac.id" 
+                      : "Fakultas tidak dapat diubah"}
+                  </p>
+                </div>
+              )}
 
-              <div className="space-y-2">
-                <Label htmlFor="prodi">Program Studi</Label>
-                <Input
-                  id="prodi"
-                  value={getProdi()}
-                  disabled
-                  className="bg-muted"
-                />
-                <p className="text-xs text-muted-foreground">
-                  {profile?.prodi 
-                    ? "Data dari multi-source (PDDIKTI/pd-unesa)" 
-                    : getProdi() !== "-"
-                    ? "Data dari kode NIM (fallback)"
-                    : "Menunggu sinkronisasi data..."}
-                </p>
-              </div>
+              {session.role === "mahasiswa" && (
+                <div className="space-y-2">
+                  <Label htmlFor="prodi">Program Studi</Label>
+                  <Input
+                    id="prodi"
+                    value={getProdi()}
+                    disabled
+                    className="bg-muted"
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    {profile?.prodi 
+                      ? "Data dari multi-source (PDDIKTI/pd-unesa)" 
+                      : getProdi() !== "-"
+                      ? "Data dari kode NIM (fallback)"
+                      : "Menunggu sinkronisasi data..."}
+                  </p>
+                </div>
+              )}
 
               <div className="space-y-2">
                 <Label htmlFor="jenisKelamin">Jenis Kelamin</Label>
