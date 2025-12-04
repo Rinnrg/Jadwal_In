@@ -22,6 +22,8 @@ const createStaffSchema = z.object({
   password: z.string().min(6).optional(),
   role: z.enum(['dosen', 'kaprodi', 'super_admin']),
   prodi: z.string().optional(),
+  nip: z.string().optional(),
+  phoneNumber: z.string().optional(),
 })
 
 const createUserSchema = z.union([
@@ -37,6 +39,8 @@ const updateUserSchema = z.object({
   nim: z.string().length(11).optional(),
   angkatan: z.number().min(2000).max(2100).optional(),
   prodi: z.string().optional().nullable(),
+  nip: z.string().optional().nullable(),
+  phoneNumber: z.string().optional().nullable(),
 })
 
 // GET - Get all users or specific user
@@ -304,6 +308,8 @@ export async function PATCH(request: NextRequest) {
         ...(data.prodi !== undefined && { prodi: data.prodi }), // Allow setting prodi to null
         ...(data.nim && { nim: data.nim }),
         ...(data.angkatan && { angkatan: data.angkatan }),
+        ...(data.nip !== undefined && { nip: data.nip }), // Allow setting nip to null
+        ...(data.phoneNumber !== undefined && { phoneNumber: data.phoneNumber }), // Allow setting phoneNumber to null
       },
       
     })
